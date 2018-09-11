@@ -51,12 +51,12 @@ export class Draw {
     });
   }
 
-  point(x, y, style) {
+  point(x, y, style, size) {
     this.ctx.lineWidth = 1;
-    this.ctx.strokeStyle = style ? style : "cyan";
+    this.ctx.fillStyle = style ? style : "cyan";
     this.ctx.beginPath();
-    this.ctx.arc(x, y, 3, 0, 6.29);
-    this.ctx.stroke();
+    this.ctx.arc(x, y, size ? size : 3, 0, 6.29);
+    this.ctx.fill();
   }
 
   arrow(sx, sy, ex, ey) {
@@ -75,8 +75,14 @@ export class Draw {
   }
 
   arc(obj) {
+    const typeToColor = {
+      long: "blue",
+      short: "green",
+      short2: "cyan"
+    };
+
     const { x, y, radius, a1, a2, type } = obj;
-    this.ctx.strokeStyle = type == "short2" ? "red" : "orange";
+    this.ctx.strokeStyle = typeToColor[type];
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.arc(x, y, radius, a1, a2);
@@ -87,8 +93,7 @@ export class Draw {
     const ex = x + radius * Math.cos(a2);
     const ey = y + radius * Math.sin(a2);
 
-    this.point(x, y, "magenta");
-    this.point(sx, sy, "darkgreen");
+    this.point(sx, sy, "green");
     this.point(ex, ey, "red");
 
     const midx = x + radius * Math.cos((a1 + a2) / 2);
@@ -105,7 +110,7 @@ export class Draw {
     this.ctx.lineTo(x2, y2);
     this.ctx.stroke();
 
-    this.point(x1, y1, "darkgreen");
+    this.point(x1, y1, "green");
     this.point(x2, y2, "red");
   }
 

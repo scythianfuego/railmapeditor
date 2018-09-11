@@ -17,18 +17,17 @@ let cursorCell = null;
 let currentTool = 16;
 
 let model = [];
-model = JSON.parse(
-  '[{"x":441.67295593006367,"y":345,"radius":105,"a1":1.5707963267948966,"a2":2.237462993461563},{"x":441.67295593006367,"y":345,"radius":105,"a1":0.9041296601282299,"a2":1.5707963267948966},{"x":688.4901960086286,"y":322.5,"radius":105,"a1":2.9985247625214253,"a2":3.665191429188092},{"x":688.4901960086286,"y":322.5,"radius":105,"a1":3.665191429188092,"a2":4.331858095854758},{"x":792.4132444627613,"y":457.50000000000006,"radius":105,"a1":5.09291986491462,"a2":5.759586531581287},{"x":792.4132444627613,"y":457.50000000000006,"radius":105,"a1":5.759586531581287,"a2":6.426253198247954}]'
-);
 
 const drawAll = () => {
   draw.clear();
   draw.grid();
-  draw.cell(cursorCell, "#000");
-  draw.cell(selectedCell, "#090");
-
+  draw.cell(cursorCell, "#999");
+  // draw.cell(selectedCell, "#090");
   model.forEach(obj => draw.object(obj));
 };
+
+// map
+// all neighbours -> intersect dots
 
 const mouseToHex = event => {
   var bounds = event.target.getBoundingClientRect();
