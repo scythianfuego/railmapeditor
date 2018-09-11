@@ -1,11 +1,14 @@
 module.exports = {
   mode: "development",
-  entry: "./index.js",
+  entry: "./src/index.js",
   output: {
     path: __dirname + "/dist",
     filename: "[name].js"
   },
   devtool: "source-map",
+  devServer: {
+    contentBase: "./src"
+  },
   module: {
     rules: [
       {
