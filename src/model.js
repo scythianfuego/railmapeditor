@@ -42,7 +42,7 @@ export default class Model {
       };
       const curr = this.store.get(key) || [];
       if (curr.length < 2) {
-        this.createConnections(o);
+        this.createConnections(o); // TODO: front and rear only
         curr.push(o);
         this.store.set(key, curr);
       } else {

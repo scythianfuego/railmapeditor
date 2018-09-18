@@ -102,6 +102,9 @@ export default class Draw {
     this.point(sx, sy, "green");
     this.point(ex, ey, "red");
 
+    this.ctx.font = "10px Arial";
+    this.ctx.fillStyle = "#f00";
+    this.ctx.fillText(`${type}`, x, y);
     // arrows
     // const midx = x + radius * Math.cos((a1 + a2) / 2);
     // const midy = y + radius * Math.sin((a1 + a2) / 2);
