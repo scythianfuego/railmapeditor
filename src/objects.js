@@ -1,4 +1,4 @@
-export class Objects {
+export default class Objects {
   getCorners(hex) {
     const point = hex.toPoint();
     return hex.corners().map(corner => corner.add(point));
@@ -18,11 +18,11 @@ export class Objects {
     const [a, b] = pairs[index];
 
     return {
-      x1: corners[a].x,
-      y1: corners[a].y,
-      x2: corners[b].x,
-      y2: corners[b].y,
-      type: "line"
+      sx: corners[a].x,
+      sy: corners[a].y,
+      ex: corners[b].x,
+      ey: corners[b].y,
+      type: 0x10 + index
     };
   }
 
@@ -45,7 +45,11 @@ export class Objects {
     const center = corners[a].add(corners[a].subtract(corners[b]));
     const { x, y } = center;
 
-    return { x, y, radius, a1, a2, type: "long" };
+    const sx = x + radius * Math.cos(a1);
+    const sy = y + radius * Math.sin(a1);
+    const ex = x + radius * Math.cos(a2);
+    const ey = y + radius * Math.sin(a2);
+    return { x, y, radius, a1, a2, sx, sy, ex, ey, type: 0x20 + index };
   }
 
   shortArc(hex, index) {
@@ -70,7 +74,11 @@ export class Objects {
     });
     const { x, y } = center;
 
-    return { x, y, radius, a1, a2, type: "short" };
+    const sx = x + radius * Math.cos(a1);
+    const sy = y + radius * Math.sin(a1);
+    const ex = x + radius * Math.cos(a2);
+    const ey = y + radius * Math.sin(a2);
+    return { x, y, radius, a1, a2, sx, sy, ex, ey, type: 0x30 + index };
   }
 
   shortArc2(hex, index) {
@@ -96,6 +104,10 @@ export class Objects {
     });
     const { x, y } = center;
 
-    return { x, y, radius, a1, a2, type: "short2" };
+    const sx = x + radius * Math.cos(a1);
+    const sy = y + radius * Math.sin(a1);
+    const ex = x + radius * Math.cos(a2);
+    const ey = y + radius * Math.sin(a2);
+    return { x, y, radius, a1, a2, sx, sy, ex, ey, type: 0x40 + index };
   }
 }

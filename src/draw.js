@@ -3,11 +3,27 @@ const getCorners = hex => {
   return hex.corners().map(corner => corner.add(point));
 };
 
-export class Draw {
+export default class Draw {
   constructor(canvas, hexgrid) {
     this.canvas = canvas;
     this.hexgrid = hexgrid;
     this.ctx = canvas.getContext("2d");
+  }
+
+  typeToColor(type) {
+    if (0x20 <= type && type <= 0x29) {
+      return "blue";
+    }
+
+    if (0x30 <= type && type <= 0x39) {
+      return "green";
+    }
+
+    if (0x40 <= type && type <= 0x49) {
+      return "cyan";
+    }
+
+    return "orange";
   }
 
   clear() {
@@ -40,14 +56,15 @@ export class Draw {
       [3, 5, 1].forEach(i => this.ctx.lineTo(corners[i].x, corners[i].y));
       this.ctx.stroke();
 
-      const point = hex.toPoint();
-      const text = `${hex.x},${hex.y}`;
-      const w = this.ctx.measureText(text).width;
-      this.ctx.fillText(
-        text,
-        point.x + hex.size - w / 2,
-        point.y + hex.size + 7
-      );
+      // cell ids
+      // const point = hex.toPoint();
+      // const text = `${hex.x},${hex.y}`;
+      // const w = this.ctx.measureText(text).width;
+      // this.ctx.fillText(
+      //   text,
+      //   point.x + hex.size - w / 2,
+      //   point.y + hex.size + 7
+      // );
     });
   }
 
@@ -75,43 +92,33 @@ export class Draw {
   }
 
   arc(obj) {
-    const typeToColor = {
-      long: "blue",
-      short: "green",
-      short2: "cyan"
-    };
-
-    const { x, y, radius, a1, a2, type } = obj;
-    this.ctx.strokeStyle = typeToColor[type];
+    const { x, y, radius, a1, a2, sx, sy, ex, ey, type } = obj;
+    this.ctx.strokeStyle = this.typeToColor(type);
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.arc(x, y, radius, a1, a2);
     this.ctx.stroke();
 
-    const sx = x + radius * Math.cos(a1);
-    const sy = y + radius * Math.sin(a1);
-    const ex = x + radius * Math.cos(a2);
-    const ey = y + radius * Math.sin(a2);
-
     this.point(sx, sy, "green");
     this.point(ex, ey, "red");
 
-    const midx = x + radius * Math.cos((a1 + a2) / 2);
-    const midy = y + radius * Math.sin((a1 + a2) / 2);
-    this.arrow(x, y, midx, midy);
+    // arrows
+    // const midx = x + radius * Math.cos((a1 + a2) / 2);
+    // const midy = y + radius * Math.sin((a1 + a2) / 2);
+    // this.arrow(x, y, midx, midy);
   }
 
   line(obj) {
-    const { x1, y1, x2, y2 } = obj;
+    const { sx, sy, ex, ey, type } = obj;
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
-    this.ctx.strokeStyle = "orange";
-    this.ctx.moveTo(x1, y1);
-    this.ctx.lineTo(x2, y2);
+    this.ctx.strokeStyle = this.typeToColor(type);
+    this.ctx.moveTo(sx, sy);
+    this.ctx.lineTo(ex, ey);
     this.ctx.stroke();
 
-    this.point(x1, y1, "green");
-    this.point(x2, y2, "red");
+    this.point(sx, sy, "green");
+    this.point(ex, ey, "red");
   }
 
   object(obj) {

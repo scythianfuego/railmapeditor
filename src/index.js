@@ -1,22 +1,24 @@
 import * as Honeycomb from "honeycomb-grid";
 
-import { Draw } from "./draw";
-import { Objects } from "./objects";
+import Draw from "./draw";
+import Objects from "./objects";
+import Model from "./model";
 
-const Hex = Honeycomb.extendHex({ size: 30 });
+const Hex = Honeycomb.extendHex({ size: 50 / Math.sqrt(3) });
 const Grid = Honeycomb.defineGrid(Hex);
 const grid = Grid.rectangle({ width: 20, height: 20 });
 
 const canvas = document.querySelector("canvas");
 const draw = new Draw(canvas, grid);
-window.draw = draw;
 const objects = new Objects();
+let model = new Model();
 
 let selectedCell = null;
 let cursorCell = null;
-let currentTool = 16;
+let currentTool = 1;
 
-let model = [];
+window.draw = draw;
+window.model = model;
 
 const drawAll = () => {
   draw.clear();
@@ -79,9 +81,7 @@ canvas.addEventListener("mouseup", event => {
   selectedCell = mouseToHex(event);
 
   const obj = tools[currentTool](selectedCell);
-  if (obj) {
-    Array.isArray(obj) ? model.push(...obj) : model.push(obj);
-  }
+  model.add(selectedCell, obj);
 
   drawAll();
 });
@@ -102,6 +102,7 @@ const drawTool = (tool, hex) => {
   // ];
 
   const obj = tools[tool](hex);
+
   if (obj) {
     Array.isArray(obj) ? obj.forEach(o => draw.object(o)) : draw.object(obj);
   }
