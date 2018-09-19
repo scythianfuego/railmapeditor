@@ -4,10 +4,21 @@ const getCorners = hex => {
 };
 
 export default class Draw {
-  constructor(canvas, hexgrid) {
+  constructor(canvas, hexgrid, model) {
     this.canvas = canvas;
     this.hexgrid = hexgrid;
+    this.model = model;
+    this.cursorCell = null;
+    this.currentTool = null;
     this.ctx = canvas.getContext("2d");
+  }
+
+  setCursor(cursorCell) {
+    this.cursorCell = cursorCell;
+  }
+
+  setTool(tool) {
+    this.currentTool = tool;
   }
 
   typeToColor(type) {
@@ -28,6 +39,25 @@ export default class Draw {
 
   clear() {
     this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  all() {
+    this.clear();
+    this.grid();
+    this.cell(this.cursorCell, "#999");
+    this.model.forEach(obj => this.object(obj));
+    this.tool();
+  }
+
+  tool() {
+    if (this.currentTool && this.cursorCell) {
+      const obj = this.currentTool(this.cursorCell);
+      if (obj) {
+        Array.isArray(obj)
+          ? obj.forEach(o => draw.object(o))
+          : draw.object(obj);
+      }
+    }
   }
 
   cell(hex, style) {
