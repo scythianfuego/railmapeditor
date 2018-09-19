@@ -39,11 +39,13 @@ const mouseToHex = event => {
 };
 
 canvas.addEventListener("mousemove", event => {
-  cursorCell = mouseToHex(event);
-
-  drawAll();
-  if (cursorCell) {
-    drawTool(currentTool, cursorCell);
+  const newCell = mouseToHex(event);
+  if (newCell != cursorCell) {
+    cursorCell = newCell;
+    drawAll();
+    if (cursorCell) {
+      drawTool(currentTool, cursorCell);
+    }
   }
 });
 

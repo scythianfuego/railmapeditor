@@ -2,6 +2,52 @@ export default class Model {
   constructor() {
     this.store = new Map();
     this.connections = new Map();
+
+    // horizontal lines:
+    //     -  0x10 left right
+    // \  0x11 top bottom (r to l!)
+    // /  0x12 top bottom
+    this.allowedConnections = [
+      //  <- ->
+      {
+        left: [0x10, 0x21, 0x31, 0x23, 0x40],
+        right: [0x10, 0x20, 0x30, 0x41, 0x24]
+      },
+      // /v  /^
+      {
+        left: [0x12, 0x20, 0x43, 0x32, 0x22],
+        right: [0x12, 0x25, 0x42, 0x23, 0x33]
+      },
+      // \v \^
+      {
+        left: [0x11, 0x25, 0x35, 0x21, 0x44],
+        right: [0x11, 0x24, 0x22, 0x34, 0x45]
+      },
+      {
+        left: [0x33],
+        right: [0x43]
+      },
+      {
+        left: [0x42],
+        right: [0x32]
+      },
+      {
+        left: [0x41],
+        right: [0x31]
+      },
+      {
+        left: [0x30],
+        right: [0x40]
+      },
+      {
+        left: [0x44],
+        right: [0x34]
+      },
+      {
+        left: [0x35],
+        right: [0x45]
+      }
+    ];
   }
 
   distance(x1, y1, x2, y2) {

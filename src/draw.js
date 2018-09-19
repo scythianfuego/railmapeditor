@@ -104,7 +104,7 @@ export default class Draw {
 
     this.ctx.font = "10px Arial";
     this.ctx.fillStyle = "#f00";
-    this.ctx.fillText(`${type}`, x, y);
+    this.ctx.fillText(`0x${type.toString(16)}`, x, y);
     // arrows
     // const midx = x + radius * Math.cos((a1 + a2) / 2);
     // const midy = y + radius * Math.sin((a1 + a2) / 2);
