@@ -2,7 +2,7 @@ export default class Animate {
   constructor(model, draw) {
     this.model = model;
     this.draw = draw;
-    this.offset = 0;
+    this.offset = null;
     this.frameFunc = timestamp => this.frameCallback(timestamp);
   }
 
@@ -15,14 +15,32 @@ export default class Animate {
   }
 
   runAnimation(path) {
-    this.offset += 1;
+    const initial = path.radius ? path.a1 : 0;
+    const max = path.radius ? path.a2 : 1;
+    const step = 0.01;
+
+    if (!this.offset) {
+      this.offset = initial;
+    }
+    if (this.offset > max) {
+      this.offset = initial;
+      // switch segment
+      // find new path
+    }
+    this.offset += step;
 
     if (path.radius) {
-      const x = path.radius * Math.cos(path.a1 + this.offset) + path.sx;
-      const y = path.radius * Math.sin(path.a1 + this.offset) + path.sy;
+      const x = path.radius * Math.cos(this.offset) + path.x;
+      const y = path.radius * Math.sin(this.offset) + path.y;
 
       this.draw.all();
-      this.draw.point(x, y, null, 10);
+      this.draw.point(x, y, "#000", 5);
+    } else {
+      const x = this.offset * (path.ex - path.sx) + path.sx;
+      const y = this.offset * (path.ey - path.sy) + path.sy;
+
+      this.draw.all();
+      this.draw.point(x, y, "#000", 5);
     }
   }
 

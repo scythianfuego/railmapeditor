@@ -48,6 +48,7 @@ const tools = [
 ];
 
 draw.setTool(tools[currentTool]);
+draw.all();
 window.draw = draw;
 window.model = model;
 

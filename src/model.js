@@ -1,3 +1,5 @@
+const MIN_DISTANCE = 5;
+
 export default class Model {
   constructor() {
     this.store = new Map();
@@ -11,7 +13,9 @@ export default class Model {
       //  <- ->
       {
         left: [0x10, 0x21, 0x31, 0x23, 0x40],
-        right: [0x10, 0x20, 0x30, 0x41, 0x24]
+        right: [0x10, 0x20, 0x30, 0x41, 0x24],
+        dirL: [1, -1, -1, 1, 1],
+        dirR: [1, -1, -1, 1, 1]
       },
       // /v  /^
       {
@@ -54,22 +58,47 @@ export default class Model {
     return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
   }
 
+  connectDots(obj, v, x1, y1) {
+    this.allowedConnections.forEach(pairList => {
+      const r_index = pairList.right.indexOf(obj.type);
+      if (r_index !== -1) {
+        // joining right
+        const x = Math.floor(x1 / MIN_DISTANCE) * MIN_DISTANCE;
+        const y = Math.floor(y1 / MIN_DISTANCE) * MIN_DISTANCE;
+        const key = `${x}-${y}`;
+        const curr = this.connections.get(key) || [];
+
+        // check v is on list
+        const l_index = pairList.left.indexOf(v.type);
+        if (l_index != -1) {
+          // todo: fill direction
+          curr.push(v, obj);
+          this.connections.set(key, curr);
+        }
+      }
+    });
+  }
+
   createConnections(obj) {
     // TODO: neighbours only
-    const threshold = 5;
+
     const distance = this.distance;
     this.store.forEach(v => {
-      if (distance(obj.sx, obj.sy, v.sx, v.sy) < threshold) {
+      if (distance(obj.sx, obj.sy, v[0].sx, v[0].sy) < MIN_DISTANCE) {
         console.log("A");
+        this.connectDots(obj, v[0], obj.sx, obj.sy);
       }
-      if (distance(obj.sx, obj.sy, v.ex, v.ey) < threshold) {
+      if (distance(obj.sx, obj.sy, v[0].ex, v[0].ey) < MIN_DISTANCE) {
         console.log("B");
+        this.connectDots(obj, v[0], obj.sx, obj.sy);
       }
-      if (distance(obj.ex, obj.ey, v.sx, v.sy) < threshold) {
+      if (distance(obj.ex, obj.ey, v[0].sx, v[0].sy) < MIN_DISTANCE) {
         console.log("C");
+        this.connectDots(obj, v[0], obj.ex, obj.ey);
       }
-      if (distance(obj.ex, obj.ey, v.ex, v.ey) < threshold) {
+      if (distance(obj.ex, obj.ey, v[0].ex, v[0].ey) < MIN_DISTANCE) {
         console.log("D");
+        this.connectDots(obj, v[0], obj.ex, obj.ey);
       }
     });
   }
