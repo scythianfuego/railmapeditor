@@ -59,6 +59,10 @@ export default class Model {
   }
 
   connectDots(obj, v, x1, y1) {
+    // find out if we are left ot right? to do this:
+    // find what we are connecting to. get pair from table -> decide
+    // create/add to connection
+
     this.allowedConnections.forEach(pairList => {
       const r_index = pairList.right.indexOf(obj.type);
       if (r_index !== -1) {
