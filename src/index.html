@@ -2,18 +2,44 @@
 
 <head>
   <style>
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      padding: 0;
+      margin: 0;
+    }
+
     canvas {
       cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .box {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    .console {
+      background: #ccc;
+      padding: 5px;
     }
   </style>
 </head>
 
 <body>
-  <canvas id="canvas" width="1200" height="800"></canvas>
-  <!-- <script src="honeycomb.min.js"></script>
-  <script src="objects.js"></script>
-  <script src="draw.js"></script>
-  <script src="index.js"></script> -->
+  <div class="box">
+    <canvas id="canvas" width="1200" height="800"></canvas>
+    <!-- <script src="honeycomb.min.js"></script>
+      <script src="objects.js"></script>
+      <script src="draw.js"></script>
+      <script src="index.js"></script> -->
+    <div class="console">
+      1 EDIT&nbsp;&nbsp;2BLOCKS&nbsp;&nbsp;3SWITCHES &emsp;&emsp;&emsp;
+      Wheel - change type
+    </div>
+  </div>
   <script src="main.js"></script>
 </body>
 

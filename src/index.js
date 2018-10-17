@@ -7,9 +7,11 @@ import Animate from "./animate";
 
 const Hex = Honeycomb.extendHex({ size: 50 / Math.sqrt(3) });
 const Grid = Honeycomb.defineGrid(Hex);
-const grid = Grid.rectangle({ width: 20, height: 20 });
+const grid = Grid.rectangle({ width: 35, height: 25 });
 
 const canvas = document.querySelector("canvas");
+canvas.height = canvas.clientHeight;
+canvas.width = canvas.clientWidth;
 const objects = new Objects();
 let model = new Model();
 const draw = new Draw(canvas, grid, model);

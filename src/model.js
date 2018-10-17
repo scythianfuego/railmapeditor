@@ -1,3 +1,14 @@
+// не пытаться разбирать левел обратно - сериализовать данные и сделать экспорт
+// упростить парсер в игре по максимумуму - отрезок - следующий, откуда считать
+
+// ES
+// SS
+// EE
+// SE
+
+// аналогично, соединять в редакторе точки а не типы. пофиг на тип
+// убрать модель с "что с чем коннектится" - точки совпали = коннектится
+
 const MIN_DISTANCE = 5;
 
 export default class Model {
@@ -62,6 +73,7 @@ export default class Model {
     // find out if we are left ot right? to do this:
     // find what we are connecting to. get pair from table -> decide
     // create/add to connection
+    // generator table rl
 
     this.allowedConnections.forEach(pairList => {
       const r_index = pairList.right.indexOf(obj.type);
