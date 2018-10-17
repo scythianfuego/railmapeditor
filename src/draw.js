@@ -23,22 +23,23 @@ export default class Draw {
 
   typeToColor(type) {
     if (0x20 <= type && type <= 0x29) {
-      return "blue";
+      return "yellow";
     }
 
     if (0x30 <= type && type <= 0x39) {
-      return "green";
+      return "#00ff2a";
     }
 
     if (0x40 <= type && type <= 0x49) {
-      return "cyan";
+      return "#00baff";
     }
 
     return "orange";
   }
 
   clear() {
-    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+    this.ctx.fillStyle = "#3c3b37";
+    this.ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
   all() {
@@ -47,6 +48,7 @@ export default class Draw {
     this.cell(this.cursorCell, "#999");
     this.model.forEach(obj => this.object(obj));
     this.tool();
+    this.helpline();
   }
 
   tool() {
@@ -76,7 +78,7 @@ export default class Draw {
   }
 
   grid() {
-    this.ctx.strokeStyle = "#eee";
+    this.ctx.strokeStyle = "#333";
     this.ctx.font = "7px Arial";
     this.ctx.fillStyle = "#999";
     this.hexgrid.forEach(hex => {
@@ -123,18 +125,18 @@ export default class Draw {
 
   arc(obj) {
     const { x, y, radius, a1, a2, sx, sy, ex, ey, type } = obj;
-    this.ctx.strokeStyle = this.typeToColor(type);
+    const color = this.typeToColor(type);
+    this.ctx.strokeStyle = color;
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.arc(x, y, radius, a1, a2);
     this.ctx.stroke();
 
-    this.point(sx, sy, "green");
-    this.point(ex, ey, "red");
+    // this.point(sx, sy, color); // TODO: color for switches
 
-    this.ctx.font = "10px Arial";
-    this.ctx.fillStyle = "#f00";
-    this.ctx.fillText(`0x${type.toString(16)}`, x, y);
+    // this.ctx.font = "10px Arial";
+    // this.ctx.fillStyle = "#f00";
+    // this.ctx.fillText(`0x${type.toString(16)}`, x, y);
     // arrows
     // const midx = x + radius * Math.cos((a1 + a2) / 2);
     // const midy = y + radius * Math.sin((a1 + a2) / 2);
@@ -143,15 +145,15 @@ export default class Draw {
 
   line(obj) {
     const { sx, sy, ex, ey, type } = obj;
+    const color = this.typeToColor(type);
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
-    this.ctx.strokeStyle = this.typeToColor(type);
+    this.ctx.strokeStyle = color;
     this.ctx.moveTo(sx, sy);
     this.ctx.lineTo(ex, ey);
     this.ctx.stroke();
 
-    this.point(sx, sy, "green");
-    this.point(ex, ey, "red");
+    // this.point(sx, sy, color);
   }
 
   object(obj) {
@@ -165,5 +167,56 @@ export default class Draw {
     this.ctx.restore();
   }
 
-  // export default draw;
+  helpline() {
+    //hints
+    const hints = [
+      { tag: 1, text: "Lines", active: true },
+      { tag: 2, text: "Large" },
+      { tag: 3, text: "Small" },
+      { tag: 4, text: "Small2" },
+      { tag: 9, text: "Block" },
+      { tag: 0, text: "Switch" },
+      { tag: "G", text: "Group" },
+      { tag: "U", text: "Ungroup" },
+      { tag: 0, text: "Delete" }
+    ];
+
+    let x = 0;
+    let y = this.canvas.height - 20;
+
+    this.ctx.fillStyle = "#303030";
+    this.ctx.fillRect(0, y, this.canvas.width, 20);
+
+    const normalFont = "14px  monospace ";
+    const boldFont = "bold 14px  monospace ";
+
+    // this.ctx
+    hints.forEach(h => {
+      let metrics;
+      // tag
+      h.tag = h.tag;
+      this.ctx.font = boldFont;
+      metrics = this.ctx.measureText(h.tag);
+      this.ctx.fillStyle = "#444444";
+      this.ctx.fillRect(x, y, metrics.width + 20, 20);
+      this.ctx.fillStyle = "#ffaf00";
+      x += 5;
+      this.ctx.fillText(h.tag, x, y + 14);
+      x += Math.floor(metrics.width + 10);
+
+      // text
+      metrics = this.ctx.measureText(h.text);
+      if (h.active) {
+        this.ctx.fillStyle = "#aaa";
+        this.ctx.fillRect(x, y, metrics.width + 10, 20);
+        this.ctx.fillStyle = "#000";
+      } else {
+        this.ctx.fillStyle = "#d5d5d5";
+      }
+      this.ctx.font = normalFont;
+      x += 5;
+      this.ctx.fillText(h.text, x, y + 14);
+      x += Math.floor(metrics.width + 20);
+    });
+  }
 }

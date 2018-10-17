@@ -4,6 +4,7 @@ import Draw from "./draw";
 import Objects from "./objects";
 import Model from "./model";
 import Animate from "./animate";
+import Controls from "./controls";
 
 const Hex = Honeycomb.extendHex({ size: 50 / Math.sqrt(3) });
 const Grid = Honeycomb.defineGrid(Hex);
@@ -14,6 +15,7 @@ canvas.height = canvas.clientHeight;
 canvas.width = canvas.clientWidth;
 const objects = new Objects();
 let model = new Model();
+const controls = new Controls();
 const draw = new Draw(canvas, grid, model);
 
 const animate = new Animate(model, draw);
