@@ -45,9 +45,15 @@ const config = [
 // tools controller
 
 export default class Controls {
-  constructor() {
+  constructor(canvas) {
+    this.canvas = canvas;
     this.activeState = 1;
+
+    canvas.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
+    canvas.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
   }
+
+  onKeyUp(keyCode) {}
 
   onKeyDown(keyCode) {
     if (toolHotkeys[keyCode]) {

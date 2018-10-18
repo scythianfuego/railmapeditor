@@ -15,7 +15,7 @@ canvas.height = canvas.clientHeight;
 canvas.width = canvas.clientWidth;
 const objects = new Objects();
 let model = new Model();
-const controls = new Controls();
+const controls = new Controls(canvas);
 const draw = new Draw(canvas, grid, model);
 
 const animate = new Animate(model, draw);
