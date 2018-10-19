@@ -1,3 +1,5 @@
+import store from "./store";
+
 const TOOL_DELETE = 1;
 const TOOL_LINES = 2;
 const TOOL_CURVES_LARGE = 3;
@@ -30,64 +32,77 @@ const secondaryHotkeys = {
 const config = [
   {
     code: 49,
-    name: "1",
-    action: TOOL_DELETE,
-    stateFilter: 0
+    tag: "1",
+    text: "Lines",
+    action: TOOL_DELETE
+  },
+  {
+    code: 50,
+    tag: "2",
+    action: ACTION_GROUP,
+    text: "Group",
+    selected: true
   },
   {
     code: 90,
-    name: "G",
+    tag: "Z",
     action: ACTION_GROUP,
-    stateFilter: TOOL_BLOCK_SECTION
+    text: "Group",
+    filter: 2,
+    selected: true
   }
+];
+
+const hints = [
+  { tag: 1, text: "Lines", active: true },
+  { tag: 2, text: "Large" },
+  { tag: 3, text: "Small" },
+  { tag: 4, text: "Small2" },
+  { tag: 9, text: "Block" },
+  { tag: 0, text: "Switch" },
+  { tag: "G", text: "Group" },
+  { tag: "U", text: "Ungroup" },
+  { tag: 0, text: "Delete" }
 ];
 
 // tools controller
 
 export default class Controls {
-  constructor(canvas) {
-    this.canvas = canvas;
+  constructor(draw) {
+    this.draw = draw;
     this.activeState = 1;
 
-    canvas.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
-    canvas.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
+    this.applyFilter();
+    const { hints } = this;
+    store.setState({ hints });
+
+    window.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
+    window.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
   }
 
-  onKeyUp(keyCode) {}
+  applyFilter() {
+    this.hints = config.filter(i => !i.filter || i.filter === this.activeState);
+  }
+
+  onKeyUp(keyCode) {
+    const index = this.hints.findIndex(i => i.code === keyCode);
+    if (index !== -1) {
+      this.hints[index].active = false;
+      this.activeState = this.hints[index].action;
+      this.applyFilter();
+
+      const { hints } = this;
+      store.setState({ hints });
+    }
+  }
 
   onKeyDown(keyCode) {
-    if (toolHotkeys[keyCode]) {
-      this.activeState = toolHotkeys[keyCode];
-      // tool changed
+    const index = this.hints.findIndex(i => i.code === keyCode);
+    if (index !== -1) {
+      this.hints[index].active = true;
+
+      const { hints } = this;
+      store.setState({ hints });
     }
-
-    if (secondaryHotkeys[keyCode]) {
-      const action = secondaryHotkeys[keyCode];
-
-      switch (this.activeState) {
-        case TOOL_BLOCK_SECTION:
-          if (action === ACTION_GROUP) {
-            console.log("group");
-          } else if (action === ACTION_UNGROUP) {
-            console.log("ungroup");
-          }
-          break;
-      }
-    }
-  }
-
-  helpLine() {
-    const names = [
-      "DELETE",
-      "LINES",
-      "LARGE",
-      "SMALL",
-      "SMALL2",
-      "BLOCK",
-      "SWITCH"
-    ];
-    const text = names.map((v, i) => `${i}&nbsp;${v}&emsp;`).join();
-
-    this.canvas = canvas;
   }
 }

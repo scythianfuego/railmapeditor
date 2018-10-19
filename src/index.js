@@ -13,10 +13,11 @@ const grid = Grid.rectangle({ width: 35, height: 25 });
 const canvas = document.querySelector("canvas");
 canvas.height = canvas.clientHeight;
 canvas.width = canvas.clientWidth;
+
 const objects = new Objects();
 let model = new Model();
-const controls = new Controls(canvas);
 const draw = new Draw(canvas, grid, model);
+const controls = new Controls(draw);
 
 const animate = new Animate(model, draw);
 animate.start();

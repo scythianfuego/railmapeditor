@@ -1,3 +1,5 @@
+import store from "./store";
+
 const getCorners = hex => {
   const point = hex.toPoint();
   return hex.corners().map(corner => corner.add(point));
@@ -11,6 +13,11 @@ export default class Draw {
     this.cursorCell = null;
     this.currentTool = null;
     this.ctx = canvas.getContext("2d");
+
+    store.subscribe(state => {
+      this.hints = state.hints;
+      this.all();
+    });
   }
 
   setCursor(cursorCell) {
@@ -168,33 +175,23 @@ export default class Draw {
   }
 
   helpline() {
-    //hints
-    const hints = [
-      { tag: 1, text: "Lines", active: true },
-      { tag: 2, text: "Large" },
-      { tag: 3, text: "Small" },
-      { tag: 4, text: "Small2" },
-      { tag: 9, text: "Block" },
-      { tag: 0, text: "Switch" },
-      { tag: "G", text: "Group" },
-      { tag: "U", text: "Ungroup" },
-      { tag: 0, text: "Delete" }
-    ];
+    const hints = this.hints;
+    if (!hints) {
+      return;
+    }
 
     let x = 0;
     let y = this.canvas.height - 20;
+    let metrics;
+    const normalFont = "14px  monospace ";
+    const boldFont = "bold 14px  monospace ";
 
     this.ctx.fillStyle = "#303030";
     this.ctx.fillRect(0, y, this.canvas.width, 20);
 
-    const normalFont = "14px  monospace ";
-    const boldFont = "bold 14px  monospace ";
-
     // this.ctx
     hints.forEach(h => {
-      let metrics;
       // tag
-      h.tag = h.tag;
       this.ctx.font = boldFont;
       metrics = this.ctx.measureText(h.tag);
       this.ctx.fillStyle = "#444444";
@@ -210,6 +207,10 @@ export default class Draw {
         this.ctx.fillStyle = "#aaa";
         this.ctx.fillRect(x, y, metrics.width + 10, 20);
         this.ctx.fillStyle = "#000";
+      } else if (h.selected) {
+        this.ctx.fillStyle = "#835a00";
+        this.ctx.fillRect(x, y, metrics.width + 10, 20);
+        this.ctx.fillStyle = "#d5d5d5";
       } else {
         this.ctx.fillStyle = "#d5d5d5";
       }
