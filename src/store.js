@@ -7,6 +7,13 @@ import devtools from "unistore/devtools";
 const defaults = {
   // ui
   hints: [],
+  mode: 1,
+  tool: null,
+  // mouse selection
+  mouse: [0, 0],
+  mouseDown: false,
+  selection: false,
+  selectionStart: [0, 0],
   // model
   model: null
 };

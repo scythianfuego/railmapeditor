@@ -11,11 +11,13 @@ export default class Draw {
     this.hexgrid = hexgrid;
     this.model = model;
     this.cursorCell = null;
-    this.currentTool = null;
+    this.currentTool = store.tool;
     this.ctx = canvas.getContext("2d");
+    this.ctx.translate(0.5, 0.5);
 
     store.subscribe(state => {
       this.hints = state.hints;
+      this.state = state;
       this.all();
     });
   }
@@ -25,7 +27,7 @@ export default class Draw {
   }
 
   setTool(tool) {
-    this.currentTool = tool;
+    // this.currentTool = tool;
   }
 
   typeToColor(type) {
@@ -55,6 +57,7 @@ export default class Draw {
     this.cell(this.cursorCell, "#999");
     this.model.forEach(obj => this.object(obj));
     this.tool();
+    this.selectionFrame();
     this.helpline();
   }
 
@@ -172,6 +175,19 @@ export default class Draw {
     }
 
     this.ctx.restore();
+  }
+
+  selectionFrame() {
+    if (!this.state.mouseDown) {
+      return;
+    }
+    const [sx, sy] = this.state.selectionFrame;
+    const [ex, ey] = this.state.mouse;
+    this.ctx.strokeStyle = "#ccc";
+    this.ctx.lineWidth = 1;
+    this.ctx.setLineDash([3, 3]);
+    this.ctx.strokeRect(sx, sy, ex - sx, ey - sy);
+    this.ctx.setLineDash([]);
   }
 
   helpline() {

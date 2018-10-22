@@ -17,7 +17,7 @@ canvas.width = canvas.clientWidth;
 const objects = new Objects();
 let model = new Model();
 const draw = new Draw(canvas, grid, model);
-const controls = new Controls(draw);
+const controls = new Controls();
 
 const animate = new Animate(model, draw);
 animate.start();
@@ -66,10 +66,6 @@ const mouseToHex = event => {
   var y = event.clientY - bounds.top;
   return grid.get(Grid.pointToHex(x, y));
 };
-
-canvas.addEventListener("contextmenu", event => {
-  event.preventDefault();
-});
 
 canvas.addEventListener("mousemove", event => {
   const newCell = mouseToHex(event);

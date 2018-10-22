@@ -1,108 +1,152 @@
 import store from "./store";
 
-const TOOL_DELETE = 1;
-const TOOL_LINES = 2;
-const TOOL_CURVES_LARGE = 3;
-const TOOL_CURVES_SMALL = 4;
-const TOOL_CURVES_SMALL_SEC = 5;
+// modes
+const A_LINES = 1;
+const A_CURVE = 2;
+const A_SIDEA = 3;
+const A_SIDEB = 4;
+const A_BLOCK = 5;
+const A_SWITCH = 6;
+const A_SELECT = 7;
 
-const TOOL_BLOCK_SECTION = 6;
-const TOOL_SWITCH = 7;
-
-const ACTION_GROUP = 100;
-const ACTION_UNGROUP = 100;
-
-const toolHotkeys = {
-  49: TOOL_DELETE,
-  50: TOOL_LINES,
-  51: TOOL_CURVES_LARGE,
-  52: TOOL_CURVES_SMALL,
-  53: TOOL_CURVES_SMALL_SEC,
-  54: TOOL_BLOCK_SECTION,
-  55: TOOL_SWITCH
-};
-
-const secondaryHotkeys = {
-  90: ACTION_GROUP,
-  88: ACTION_UNGROUP
-};
-
-// states list equals tool list now
+// actions
+const A_GROUP = 101;
+const A_UNGROUP = 102;
+const A_DELETE = 103;
+const A_NEXT = 104;
+const A_PREV = 104;
 
 const config = [
-  {
-    code: 49,
-    tag: "1",
-    text: "Lines",
-    action: TOOL_DELETE
-  },
-  {
-    code: 50,
-    tag: "2",
-    action: ACTION_GROUP,
-    text: "Group",
-    selected: true
-  },
-  {
-    code: 90,
-    tag: "Z",
-    action: ACTION_GROUP,
-    text: "Group",
-    filter: 2,
-    selected: true
-  }
-];
-
-const hints = [
-  { tag: 1, text: "Lines", active: true },
-  { tag: 2, text: "Large" },
-  { tag: 3, text: "Small" },
-  { tag: 4, text: "Small2" },
-  { tag: 9, text: "Block" },
-  { tag: 0, text: "Switch" },
-  { tag: "G", text: "Group" },
-  { tag: "U", text: "Ungroup" },
-  { tag: 0, text: "Delete" }
+  // modes
+  { code: 27, tag: "ESC", text: "Select", action: A_SELECT, mode: A_SELECT },
+  { code: 49, tag: "1", text: "Lines", action: A_LINES, mode: A_LINES },
+  { code: 50, tag: "2", text: "Curve", action: A_CURVE, mode: A_CURVE },
+  { code: 51, tag: "3", text: "SideA", action: A_SIDEA, mode: A_SIDEA },
+  { code: 52, tag: "4", text: "SideB", action: A_SIDEB, mode: A_SIDEB },
+  { code: 53, tag: "5", text: "Block", action: A_BLOCK, mode: A_BLOCK },
+  { code: 54, tag: "6", text: "Switch", action: A_SWITCH, mode: A_SWITCH },
+  // actions
+  { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_LINES },
+  { code: 91, tag: "X", text: "Prev tool", action: A_PREV, filter: A_LINES },
+  { code: 90, tag: "Z", text: "Group", action: A_GROUP, filter: A_BLOCK },
+  { code: 91, tag: "X", text: "Unroup", action: A_UNGROUP, filter: A_BLOCK },
+  { code: 90, tag: "Z", text: "Delete", action: A_DELETE, filter: A_SELECT },
+  { code: 90, tag: "Z", text: "Create switch", action: null, filter: A_SWITCH }
 ];
 
 // tools controller
+const tools = {
+  A_LINES: [
+    hex => objects.line(hex, 0),
+    hex => objects.line(hex, 1),
+    hex => objects.line(hex, 2)
+  ],
+  A_CURVE: [
+    hex => objects.longArc(hex, 0),
+    hex => objects.longArc(hex, 1),
+    hex => objects.longArc(hex, 2),
+    hex => objects.longArc(hex, 3),
+    hex => objects.longArc(hex, 4),
+    hex => objects.longArc(hex, 5)
+  ],
+  A_SIDEA: [
+    hex => objects.shortArc(hex, 0),
+    hex => objects.shortArc(hex, 1),
+    hex => objects.shortArc(hex, 2),
+    hex => objects.shortArc(hex, 3),
+    hex => objects.shortArc(hex, 4),
+    hex => objects.shortArc(hex, 5)
+  ],
+  A_SIDEB: [
+    hex => objects.shortArc2(hex, 0),
+    hex => objects.shortArc2(hex, 1),
+    hex => objects.shortArc2(hex, 2),
+    hex => objects.shortArc2(hex, 3),
+    hex => objects.shortArc2(hex, 4),
+    hex => objects.shortArc2(hex, 5)
+  ]
+};
+
+// draw.setTool(tools[currentTool]);
 
 export default class Controls {
-  constructor(draw) {
-    this.draw = draw;
-    this.activeState = 1;
-
-    this.applyFilter();
-    const { hints } = this;
+  constructor() {
+    const mode = store.getState().mode;
+    const hints = this.applyFilter(mode);
     store.setState({ hints });
 
     window.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
     window.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
+    window.addEventListener("contextmenu", event => event.preventDefault());
+    window.addEventListener("mousemove", event => this.onMouseMove(event));
+    window.addEventListener("mousedown", event => this.onMouseDown(event));
+    window.addEventListener("mouseup", event => this.onMouseUp(event));
   }
 
-  applyFilter() {
-    this.hints = config.filter(i => !i.filter || i.filter === this.activeState);
+  applyFilter(mode) {
+    const result = config
+      .map(a => ({ ...a })) // copy
+      .filter(i => !i.filter || i.filter === mode);
+    result.find(i => i.mode === mode).selected = true;
+    return result;
   }
 
   onKeyUp(keyCode) {
-    const index = this.hints.findIndex(i => i.code === keyCode);
+    const state = store.getState();
+    const { mode, hints } = state;
+    const index = hints.findIndex(i => i.code === keyCode);
     if (index !== -1) {
-      this.hints[index].active = false;
-      this.activeState = this.hints[index].action;
-      this.applyFilter();
-
-      const { hints } = this;
-      store.setState({ hints });
+      const newMode = hints[index].mode || mode;
+      const newHints = this.applyFilter(newMode);
+      store.setState({ hints: newHints, mode: newMode });
     }
   }
 
   onKeyDown(keyCode) {
-    const index = this.hints.findIndex(i => i.code === keyCode);
+    const state = store.getState();
+    const { hints } = state;
+    const index = hints.findIndex(i => i.code === keyCode);
     if (index !== -1) {
-      this.hints[index].active = true;
-
-      const { hints } = this;
+      hints[index].active = true;
       store.setState({ hints });
     }
+  }
+
+  mouseEventToXY(e) {
+    var bounds = event.target.getBoundingClientRect();
+    var x = event.clientX - bounds.left;
+    var y = event.clientY - bounds.top;
+    return [x, y];
+  }
+
+  /**  mouse: [0, 0],
+  mouseDown: false,
+  selection: false,
+  selectionStart: [0, 0], */
+
+  onMouseDown(e) {
+    // selectedCell = mouseToHex(event);
+    const xy = this.mouseEventToXY(e);
+    const selection = true;
+    const selectionStart = xy;
+    const mouse = xy;
+    const mouseDown = true;
+    store.setState({ mouse, mouseDown, selection, selectionStart });
+  }
+
+  onMouseUp(e) {
+    const xy = this.mouseEventToXY(e);
+    const selection = false;
+    const selectionStart = [0, 0];
+    const mouse = xy;
+    const mouseDown = false;
+    store.setState({ mouse, mouseDown, selection, selectionStart });
+  }
+
+  onMouseMove(e) {
+    // const state = store.getState();
+    const xy = this.mouseEventToXY(e);
+    const mouse = xy;
+    store.setState({ mouse });
   }
 }
