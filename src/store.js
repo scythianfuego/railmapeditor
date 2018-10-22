@@ -15,6 +15,8 @@ const defaults = {
     down: false,
     selection: null
   },
+  cursorCell: null,
+  tool: null,
   // model
   model: null
 };

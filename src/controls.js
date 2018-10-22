@@ -1,4 +1,6 @@
 import store from "./store";
+import Objects from "./objects";
+const objects = new Objects();
 
 // modes
 const A_LINES = 1;
@@ -27,21 +29,28 @@ const config = [
   { code: 54, tag: "6", text: "Switch", action: A_SWITCH, mode: A_SWITCH },
   // actions
   { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_LINES },
-  { code: 91, tag: "X", text: "Prev tool", action: A_PREV, filter: A_LINES },
+  { code: 88, tag: "X", text: "Prev tool", action: A_PREV, filter: A_LINES },
+  { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_CURVE },
+  { code: 88, tag: "X", text: "Prev tool", action: A_PREV, filter: A_CURVE },
+  { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_SIDEA },
+  { code: 88, tag: "X", text: "Prev tool", action: A_PREV, filter: A_SIDEA },
+  { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_SIDEB },
+  { code: 88, tag: "X", text: "Prev tool", action: A_PREV, filter: A_SIDEB },
+
   { code: 90, tag: "Z", text: "Group", action: A_GROUP, filter: A_BLOCK },
-  { code: 91, tag: "X", text: "Unroup", action: A_UNGROUP, filter: A_BLOCK },
+  { code: 88, tag: "X", text: "Unroup", action: A_UNGROUP, filter: A_BLOCK },
   { code: 90, tag: "Z", text: "Delete", action: A_DELETE, filter: A_SELECT },
   { code: 90, tag: "Z", text: "Create switch", action: null, filter: A_SWITCH }
 ];
 
 // tools controller
 const tools = {
-  A_LINES: [
+  [A_LINES]: [
     hex => objects.line(hex, 0),
     hex => objects.line(hex, 1),
     hex => objects.line(hex, 2)
   ],
-  A_CURVE: [
+  [A_CURVE]: [
     hex => objects.longArc(hex, 0),
     hex => objects.longArc(hex, 1),
     hex => objects.longArc(hex, 2),
@@ -49,7 +58,7 @@ const tools = {
     hex => objects.longArc(hex, 4),
     hex => objects.longArc(hex, 5)
   ],
-  A_SIDEA: [
+  [A_SIDEA]: [
     hex => objects.shortArc(hex, 0),
     hex => objects.shortArc(hex, 1),
     hex => objects.shortArc(hex, 2),
@@ -57,7 +66,7 @@ const tools = {
     hex => objects.shortArc(hex, 4),
     hex => objects.shortArc(hex, 5)
   ],
-  A_SIDEB: [
+  [A_SIDEB]: [
     hex => objects.shortArc2(hex, 0),
     hex => objects.shortArc2(hex, 1),
     hex => objects.shortArc2(hex, 2),
@@ -67,11 +76,11 @@ const tools = {
   ]
 };
 
-// draw.setTool(tools[currentTool]);
-
 export default class Controls {
-  constructor(model) {
+  constructor(model, grid, Grid) {
     this.model = model;
+    this.grid = grid;
+    this.Grid = Grid;
 
     const mode = store.getState().mode;
     const hints = this.applyFilter(mode);
@@ -83,6 +92,7 @@ export default class Controls {
     window.addEventListener("mousemove", event => this.onMouseMove(event));
     window.addEventListener("mousedown", event => this.onMouseDown(event));
     window.addEventListener("mouseup", event => this.onMouseUp(event));
+    window.addEventListener("wheel", event => this.onWheel(event));
   }
 
   applyFilter(mode) {
@@ -95,33 +105,41 @@ export default class Controls {
 
   onKeyUp(keyCode) {
     const state = store.getState();
-    const { mode, hints } = state;
+    const { hints } = state;
     const index = hints.findIndex(i => i.code === keyCode);
     if (index !== -1) {
-      const newMode = hints[index].mode || mode;
-      const newHints = this.applyFilter(newMode);
-      store.setState({ hints: newHints, mode: newMode });
+      hints[index].active = false;
+      store.setState({ hints });
     }
   }
 
   onKeyDown(keyCode) {
     const state = store.getState();
-    const { hints } = state;
+    const { mode, hints } = state;
     const index = hints.findIndex(i => i.code === keyCode);
     if (index !== -1) {
-      hints[index].active = true;
-      store.setState({ hints });
+      const newMode = hints[index].mode || mode;
+      const newHints = this.applyFilter(newMode);
+      newHints[index].active = true;
+      store.setState({ hints: newHints, mode: newMode });
+      this.runAction(hints[index].action);
     }
   }
 
-  mouseEventToXY(e) {
+  mouseEventToXY(event) {
     var bounds = event.target.getBoundingClientRect();
     var x = event.clientX - bounds.left;
     var y = event.clientY - bounds.top;
     return [x, y];
   }
 
-  /**  mouse: [0, 0],
+  mouseToHex(event) {
+    var bounds = event.target.getBoundingClientRect();
+    var x = event.clientX - bounds.left;
+    var y = event.clientY - bounds.top;
+    return this.grid.get(this.Grid.pointToHex(x, y));
+  }
+  /**  mouse: [0, 0],2
   mouseDown: false,
   selection: false,
   selectionStart: [0, 0], */
@@ -137,7 +155,7 @@ export default class Controls {
     store.setState({ mouse });
 
     const [x, y] = coords;
-    let a = model.findByXY(x, y);
+    let a = this.model.findByXY(x, y);
     a.selected = true;
   }
 
@@ -154,6 +172,118 @@ export default class Controls {
   onMouseMove(e) {
     const mouse = store.getState().mouse;
     mouse.coords = this.mouseEventToXY(e);
-    store.setState({ mouse });
+    const cursorCell = this.mouseToHex(e);
+    store.setState({ mouse, cursorCell });
+  }
+
+  onWheel(e) {
+    if (event.wheelDelta > 0) {
+      this.nextTool();
+    } else {
+      this.prevTool();
+    }
+    const tool = this.toolset[this.currentTool];
+    store.setState({ tool });
+  }
+
+  nextTool() {
+    const toolCount = this.toolset.length - 1;
+    this.currentTool++;
+    if (this.currentTool > toolCount) {
+      this.currentTool = 0;
+    }
+  }
+
+  prevTool() {
+    const toolCount = this.toolset.length - 1;
+    this.currentTool--;
+    if (this.currentTool < 0) {
+      this.currentTool = toolCount;
+    }
+  }
+
+  runAction(action) {
+    let tool = null;
+    // this.toolset = [];
+
+    switch (action) {
+      case A_LINES:
+      case A_CURVE:
+      case A_SIDEA:
+      case A_SIDEB:
+        this.currentTool = 0;
+        this.toolset = tools[action];
+        // draw.setTool(this.tool);
+        break;
+      case A_BLOCK:
+        this.toolset = [];
+        break;
+      case A_SWITCH:
+        this.toolset = [];
+        break;
+      case A_SELECT:
+        this.toolset = [];
+        break;
+      case A_GROUP:
+        break;
+      case A_UNGROUP:
+        break;
+      case A_DELETE:
+        break;
+      case A_NEXT:
+        this.nextTool();
+        break;
+      case A_PREV:
+        this.prevTool();
+        break;
+    }
+    tool = this.toolset[this.currentTool] || null;
+    store.setState({ tool });
   }
 }
+
+/*
+canvas.addEventListener("mousemove", event => {
+  const newCell = mouseToHex(event);
+  if (newCell != cursorCell) {
+    cursorCell = newCell;
+    draw.setCursor(cursorCell);
+    draw.all();
+  }
+});
+
+canvas.addEventListener("mouseup", event => {
+  selectedCell = mouseToHex(event);
+
+  const obj = tools[currentTool](selectedCell);
+  model.add(selectedCell, obj);
+
+  draw.all();
+});
+
+canvas.addEventListener("wheel", event => {
+  const toolCount = tools.length;
+  if (!cursorCell) {
+    return;
+  }
+  draw.all();
+  // tools
+
+  if (event.wheelDelta > 0) {
+    currentTool++;
+    if (currentTool > toolCount) {
+      currentTool = 0;
+    }
+  } else {
+    currentTool--;
+    if (currentTool < 0) {
+      currentTool = toolCount;
+    }
+  }
+
+  const obj = tools[currentTool] ? tools[currentTool] : null;
+  draw.setTool(obj);
+  draw.all();
+});
+
+*/

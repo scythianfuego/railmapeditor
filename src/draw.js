@@ -11,23 +11,16 @@ export default class Draw {
     this.hexgrid = hexgrid;
     this.model = model;
     this.cursorCell = null;
-    this.currentTool = store.tool;
     this.ctx = canvas.getContext("2d");
     this.ctx.translate(0.5, 0.5);
 
     store.subscribe(state => {
       this.hints = state.hints;
       this.state = state;
+      this.currentTool = state.tool;
+      this.cursorCell = state.cursorCell;
       // this.all(); // rerendered on animation
     });
-  }
-
-  setCursor(cursorCell) {
-    this.cursorCell = cursorCell;
-  }
-
-  setTool(tool) {
-    // this.currentTool = tool;
   }
 
   typeToColor(type) {
@@ -66,8 +59,8 @@ export default class Draw {
       const obj = this.currentTool(this.cursorCell);
       if (obj) {
         Array.isArray(obj)
-          ? obj.forEach(o => draw.object(o))
-          : draw.object(obj);
+          ? obj.forEach(o => this.object(o))
+          : this.object(obj);
       }
     }
   }
