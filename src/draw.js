@@ -18,7 +18,7 @@ export default class Draw {
     store.subscribe(state => {
       this.hints = state.hints;
       this.state = state;
-      this.all();
+      // this.all(); // rerendered on animation
     });
   }
 
@@ -134,7 +134,7 @@ export default class Draw {
   }
 
   arc(obj) {
-    const { x, y, radius, a1, a2, sx, sy, ex, ey, type } = obj;
+    const { x, y, radius, a1, a2, sx, sy, ex, ey, type, selected } = obj;
     const color = this.typeToColor(type);
     this.ctx.strokeStyle = color;
     this.ctx.lineWidth = 2;
@@ -154,8 +154,8 @@ export default class Draw {
   }
 
   line(obj) {
-    const { sx, sy, ex, ey, type } = obj;
-    const color = this.typeToColor(type);
+    const { sx, sy, ex, ey, type, selected } = obj;
+    const color = selected ? "red" : this.typeToColor(type);
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.strokeStyle = color;
@@ -178,11 +178,12 @@ export default class Draw {
   }
 
   selectionFrame() {
-    if (!this.state.mouseDown) {
+    const { mouse } = this.state;
+    if (!mouse.down) {
       return;
     }
-    const [sx, sy] = this.state.selectionFrame;
-    const [ex, ey] = this.state.mouse;
+    const [sx, sy] = mouse.selection;
+    const [ex, ey] = mouse.coords;
     this.ctx.strokeStyle = "#ccc";
     this.ctx.lineWidth = 1;
     this.ctx.setLineDash([3, 3]);

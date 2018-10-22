@@ -33,23 +33,22 @@ export default class Animate {
       const x = path.radius * Math.cos(this.offset) + path.x;
       const y = path.radius * Math.sin(this.offset) + path.y;
 
-      this.draw.all();
       this.draw.point(x, y, "#000", 5);
     } else {
       const x = this.offset * (path.ex - path.sx) + path.sx;
       const y = this.offset * (path.ey - path.sy) + path.sy;
 
-      this.draw.all();
       this.draw.point(x, y, "#000", 5);
     }
   }
 
   frameCallback(timestamp) {
     //
+    this.draw.all();
     const v = this.model.store.values().next().value;
     this.currentPath = v ? v[0] : null;
     if (this.currentPath) {
-      this.runAnimation(this.currentPath);
+      // this.runAnimation(this.currentPath);
     }
 
     this.requestId = window.requestAnimationFrame(this.frameFunc);

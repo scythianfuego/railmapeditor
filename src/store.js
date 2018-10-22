@@ -10,10 +10,11 @@ const defaults = {
   mode: 1,
   tool: null,
   // mouse selection
-  mouse: [0, 0],
-  mouseDown: false,
-  selection: false,
-  selectionStart: [0, 0],
+  mouse: {
+    coords: [0, 0],
+    down: false,
+    selection: null
+  },
   // model
   model: null
 };

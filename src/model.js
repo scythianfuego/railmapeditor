@@ -145,4 +145,54 @@ export default class Model {
   forEach(fn) {
     this.store.forEach(v => v.forEach(i => fn(i)));
   }
+
+  findByRect(sx, sy, ex, ey) {
+    const lx = Math.min(sx, ex);
+    const rx = Math.max(sx, ex);
+    const ly = Math.min(sy, ey);
+    const ry = Math.max(sy, ey);
+    const results = [];
+    const inside = (x, a, b) => a < x && x < b;
+    const insideX = x => inside(x, lx, rx);
+    const insideY = y => inside(y, ly, ry);
+    const insideXY = (x, y) => insideX(x) && insideY(y);
+    this.forEach(obj => {
+      if (insideXY(obj.sx, obj.sy)) {
+        results.push(obj);
+      } else if (insideXY(obj.ex, obj.ey)) {
+        results.push(obj);
+      }
+    });
+  }
+
+  findByXY(x, y) {
+    const threshold = 10;
+    const results = [];
+    const inside = (x, a, b) => a < x && x < b;
+    this.forEach(obj => {
+      if (obj.radius) {
+        const angle = Math.atan2(y - obj.y, x - obj.x);
+        const radius = this.distance(x, y, obj.x, obj.y);
+        // check if within sector and close to radius
+        if (
+          inside(angle, obj.a1, obj.a2) &&
+          Math.abs(radius - obj.radius) < threshold
+        ) {
+          results.push(obj);
+        }
+      } else {
+        const angle = Math.atan2(obj.ey - obj.sy, obj.ex - obj.sx);
+        // rotate bounding box and check if the point is inside
+        const ex = (obj.ex - obj.sx) * Math.cos(angle);
+        const ey = (obj.ey - obj.sy) * Math.cos(angle) + threshold;
+        const px = (x - obj.sx) * Math.cos(angle);
+        const py = (y - obj.sy) * Math.cos(angle) + threshold;
+
+        if (inside(px, 0, ex) && inside(py, 0, ey)) {
+          results.push(obj);
+        }
+      }
+    });
+    return results;
+  }
 }

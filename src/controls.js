@@ -70,7 +70,9 @@ const tools = {
 // draw.setTool(tools[currentTool]);
 
 export default class Controls {
-  constructor() {
+  constructor(model) {
+    this.model = model;
+
     const mode = store.getState().mode;
     const hints = this.applyFilter(mode);
     store.setState({ hints });
@@ -126,27 +128,32 @@ export default class Controls {
 
   onMouseDown(e) {
     // selectedCell = mouseToHex(event);
-    const xy = this.mouseEventToXY(e);
-    const selection = true;
-    const selectionStart = xy;
-    const mouse = xy;
-    const mouseDown = true;
-    store.setState({ mouse, mouseDown, selection, selectionStart });
+    const coords = this.mouseEventToXY(e);
+    const mouse = {
+      coords,
+      down: true,
+      selection: coords
+    };
+    store.setState({ mouse });
+
+    const [x, y] = coords;
+    let a = model.findByXY(x, y);
+    a.selected = true;
   }
 
   onMouseUp(e) {
-    const xy = this.mouseEventToXY(e);
-    const selection = false;
-    const selectionStart = [0, 0];
-    const mouse = xy;
-    const mouseDown = false;
-    store.setState({ mouse, mouseDown, selection, selectionStart });
+    const coords = this.mouseEventToXY(e);
+    const mouse = {
+      coords,
+      down: false,
+      selection: null
+    };
+    store.setState({ mouse });
   }
 
   onMouseMove(e) {
-    // const state = store.getState();
-    const xy = this.mouseEventToXY(e);
-    const mouse = xy;
+    const mouse = store.getState().mouse;
+    mouse.coords = this.mouseEventToXY(e);
     store.setState({ mouse });
   }
 }
