@@ -146,6 +146,17 @@ export default class Model {
     this.store.forEach(v => v.forEach(i => fn(i)));
   }
 
+  flat() {
+    const flatMap = arr => {
+      let accu = [];
+      if (arr) {
+        arr.forEach(v => v.forEach(i => (accu[accu.length] = i)));
+      }
+      return accu;
+    };
+    return flatMap(Array.from(this.store));
+  }
+
   findByRect(sx, sy, ex, ey) {
     const lx = Math.min(sx, ex);
     const rx = Math.max(sx, ex);
