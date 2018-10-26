@@ -19,11 +19,15 @@ export default class Draw {
       this.state = state;
       this.currentTool = state.tool;
       this.cursorCell = state.cursorCell;
+      this.selectionMode = state.selectionMode;
       // this.all(); // rerendered on animation
     });
   }
 
-  typeToColor(type) {
+  getColor(type, selected) {
+    if (this.selectionMode) {
+      return selected ? "red" : "#ccc";
+    }
     if (0x20 <= type && type <= 0x29) {
       return "yellow";
     }
@@ -128,7 +132,7 @@ export default class Draw {
 
   arc(obj) {
     const { x, y, radius, a1, a2, sx, sy, ex, ey, type, selected } = obj;
-    const color = this.typeToColor(type);
+    const color = this.getColor(type, selected);
     this.ctx.strokeStyle = color;
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
@@ -148,7 +152,7 @@ export default class Draw {
 
   line(obj) {
     const { sx, sy, ex, ey, type, selected } = obj;
-    const color = selected ? "red" : this.typeToColor(type);
+    const color = selected ? "red" : this.getColor(type, selected);
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.strokeStyle = color;

@@ -9,6 +9,7 @@ const defaults = {
   hints: [],
   mode: 1,
   tool: null,
+  selectionMode: false,
   // mouse selection
   mouse: {
     coords: [0, 0],

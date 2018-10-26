@@ -120,38 +120,31 @@ export default class Model {
   }
 
   add(cell, obj) {
-    if (!obj) return;
+    if (!obj) {
+      return;
+    }
 
     obj = Array.isArray(obj) ? obj : [obj];
     obj.forEach(o => {
-      const key = `${cell.x}-${cell.y}`;
-
-      o.meta = {
-        x: cell.x,
-        y: cell.y,
-        key
-      };
-      const curr = this.store.get(key) || [];
-      if (curr.length < 2) {
-        this.createConnections(o); // TODO: front and rear only
-        curr.push(o);
-        this.store.set(key, curr);
-      } else {
-        console.log("too many lines here");
-      }
+      const { x, y } = cell;
+      const key = `${x},${y}`;
+      const hexCell = this.store.get(key) || [];
+      const selected = false;
+      o.meta = { x, y, key, selected };
+      hexCell.push(o);
+      // this.createConnections(o);
+      this.store.set(key, hexCell);
     });
   }
 
   forEach(fn) {
-    this.store.forEach(v => v.forEach(i => fn(i)));
+    this.store.forEach(i => i.forEach(j => fn(j)));
   }
 
   flat() {
     const flatMap = arr => {
       let accu = [];
-      if (arr) {
-        arr.forEach(v => v.forEach(i => (accu[accu.length] = i)));
-      }
+      arr && arr.forEach(i => i.forEach(j => (accu[accu.length] = j)));
       return accu;
     };
     return flatMap(Array.from(this.store));
@@ -167,13 +160,9 @@ export default class Model {
     const insideX = x => inside(x, lx, rx);
     const insideY = y => inside(y, ly, ry);
     const insideXY = (x, y) => insideX(x) && insideY(y);
-    this.forEach(obj => {
-      if (insideXY(obj.sx, obj.sy)) {
-        results.push(obj);
-      } else if (insideXY(obj.ex, obj.ey)) {
-        results.push(obj);
-      }
-    });
+    this.forEach(
+      o => (insideXY(o.sx, o.sy) || insideXY(o.ex, o.ey)) && results.push(o)
+    );
   }
 
   findByXY(x, y) {

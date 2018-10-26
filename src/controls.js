@@ -27,6 +27,14 @@ const config = [
   { code: 52, tag: "4", text: "SideB", action: A_SIDEB, mode: A_SIDEB },
   { code: 53, tag: "5", text: "Block", action: A_BLOCK, mode: A_BLOCK },
   { code: 54, tag: "6", text: "Switch", action: A_SWITCH, mode: A_SWITCH },
+  // {
+  //   code: 55,
+  //   tag: "7",
+  //   text: "Rearrange",
+  //   action: A_SWITCH,
+  //   mode: A_SWITCH,
+  //   submode: A_ARRANGE
+  // },
   // actions
   { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_LINES },
   { code: 88, tag: "X", text: "Prev tool", action: A_PREV, filter: A_LINES },
@@ -166,6 +174,14 @@ export default class Controls {
       down: false,
       selection: null
     };
+
+    if (this.toolset.length) {
+      const selectedCell = this.mouseToHex(event);
+      const tool = this.toolset[this.currentTool];
+      const obj = tool(selectedCell);
+      this.model.add(selectedCell, obj);
+    }
+
     store.setState({ mouse });
   }
 
@@ -204,6 +220,7 @@ export default class Controls {
 
   runAction(action) {
     let tool = null;
+    let selectionMode = false;
     // this.toolset = [];
 
     switch (action) {
@@ -222,6 +239,7 @@ export default class Controls {
         this.toolset = [];
         break;
       case A_SELECT:
+        selectionMode = true;
         this.toolset = [];
         break;
       case A_GROUP:
@@ -238,7 +256,7 @@ export default class Controls {
         break;
     }
     tool = this.toolset[this.currentTool] || null;
-    store.setState({ tool });
+    store.setState({ tool, selectionMode });
   }
 }
 
