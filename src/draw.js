@@ -40,11 +40,11 @@ export default class Draw {
       return "#00baff";
     }
 
-    return "orange";
+    return "#ffa834";
   }
 
   clear() {
-    this.ctx.fillStyle = "#3c3b37";
+    this.ctx.fillStyle = "#1e0b09";
     this.ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
@@ -85,7 +85,7 @@ export default class Draw {
   }
 
   grid() {
-    this.ctx.strokeStyle = "#333";
+    this.ctx.strokeStyle = "#222";
     this.ctx.font = "7px Arial";
     this.ctx.fillStyle = "#999";
     this.hexgrid.forEach(hex => {

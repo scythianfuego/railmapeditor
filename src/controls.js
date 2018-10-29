@@ -101,6 +101,8 @@ export default class Controls {
     window.addEventListener("mousedown", event => this.onMouseDown(event));
     window.addEventListener("mouseup", event => this.onMouseUp(event));
     window.addEventListener("wheel", event => this.onWheel(event));
+
+    this.runAction(A_LINES);
   }
 
   applyFilter(mode) {
@@ -164,7 +166,8 @@ export default class Controls {
 
     const [x, y] = coords;
     let a = this.model.findByXY(x, y);
-    a.selected = true;
+    this.model.forEach(v => (v.selected = false)); // deselect if not ctrl
+    a.forEach(v => (v.selected = true));
   }
 
   onMouseUp(e) {

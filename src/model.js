@@ -168,14 +168,18 @@ export default class Model {
   findByXY(x, y) {
     const threshold = 10;
     const results = [];
+
+    const pi2 = 2 * Math.PI;
+    const normalize = angle => ((angle % pi2) + pi2) % pi2;
     const inside = (x, a, b) => a < x && x < b;
+
     this.forEach(obj => {
       if (obj.radius) {
         const angle = Math.atan2(y - obj.y, x - obj.x);
         const radius = this.distance(x, y, obj.x, obj.y);
         // check if within sector and close to radius
         if (
-          inside(angle, obj.a1, obj.a2) &&
+          inside(normalize(angle), obj.a1, obj.a2) &&
           Math.abs(radius - obj.radius) < threshold
         ) {
           results.push(obj);
@@ -186,7 +190,7 @@ export default class Model {
         const ex = (obj.ex - obj.sx) * Math.cos(angle);
         const ey = (obj.ey - obj.sy) * Math.cos(angle) + threshold;
         const px = (x - obj.sx) * Math.cos(angle);
-        const py = (y - obj.sy) * Math.cos(angle) + threshold;
+        const py = (y - obj.sy) * Math.cos(angle) + threshold * 0.5;
 
         if (inside(px, 0, ex) && inside(py, 0, ey)) {
           results.push(obj);
