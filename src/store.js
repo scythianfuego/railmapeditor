@@ -10,6 +10,7 @@ const defaults = {
   mode: 1,
   tool: null,
   selectionMode: false,
+  blocks: false,
   // mouse selection
   mouse: {
     coords: [0, 0],

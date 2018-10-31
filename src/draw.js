@@ -139,6 +139,10 @@ export default class Draw {
     this.ctx.arc(x, y, radius, a1, a2);
     this.ctx.stroke();
 
+    const midx = x + radius * Math.cos((a1 + a2) / 2);
+    const midy = y + radius * Math.sin((a1 + a2) / 2);
+    obj.meta && this.state.blocks && this.text(midx, midy, obj.meta.block);
+
     // this.point(sx, sy, color); // TODO: color for switches
 
     // this.ctx.font = "10px Arial";
@@ -148,6 +152,21 @@ export default class Draw {
     // const midx = x + radius * Math.cos((a1 + a2) / 2);
     // const midy = y + radius * Math.sin((a1 + a2) / 2);
     // this.arrow(x, y, midx, midy);
+  }
+
+  text(x, y, what) {
+    this.ctx.font = "10px Arial";
+    const w = this.ctx.measureText(what).width;
+    const h = 10;
+    const tx = x - w * 0.5;
+    const ty = y + h * 0.25;
+    this.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, 10, 0, 6.29);
+    this.ctx.fill();
+
+    this.ctx.fillStyle = "#fff";
+    this.ctx.fillText(what, tx, ty);
   }
 
   line(obj) {
@@ -160,6 +179,9 @@ export default class Draw {
     this.ctx.lineTo(ex, ey);
     this.ctx.stroke();
 
+    const midx = (sx + ex) * 0.5;
+    const midy = (sy + ey) * 0.5;
+    obj.meta && this.state.blocks && this.text(midx, midy, obj.meta.block);
     // this.point(sx, sy, color);
   }
 

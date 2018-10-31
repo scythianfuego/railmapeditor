@@ -5,18 +5,23 @@ const objects = new Objects();
 // modes
 const A_LINES = 1;
 const A_CURVE = 2;
-const A_SIDEA = 3;
-const A_SIDEB = 4;
-const A_BLOCK = 5;
-const A_SWITCH = 6;
-const A_SELECT = 7;
+const A_SIDEA = 4;
+const A_SIDEB = 8;
+const A_BLOCK = 16;
+const A_SWITCH = 32;
+const A_SELECT = 64;
 
 // actions
-const A_GROUP = 101;
-const A_UNGROUP = 102;
-const A_DELETE = 103;
-const A_NEXT = 104;
-const A_PREV = 104;
+const A_GROUP = 1024;
+const A_UNGROUP = 2048;
+const A_DELETE = 4096;
+const A_NEXT = 8192;
+const A_PREV = 16384;
+
+const SELECTABLE = A_SELECT | A_BLOCK;
+const TOOLS = A_LINES | A_CURVE | A_SIDEA | A_SIDEB;
+const MODES = SELECTABLE | TOOLS;
+const ACTIONS = A_GROUP | A_UNGROUP | A_DELETE | A_NEXT | A_PREV;
 
 const config = [
   // modes
@@ -114,6 +119,12 @@ export default class Controls {
   }
 
   onKeyUp(keyCode) {
+    if (keyCode === 16) {
+      this.shift = false;
+    } else if (keyCode == 17) {
+      this.ctrl = false;
+    }
+
     const state = store.getState();
     const { hints } = state;
     const index = hints.findIndex(i => i.code === keyCode);
@@ -124,6 +135,12 @@ export default class Controls {
   }
 
   onKeyDown(keyCode) {
+    if (keyCode === 16) {
+      this.shift = true;
+    } else if (keyCode == 17) {
+      this.ctrl = true;
+    }
+
     const state = store.getState();
     const { mode, hints } = state;
     const index = hints.findIndex(i => i.code === keyCode);
@@ -155,23 +172,31 @@ export default class Controls {
   selectionStart: [0, 0], */
 
   onMouseDown(e) {
-    // selectedCell = mouseToHex(event);
+    const state = store.getState();
     const coords = this.mouseEventToXY(e);
+
+    if (state.mode & SELECTABLE) {
+      const [x, y] = coords;
+      const hit = this.model.findByXY(x, y);
+      !this.shift && this.model.deselect(); // deselect if shift is not pressed
+      this.model.select(hit);
+      if (state.mode & A_BLOCK) {
+        this.model.selectGroup(hit);
+      }
+    }
+
     const mouse = {
       coords,
       down: true,
       selection: coords
     };
     store.setState({ mouse });
-
-    const [x, y] = coords;
-    let a = this.model.findByXY(x, y);
-    this.model.forEach(v => (v.selected = false)); // deselect if not ctrl
-    a.forEach(v => (v.selected = true));
   }
 
   onMouseUp(e) {
+    const state = store.getState();
     const coords = this.mouseEventToXY(e);
+
     const mouse = {
       coords,
       down: false,
@@ -189,20 +214,39 @@ export default class Controls {
   }
 
   onMouseMove(e) {
-    const mouse = store.getState().mouse;
-    mouse.coords = this.mouseEventToXY(e);
+    const state = store.getState();
+    const coords = this.mouseEventToXY(e);
     const cursorCell = this.mouseToHex(e);
+
+    const mouse = state.mouse;
+    mouse.coords = coords;
     store.setState({ mouse, cursorCell });
+
+    state.mode & SELECTABLE &&
+      this.alterSelection(coords, state.mouse.selection);
   }
 
   onWheel(e) {
-    if (event.wheelDelta > 0) {
-      this.nextTool();
-    } else {
-      this.prevTool();
-    }
+    event.wheelDelta > 0 ? this.nextTool() : this.prevTool();
     const tool = this.toolset[this.currentTool];
     store.setState({ tool });
+  }
+
+  alterSelection(startPoint, endPoint) {
+    const state = store.getState();
+    // rectangular selection, todo: move to model
+    const threshold = 10;
+    const [sx, sy] = startPoint;
+    const [ex, ey] = endPoint;
+    if (this.model.distance(sx, sy, ex, ey) > threshold) {
+      const hit = this.model.findByRect(sx, sy, ex, ey);
+      !this.shift && this.model.deselect(); // deselect if shift is not pressed
+      this.model.select(hit);
+
+      if (state.mode & A_BLOCK) {
+        this.model.selectGroup(hit);
+      }
+    }
   }
 
   nextTool() {
@@ -222,89 +266,38 @@ export default class Controls {
   }
 
   runAction(action) {
-    let tool = null;
-    let selectionMode = false;
-    // this.toolset = [];
+    const state = store.getState();
+    let { tool, selectionMode, blocks } = state;
 
-    switch (action) {
-      case A_LINES:
-      case A_CURVE:
-      case A_SIDEA:
-      case A_SIDEB:
-        this.currentTool = 0;
-        this.toolset = tools[action];
-        // draw.setTool(this.tool);
-        break;
-      case A_BLOCK:
-        this.toolset = [];
-        break;
-      case A_SWITCH:
-        this.toolset = [];
-        break;
-      case A_SELECT:
-        selectionMode = true;
-        this.toolset = [];
-        break;
-      case A_GROUP:
-        break;
-      case A_UNGROUP:
-        break;
-      case A_DELETE:
-        break;
-      case A_NEXT:
-        this.nextTool();
-        break;
-      case A_PREV:
-        this.prevTool();
-        break;
+    this.toolset = [];
+
+    // modes
+    if (action & TOOLS) {
+      this.currentTool = 0;
+      this.toolset = tools[action];
+      tool = this.toolset[this.currentTool] || null;
+      selectionMode = false;
     }
-    tool = this.toolset[this.currentTool] || null;
-    store.setState({ tool, selectionMode });
+
+    if (action & SELECTABLE) {
+      selectionMode = true;
+      tool = null;
+    }
+
+    if (action & MODES) {
+      blocks = false;
+    }
+    if (action & A_BLOCK) {
+      blocks = true;
+    }
+
+    // actions to run
+    action & A_GROUP && this.model.group();
+    action & A_UNGROUP && this.model.ungroup();
+    action & A_DELETE && this.model.deleteSelected();
+    action & A_NEXT && this.nextTool();
+    action & A_PREV && this.prevTool();
+
+    store.setState({ tool, selectionMode, blocks });
   }
 }
-
-/*
-canvas.addEventListener("mousemove", event => {
-  const newCell = mouseToHex(event);
-  if (newCell != cursorCell) {
-    cursorCell = newCell;
-    draw.setCursor(cursorCell);
-    draw.all();
-  }
-});
-
-canvas.addEventListener("mouseup", event => {
-  selectedCell = mouseToHex(event);
-
-  const obj = tools[currentTool](selectedCell);
-  model.add(selectedCell, obj);
-
-  draw.all();
-});
-
-canvas.addEventListener("wheel", event => {
-  const toolCount = tools.length;
-  if (!cursorCell) {
-    return;
-  }
-  draw.all();
-  // tools
-
-  if (event.wheelDelta > 0) {
-    currentTool++;
-    if (currentTool > toolCount) {
-      currentTool = 0;
-    }
-  } else {
-    currentTool--;
-    if (currentTool < 0) {
-      currentTool = toolCount;
-    }
-  }
-
-  const obj = tools[currentTool] ? tools[currentTool] : null;
-  draw.setTool(obj);
-  draw.all();
-});
-
-*/
