@@ -14,9 +14,10 @@ const MIN_DISTANCE = 5;
 export default class Model {
   constructor() {
     this.store = [];
-    this.connections = [];
+    this.connections = {};
     this.switches = [];
     this.blockId = 1;
+    this.objectId = 1;
 
     // horizontal lines:
     //     -  0x10 left right
@@ -97,29 +98,50 @@ export default class Model {
   //   });
   // }
 
-  // createConnections(obj) {
-  //   // TODO: neighbours only
+  makeConnection(id, x, y) {
+    x |= 0;
+    y |= 0;
+    const key = `${x}-${y}`;
+    if (!this.connections[key]) {
+      this.connections[key] = {
+        x,
+        y,
+        items: []
+      };
+    } else {
+      throw "Unexpected connection";
+    }
+    const items = this.connections[key].items;
+    if (!items.includes(id)) {
+      items.push(id);
+    }
+  }
 
-  //   const distance = this.distance;
-  //   this.store.forEach(v => {
-  //     if (distance(obj.sx, obj.sy, v[0].sx, v[0].sy) < MIN_DISTANCE) {
-  //       console.log("A");
-  //       this.connectDots(obj, v[0], obj.sx, obj.sy);
-  //     }
-  //     if (distance(obj.sx, obj.sy, v[0].ex, v[0].ey) < MIN_DISTANCE) {
-  //       console.log("B");
-  //       this.connectDots(obj, v[0], obj.sx, obj.sy);
-  //     }
-  //     if (distance(obj.ex, obj.ey, v[0].sx, v[0].sy) < MIN_DISTANCE) {
-  //       console.log("C");
-  //       this.connectDots(obj, v[0], obj.ex, obj.ey);
-  //     }
-  //     if (distance(obj.ex, obj.ey, v[0].ex, v[0].ey) < MIN_DISTANCE) {
-  //       console.log("D");
-  //       this.connectDots(obj, v[0], obj.ex, obj.ey);
-  //     }
-  //   });
-  // }
+  addToConnection(connection, id) {
+    !connection.items.includes(id) && connection.items.push(id);
+  }
+
+  createConnections(obj) {
+    //let uniq = a => [...new Set(a)];
+
+    const distance = this.distance;
+    const findConnection = (x, y) =>
+      Object.values(this.connections).find(
+        v => distance(x, y, v.x, v.y) < MIN_DISTANCE
+      );
+
+    const id = obj.meta.id;
+    const points = [[obj.sx, obj.sy], [obj.ex, obj.ey]];
+
+    points.forEach(([x, y]) => {
+      const connection = findConnection(x, y);
+      if (connection) {
+        this.addToConnection(connection, id);
+      } else {
+        this.makeConnection(id, x, y);
+      }
+    });
+  }
 
   add(cell, obj) {
     if (!obj) {
@@ -131,8 +153,10 @@ export default class Model {
       const { x, y } = cell;
       const key = `${x},${y}`;
       const selected = false;
+      const id = this.objectId++;
       const block = this.blockId++;
-      o.meta = { x, y, key, selected, block };
+      o.meta = { id, x, y, key, selected, block };
+      this.createConnections(o);
       this.store.push(o);
     });
   }

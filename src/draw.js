@@ -53,6 +53,7 @@ export default class Draw {
     this.grid();
     this.cell(this.cursorCell, "#999");
     this.model.forEach(obj => this.object(obj));
+    this.connections();
     this.tool();
     this.selectionFrame();
     this.helpline();
@@ -194,6 +195,18 @@ export default class Draw {
     }
 
     this.ctx.restore();
+  }
+
+  connections() {
+    const c = this.model.connections;
+    Object.values(c).map(v => {
+      const { x, y, items } = v;
+
+      this.ctx.strokeStyle = items.length > 2 ? "red" : "green";
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, 5, 0, 6.29);
+      this.ctx.stroke();
+    });
   }
 
   selectionFrame() {
