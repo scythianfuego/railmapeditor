@@ -51,7 +51,9 @@ export default class Draw {
   all() {
     this.clear();
     this.grid();
-    this.cell(this.cursorCell, "#999");
+    if (!this.selectionMode) {
+      this.cell(this.cursorCell, "#999");
+    }
     this.model.forEach(obj => this.object(obj));
     this.connections();
     this.tool();
@@ -201,11 +203,19 @@ export default class Draw {
     const c = this.model.connections;
     Object.values(c).map(v => {
       const { x, y, items } = v;
+      const simple = items.length <= 2;
 
-      this.ctx.strokeStyle = items.length > 2 ? "red" : "green";
+      let radius = simple ? 2 : 5;
+      let color = simple ? "green" : "red";
+      if (v === this.model.selectedConnection) {
+        radius = 15;
+        color = "rgba(0, 0, 0, 0.8)";
+      }
+
+      this.ctx.fillStyle = color;
       this.ctx.beginPath();
-      this.ctx.arc(x, y, 5, 0, 6.29);
-      this.ctx.stroke();
+      this.ctx.arc(x, y, radius, 0, 6.29);
+      this.ctx.fill();
     });
   }
 

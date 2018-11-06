@@ -15,6 +15,7 @@ export default class Model {
   constructor() {
     this.store = [];
     this.connections = {};
+    this.selectedConnection = null;
     this.switches = [];
     this.blockId = 1;
     this.objectId = 1;
@@ -72,32 +73,6 @@ export default class Model {
     return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
   }
 
-  // connectDots(obj, v, x1, y1) {
-  //   // find out if we are left ot right? to do this:
-  //   // find what we are connecting to. get pair from table -> decide
-  //   // create/add to connection
-  //   // generator table rl
-
-  //   this.allowedConnections.forEach(pairList => {
-  //     const r_index = pairList.right.indexOf(obj.type);
-  //     if (r_index !== -1) {
-  //       // joining right
-  //       const x = Math.floor(x1 / MIN_DISTANCE) * MIN_DISTANCE;
-  //       const y = Math.floor(y1 / MIN_DISTANCE) * MIN_DISTANCE;
-  //       const key = `${x}-${y}`;
-  //       const curr = this.connections.get(key) || [];
-
-  //       // check v is on list
-  //       const l_index = pairList.left.indexOf(v.type);
-  //       if (l_index != -1) {
-  //         // todo: fill direction
-  //         curr.push(v, obj);
-  //         this.connections.set(key, curr);
-  //       }
-  //     }
-  //   });
-  // }
-
   makeConnection(id, x, y) {
     x |= 0;
     y |= 0;
@@ -121,20 +96,18 @@ export default class Model {
     !connection.items.includes(id) && connection.items.push(id);
   }
 
+  findConnection(x, y) {
+    return Object.values(this.connections).find(
+      v => this.distance(x, y, v.x, v.y) < MIN_DISTANCE
+    );
+  }
+
   createConnections(obj) {
-    //let uniq = a => [...new Set(a)];
-
-    const distance = this.distance;
-    const findConnection = (x, y) =>
-      Object.values(this.connections).find(
-        v => distance(x, y, v.x, v.y) < MIN_DISTANCE
-      );
-
     const id = obj.meta.id;
     const points = [[obj.sx, obj.sy], [obj.ex, obj.ey]];
 
     points.forEach(([x, y]) => {
-      const connection = findConnection(x, y);
+      const connection = this.findConnection(x, y);
       if (connection) {
         this.addToConnection(connection, id);
       } else {

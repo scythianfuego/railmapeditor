@@ -19,6 +19,7 @@ const A_NEXT = 8192;
 const A_PREV = 16384;
 
 const SELECTABLE = A_SELECT | A_BLOCK;
+const SELECT_CONNECTIONS = A_SWITCH;
 const TOOLS = A_LINES | A_CURVE | A_SIDEA | A_SIDEB;
 const MODES = SELECTABLE | TOOLS;
 const ACTIONS = A_GROUP | A_UNGROUP | A_DELETE | A_NEXT | A_PREV;
@@ -183,6 +184,12 @@ export default class Controls {
       if (state.mode & A_BLOCK) {
         this.model.selectGroup(hit);
       }
+    }
+
+    if (state.mode & SELECT_CONNECTIONS) {
+      const [x, y] = coords;
+      const hit = this.model.findConnection(x, y);
+      this.model.selectedConnection = hit;
     }
 
     const mouse = {

@@ -19,6 +19,8 @@ const controls = new Controls(model, grid, Grid);
 const animate = new Animate(model, draw);
 animate.start();
 
+window.model = model;
+
 // let selectedCell = null;
 // let cursorCell = null;
 // let currentTool = 1;
