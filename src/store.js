@@ -15,7 +15,9 @@ const defaults = {
   mouse: {
     coords: [0, 0],
     down: false,
-    selection: null
+    pan: false,
+    selection: null,
+    movement: [0, 0]
   },
   cursorCell: null,
   tool: null,

@@ -194,7 +194,8 @@ export default class Controls {
 
     const mouse = {
       coords,
-      down: true,
+      down: e.button === 0,
+      pan: e.button === 1,
       selection: coords
     };
     store.setState({ mouse });
@@ -207,6 +208,7 @@ export default class Controls {
     const mouse = {
       coords,
       down: false,
+      pan: false,
       selection: null
     };
 
@@ -227,6 +229,7 @@ export default class Controls {
 
     const mouse = state.mouse;
     mouse.coords = coords;
+    mouse.movement = [e.movementX, e.movementY];
     store.setState({ mouse, cursorCell });
 
     state.mode & SELECTABLE &&

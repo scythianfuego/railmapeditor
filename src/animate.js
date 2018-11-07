@@ -4,6 +4,7 @@ export default class Animate {
     this.draw = draw;
     this.offset = null;
     this.frameFunc = timestamp => this.frameCallback(timestamp);
+    this.boundDrawAll = draw.all.bind(draw);
   }
 
   start() {
@@ -44,7 +45,8 @@ export default class Animate {
 
   frameCallback(timestamp) {
     //
-    this.draw.all();
+    // this.boundDrawAll();
+    this.draw.all.apply(this.draw);
     const v = this.model.store.values().next().value;
     this.currentPath = v ? v[0] : null;
     if (this.currentPath) {

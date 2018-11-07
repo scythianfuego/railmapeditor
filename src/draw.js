@@ -7,12 +7,23 @@ const getCorners = hex => {
 
 export default class Draw {
   constructor(canvas, hexgrid, model) {
+    this.zoom = 1;
+    this.panX = 0;
+    this.panY = 0;
+
     this.canvas = canvas;
     this.hexgrid = hexgrid;
     this.model = model;
     this.cursorCell = null;
     this.ctx = canvas.getContext("2d");
     this.ctx.translate(0.5, 0.5);
+
+    this.screen = {
+      moveTo: (x, y) => this.ctx.moveTo(this.sx(x), this.sy(y)),
+      lineTo: (x, y) => this.ctx.lineTo(this.sx(x), this.sy(y)),
+      arc: (x, y, radius, a1, a2, ccw) =>
+        this.ctx.arc(this.sx(x), this.sy(y), this.scale(radius), a1, a2, ccw)
+    };
 
     store.subscribe(state => {
       this.hints = state.hints;
@@ -21,7 +32,24 @@ export default class Draw {
       this.cursorCell = state.cursorCell;
       this.selectionMode = state.selectionMode;
       // this.all(); // rerendered on animation
+      if (state.mouse.pan) {
+        this.panX += state.mouse.movement[0];
+        this.panY += state.mouse.movement[1];
+      }
     });
+  }
+
+  // world to screen
+  sx(x) {
+    return x * this.zoom + this.panX;
+  }
+
+  sy(y) {
+    return y * this.zoom + this.panY;
+  }
+
+  scale(v) {
+    return v * this.zoom;
   }
 
   getColor(type, selected) {
@@ -81,9 +109,9 @@ export default class Draw {
     const [firstCorner, ...otherCorners] = corners;
 
     this.ctx.beginPath();
-    this.ctx.moveTo(firstCorner.x, firstCorner.y); // move the "pen" to the first corner
-    otherCorners.forEach(({ x, y }) => this.ctx.lineTo(x, y)); // draw lines to the other corners
-    this.ctx.lineTo(firstCorner.x, firstCorner.y); // finish at the first corner
+    this.screen.moveTo(firstCorner.x, firstCorner.y); // move the "pen" to the first corner
+    otherCorners.forEach(({ x, y }) => this.screen.lineTo(x, y)); // draw lines to the other corners
+    this.screen.lineTo(firstCorner.x, firstCorner.y); // finish at the first corner
     this.ctx.stroke();
   }
 
@@ -94,19 +122,9 @@ export default class Draw {
     this.hexgrid.forEach(hex => {
       const corners = getCorners(hex);
       this.ctx.beginPath();
-      this.ctx.moveTo(corners[1].x, corners[1].y); // move the "pen" to the first corner
-      [3, 5, 1].forEach(i => this.ctx.lineTo(corners[i].x, corners[i].y));
+      this.screen.moveTo(corners[1].x, corners[1].y); // move the "pen" to the first corner
+      [3, 5, 1].forEach(i => this.screen.lineTo(corners[i].x, corners[i].y));
       this.ctx.stroke();
-
-      // cell ids
-      // const point = hex.toPoint();
-      // const text = `${hex.x},${hex.y}`;
-      // const w = this.ctx.measureText(text).width;
-      // this.ctx.fillText(
-      //   text,
-      //   point.x + hex.size - w / 2,
-      //   point.y + hex.size + 7
-      // );
     });
   }
 
@@ -114,7 +132,7 @@ export default class Draw {
     this.ctx.lineWidth = 1;
     this.ctx.fillStyle = style ? style : "cyan";
     this.ctx.beginPath();
-    this.ctx.arc(x, y, size ? size : 3, 0, 6.29);
+    this.screen.arc(x, y, size ? size : 3, 0, 6.29);
     this.ctx.fill();
   }
 
@@ -125,11 +143,11 @@ export default class Draw {
     const h = 10; // length of head in pixels
     const a = Math.atan2(ey - sy, ex - sx);
     const a1 = Math.PI / 12;
-    this.ctx.moveTo(sx, sy);
-    this.ctx.lineTo(ex, ey);
-    this.ctx.lineTo(ex - h * Math.cos(a - a1), ey - h * Math.sin(a - a1));
-    this.ctx.moveTo(ex, ey);
-    this.ctx.lineTo(ex - h * Math.cos(a + a1), ey - h * Math.sin(a + a1));
+    this.screen.moveTo(sx, sy);
+    this.screen.lineTo(ex, ey);
+    this.screen.lineTo(ex - h * Math.cos(a - a1), ey - h * Math.sin(a - a1));
+    this.screen.moveTo(ex, ey);
+    this.screen.lineTo(ex - h * Math.cos(a + a1), ey - h * Math.sin(a + a1));
     this.ctx.stroke();
   }
 
@@ -139,7 +157,7 @@ export default class Draw {
     this.ctx.strokeStyle = color;
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
-    this.ctx.arc(x, y, radius, a1, a2);
+    this.screen.arc(x, y, radius, a1, a2);
     this.ctx.stroke();
 
     const midx = x + radius * Math.cos((a1 + a2) / 2);
@@ -165,7 +183,7 @@ export default class Draw {
     const ty = y + h * 0.25;
     this.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
     this.ctx.beginPath();
-    this.ctx.arc(x, y, 10, 0, 6.29);
+    this.screen.arc(x, y, 10, 0, 6.29);
     this.ctx.fill();
 
     this.ctx.fillStyle = "#fff";
@@ -178,8 +196,8 @@ export default class Draw {
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.strokeStyle = color;
-    this.ctx.moveTo(sx, sy);
-    this.ctx.lineTo(ex, ey);
+    this.screen.moveTo(sx, sy);
+    this.screen.lineTo(ex, ey);
     this.ctx.stroke();
 
     const midx = (sx + ex) * 0.5;
@@ -214,7 +232,7 @@ export default class Draw {
 
       this.ctx.fillStyle = color;
       this.ctx.beginPath();
-      this.ctx.arc(x, y, radius, 0, 6.29);
+      this.screen.arc(x, y, radius, 0, 6.29);
       this.ctx.fill();
     });
   }
