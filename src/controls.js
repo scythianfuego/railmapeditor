@@ -1,4 +1,5 @@
 import store from "./store";
+import ts from "./transform";
 import Objects from "./objects";
 const objects = new Objects();
 
@@ -162,9 +163,10 @@ export default class Controls {
   }
 
   mouseToHex(event) {
+    const state = store.getState();
     var bounds = event.target.getBoundingClientRect();
-    var x = event.clientX - bounds.left;
-    var y = event.clientY - bounds.top;
+    var x = event.clientX - bounds.left - state.panX;
+    var y = event.clientY - bounds.top - state.panY;
     return this.grid.get(this.Grid.pointToHex(x, y));
   }
   /**  mouse: [0, 0],2
@@ -196,8 +198,7 @@ export default class Controls {
       coords,
       down: e.button === 0,
       pan: e.button === 1,
-      selection: coords,
-      movement: [0, 0]
+      selection: coords
     };
     store.setState({ mouse });
   }
@@ -210,15 +211,13 @@ export default class Controls {
       coords,
       down: false,
       pan: false,
-      selection: null,
-      movement: [0, 0]
+      selection: null
     };
 
     if (this.toolset.length) {
       const selectedCell = this.mouseToHex(event);
       const tool = this.toolset[this.currentTool];
-      const obj = tool(selectedCell);
-      this.model.add(selectedCell, obj);
+      selectedCell && this.model.add(selectedCell, tool(selectedCell));
     }
 
     store.setState({ mouse });
@@ -231,8 +230,11 @@ export default class Controls {
 
     const mouse = state.mouse;
     mouse.coords = coords;
-    mouse.movement = [e.movementX, e.movementY];
-    store.setState({ mouse, cursorCell });
+
+    const panX = mouse.pan ? state.panX + e.movementX : state.panX;
+    const panY = mouse.pan ? state.panY + e.movementY : state.panY;
+
+    store.setState({ mouse, cursorCell, panX, panY });
 
     state.mode & SELECTABLE &&
       state.mouse.selection &&
@@ -240,17 +242,41 @@ export default class Controls {
   }
 
   onWheel(e) {
-    event.wheelDelta > 0 ? this.nextTool() : this.prevTool();
+    const state = store.getState();
+    const direction = event.wheelDelta > 0 ? 1 : -1;
+    direction > 0 ? this.nextTool() : this.prevTool();
     const tool = this.toolset[this.currentTool];
-    store.setState({ tool });
+
+    if (state.mode & SELECTABLE) {
+      const oldZoom = state.zoom;
+      const zoom = state.zoom + 0.05 * direction;
+
+      // temp
+      const cellSize = 50 / Math.sqrt(3);
+      const xCells = 35;
+      const yCells = 25;
+      const gridWidth = (xCells + 0.5) * cellSize * Math.sqrt(3);
+      const gridHeight = yCells * cellSize * 1.5;
+
+      const oldWidth = gridWidth;
+      const width = oldWidth * zoom;
+      const panXDelta = (oldWidth - width) * 0.5; // rate
+      const panX = state.panX + panXDelta;
+      const panY = state.panY;
+      store.setState({ tool, zoom, panX, panY });
+    } else {
+      store.setState({ tool });
+    }
   }
 
   alterSelection(startPoint, endPoint) {
     const state = store.getState();
     // rectangular selection, todo: move to model
     const threshold = 10;
-    const [sx, sy] = startPoint;
-    const [ex, ey] = endPoint;
+    const sx = ts.wx(startPoint[0]);
+    const sy = ts.wy(startPoint[1]);
+    const ex = ts.wx(endPoint[0]);
+    const ey = ts.wy(endPoint[1]);
     if (this.model.distance(sx, sy, ex, ey) > threshold) {
       const hit = this.model.findByRect(sx, sy, ex, ey);
       !this.shift && this.model.deselect(); // deselect if shift is not pressed

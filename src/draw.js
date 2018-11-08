@@ -1,4 +1,5 @@
-import store from "./store";
+import store, { copy } from "./store";
+import ts from "./transform";
 
 const getCorners = hex => {
   const point = hex.toPoint();
@@ -7,10 +8,6 @@ const getCorners = hex => {
 
 export default class Draw {
   constructor(canvas, hexgrid, model) {
-    this.zoom = 1;
-    this.panX = 0;
-    this.panY = 0;
-
     this.canvas = canvas;
     this.hexgrid = hexgrid;
     this.model = model;
@@ -19,40 +16,32 @@ export default class Draw {
     this.ctx.translate(0.5, 0.5);
 
     this.screen = {
-      moveTo: (x, y) => this.ctx.moveTo(this.sx(x), this.sy(y)),
-      lineTo: (x, y) => this.ctx.lineTo(this.sx(x), this.sy(y)),
+      moveTo: (x, y) => this.ctx.moveTo(ts.sx(x), ts.sy(y)),
+      lineTo: (x, y) => this.ctx.lineTo(ts.sx(x), ts.sy(y)),
       arc: (x, y, radius, a1, a2, ccw) =>
-        this.ctx.arc(this.sx(x), this.sy(y), this.scale(radius), a1, a2, ccw)
+        this.ctx.arc(ts.sx(x), ts.sy(y), ts.scale(radius), a1, a2, ccw),
+      fillText: (text, x, y, maxWidth) =>
+        this.ctx.fillText(text, ts.sx(x), ts.sy(y), maxWidth)
     };
 
     store.subscribe(state => {
-      this.hints = state.hints;
-      this.state = state;
-      this.currentTool = state.tool;
-      this.cursorCell = state.cursorCell;
-      this.selectionMode = state.selectionMode;
-      // this.all(); // rerendered on animation
+      copy(state, this, [
+        "hints",
+        "tool",
+        "cursorCell",
+        "selectionMode",
+        "zoom",
+        "panX",
+        "panY"
+      ]);
+
+      this.state = state; // todo: refactor out mouse
       if (state.mouse.pan) {
-        this.panX += state.mouse.movement[0];
-        this.panY += state.mouse.movement[1];
         this.canvas.style.cursor = "grabbing";
       } else {
         this.canvas.style.cursor = "pointer";
       }
     });
-  }
-
-  // world to screen
-  sx(x) {
-    return x * this.zoom + this.panX;
-  }
-
-  sy(y) {
-    return y * this.zoom + this.panY;
-  }
-
-  scale(v) {
-    return v * this.zoom;
   }
 
   getColor(type, selected) {
@@ -87,14 +76,14 @@ export default class Draw {
     }
     this.model.forEach(obj => this.object(obj));
     this.connections();
-    this.tool();
+    this.cursor();
     this.selectionFrame();
     this.helpline();
   }
 
-  tool() {
-    if (this.currentTool && this.cursorCell) {
-      const obj = this.currentTool(this.cursorCell);
+  cursor() {
+    if (this.tool && this.cursorCell) {
+      const obj = this.tool(this.cursorCell);
       if (obj) {
         Array.isArray(obj)
           ? obj.forEach(o => this.object(o))
@@ -127,6 +116,7 @@ export default class Draw {
 
     this.ctx.fillStyle = "#1e0b09";
     this.ctx.fillRect(this.panX, this.panY, gridWidth, gridHeight);
+    111;
     this.ctx.strokeStyle = "#333";
     this.ctx.lineWidth = 1;
     this.ctx.strokeRect(
@@ -143,6 +133,7 @@ export default class Draw {
     this.hexgrid.forEach(hex => {
       const corners = getCorners(hex);
       this.ctx.beginPath();
+      2;
       this.screen.moveTo(corners[1].x, corners[1].y); // move the "pen" to the first corner
       [3, 5, 1].forEach(i => this.screen.lineTo(corners[i].x, corners[i].y));
       this.ctx.stroke();
@@ -184,16 +175,6 @@ export default class Draw {
     const midx = x + radius * Math.cos((a1 + a2) / 2);
     const midy = y + radius * Math.sin((a1 + a2) / 2);
     obj.meta && this.state.blocks && this.text(midx, midy, obj.meta.block);
-
-    // this.point(sx, sy, color); // TODO: color for switches
-
-    // this.ctx.font = "10px Arial";
-    // this.ctx.fillStyle = "#f00";
-    // this.ctx.fillText(`0x${type.toString(16)}`, x, y);
-    // arrows
-    // const midx = x + radius * Math.cos((a1 + a2) / 2);
-    // const midy = y + radius * Math.sin((a1 + a2) / 2);
-    // this.arrow(x, y, midx, midy);
   }
 
   text(x, y, what) {
@@ -208,7 +189,7 @@ export default class Draw {
     this.ctx.fill();
 
     this.ctx.fillStyle = "#fff";
-    this.ctx.fillText(what, tx, ty);
+    this.screen.fillText(what, tx, ty);
   }
 
   line(obj) {

@@ -6,24 +6,36 @@ import devtools from "unistore/devtools";
 
 const defaults = {
   // ui
-  hints: [],
   mode: 1,
-  tool: null,
-  selectionMode: false,
+  // drawing
   blocks: false,
+  hints: [],
+  tool: null,
+  cursorCell: null,
+  selectionMode: false,
+  // display scale
+  panX: 0,
+  panY: 0,
+  zoom: 1,
   // mouse selection
   mouse: {
     coords: [0, 0],
     down: false,
     pan: false,
-    selection: null,
-    movement: [0, 0]
+    selection: null
   },
-  cursorCell: null,
   tool: null,
   // model
   model: null
 };
 
 let store = devtools(createStore(defaults));
+
+const pick = (object, props) =>
+  props.reduce((acc, curr) => {
+    acc[curr] = object[curr];
+    return acc;
+  }, {});
+
+export const copy = (from, to, props) => Object.assign(to, pick(from, props));
 export default store;
