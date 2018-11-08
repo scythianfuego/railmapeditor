@@ -5,7 +5,7 @@ module.exports = {
     path: __dirname + "/dist",
     filename: "[name].js"
   },
-  devtool: "source-map",
+  devtool: "eval-source-map",
   devServer: {
     contentBase: "./src"
   },

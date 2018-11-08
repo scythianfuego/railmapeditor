@@ -35,6 +35,9 @@ export default class Draw {
       if (state.mouse.pan) {
         this.panX += state.mouse.movement[0];
         this.panY += state.mouse.movement[1];
+        this.canvas.style.cursor = "grabbing";
+      } else {
+        this.canvas.style.cursor = "pointer";
       }
     });
   }
@@ -72,7 +75,7 @@ export default class Draw {
   }
 
   clear() {
-    this.ctx.fillStyle = "#1e0b09";
+    this.ctx.fillStyle = "#0f0605";
     this.ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
@@ -116,6 +119,24 @@ export default class Draw {
   }
 
   grid() {
+    const cellSize = 50 / Math.sqrt(3);
+    const xCells = 35;
+    const yCells = 25;
+    const gridWidth = (xCells + 0.5) * cellSize * Math.sqrt(3);
+    const gridHeight = yCells * cellSize * 1.5;
+
+    this.ctx.fillStyle = "#1e0b09";
+    this.ctx.fillRect(this.panX, this.panY, gridWidth, gridHeight);
+    this.ctx.strokeStyle = "#333";
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(
+      this.panX - 1,
+      this.panY - 1,
+      gridWidth + 1,
+      gridHeight + 1
+    );
+
+    this.ctx.lineWidth = 1;
     this.ctx.strokeStyle = "#222";
     this.ctx.font = "7px Arial";
     this.ctx.fillStyle = "#999";

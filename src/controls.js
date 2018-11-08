@@ -196,7 +196,8 @@ export default class Controls {
       coords,
       down: e.button === 0,
       pan: e.button === 1,
-      selection: coords
+      selection: coords,
+      movement: [0, 0]
     };
     store.setState({ mouse });
   }
@@ -209,7 +210,8 @@ export default class Controls {
       coords,
       down: false,
       pan: false,
-      selection: null
+      selection: null,
+      movement: [0, 0]
     };
 
     if (this.toolset.length) {
@@ -233,6 +235,7 @@ export default class Controls {
     store.setState({ mouse, cursorCell });
 
     state.mode & SELECTABLE &&
+      state.mouse.selection &&
       this.alterSelection(coords, state.mouse.selection);
   }
 
