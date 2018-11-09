@@ -15,18 +15,20 @@ export default class Draw {
     this.ctx = canvas.getContext("2d");
     this.ctx.translate(0.5, 0.5);
 
+    const { sx, sy, scale } = ts;
     // moveable and zoomable parts of canvas
     this.screen = {
-      moveTo: (x, y) => this.ctx.moveTo(ts.sx(x), ts.sy(y)),
-      lineTo: (x, y) => this.ctx.lineTo(ts.sx(x), ts.sy(y)),
+      moveTo: (x, y) => this.ctx.moveTo(sx(x), sy(y)),
+      lineTo: (x, y) => this.ctx.lineTo(sx(x), sy(y)),
       arc: (x, y, radius, a1, a2, ccw) =>
-        this.ctx.arc(ts.sx(x), ts.sy(y), ts.scale(radius), a1, a2, ccw),
+        this.ctx.arc(sx(x), sy(y), scale(radius), a1, a2, ccw),
+      circle: (x, y, radius) => this.ctx.arc(sx(x), sy(y), radius, 0, 6.29),
       fillText: (text, x, y, maxWidth) =>
-        this.ctx.fillText(text, ts.sx(x), ts.sy(y), maxWidth),
+        this.ctx.fillText(text, sx(x), sy(y), maxWidth),
       fillRect: (x, y, w, h) =>
-        this.ctx.fillRect(ts.sx(x), ts.sy(y), ts.scale(w), ts.scale(h)),
+        this.ctx.fillRect(sx(x), sy(y), scale(w), scale(h)),
       strokeRect: (x, y, w, h) =>
-        this.ctx.strokeRect(ts.sx(x), ts.sy(y), ts.scale(w), ts.scale(h))
+        this.ctx.strokeRect(sx(x), sy(y), scale(w), scale(h))
     };
 
     store.subscribe(state => {
@@ -41,11 +43,7 @@ export default class Draw {
       ]);
 
       this.state = state; // todo: refactor out mouse
-      if (state.mouse.pan) {
-        this.canvas.style.cursor = "grabbing";
-      } else {
-        this.canvas.style.cursor = "pointer";
-      }
+      this.canvas.style.cursor = state.mouse.pan ? "grabbing" : "pointer";
     });
   }
 
@@ -76,9 +74,8 @@ export default class Draw {
   all() {
     this.clear();
     this.grid();
-    if (!this.selectionMode) {
-      this.cell(this.cursorCell, "#999");
-    }
+    !this.selectionMode && this.cell(this.cursorCell, "#999");
+
     this.model.forEach(obj => this.object(obj));
     this.connections();
     this.cursor();
@@ -87,21 +84,14 @@ export default class Draw {
   }
 
   cursor() {
-    if (this.tool && this.cursorCell) {
-      const obj = this.tool(this.cursorCell);
-      if (obj) {
-        Array.isArray(obj)
-          ? obj.forEach(o => this.object(o))
-          : this.object(obj);
-      }
-    }
+    this.tool && this.cursorCell && this.object(this.tool(this.cursorCell));
   }
 
   cell(hex, style) {
     if (!hex) {
       return;
     }
-    this.ctx.strokeStyle = style ? style : "#000";
+    this.ctx.strokeStyle = style || "#000";
     const corners = getCorners(hex);
     const [firstCorner, ...otherCorners] = corners;
 
@@ -137,7 +127,7 @@ export default class Draw {
     this.ctx.lineWidth = 1;
     this.ctx.fillStyle = style ? style : "cyan";
     this.ctx.beginPath();
-    this.screen.arc(x, y, size ? size : 3, 0, 6.29);
+    this.ctx.arc(x, y, size ? size : 3, 0, 6.29);
     this.ctx.fill();
   }
 
@@ -178,7 +168,7 @@ export default class Draw {
     const ty = y + h * 0.25;
     this.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
     this.ctx.beginPath();
-    this.screen.arc(x, y, 10, 0, 6.29);
+    this.screen.circle(x, y, 10);
     this.ctx.fill();
 
     this.ctx.fillStyle = "#fff";
@@ -203,23 +193,18 @@ export default class Draw {
 
   object(obj) {
     this.ctx.save();
-    if (obj.radius) {
-      this.arc(obj);
-    } else {
-      this.line(obj);
-    }
-
+    obj.radius ? this.arc(obj) : this.line(obj);
     this.ctx.restore();
   }
 
   connections() {
     const c = this.model.connections;
-    Object.values(c).map(v => {
-      const { x, y, items } = v;
-      const simple = items.length <= 2;
+    Object.values(c).forEach(v => {
+      const { px, py, items } = v;
+      const isSimple = items.length <= 2;
 
-      let radius = simple ? 2 : 5;
-      let color = simple ? "green" : "red";
+      let radius = isSimple ? 2 : 5;
+      let color = isSimple ? "green" : "red";
       if (v === this.model.selectedConnection) {
         radius = 15;
         color = "rgba(0, 0, 0, 0.8)";
@@ -227,7 +212,7 @@ export default class Draw {
 
       this.ctx.fillStyle = color;
       this.ctx.beginPath();
-      this.screen.arc(x, y, radius, 0, 6.29);
+      this.screen.circle(px, py, radius);
       this.ctx.fill();
     });
   }

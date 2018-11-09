@@ -23,7 +23,7 @@ const SELECTABLE = A_SELECT | A_BLOCK;
 const SELECT_CONNECTIONS = A_SWITCH;
 const TOOLS = A_LINES | A_CURVE | A_SIDEA | A_SIDEB;
 const MODES = SELECTABLE | TOOLS;
-const ACTIONS = A_GROUP | A_UNGROUP | A_DELETE | A_NEXT | A_PREV;
+// const ACTIONS = A_GROUP | A_UNGROUP | A_DELETE | A_NEXT | A_PREV;
 
 const config = [
   // modes
@@ -34,15 +34,6 @@ const config = [
   { code: 52, tag: "4", text: "SideB", action: A_SIDEB, mode: A_SIDEB },
   { code: 53, tag: "5", text: "Block", action: A_BLOCK, mode: A_BLOCK },
   { code: 54, tag: "6", text: "Switch", action: A_SWITCH, mode: A_SWITCH },
-  // {
-  //   code: 55,
-  //   tag: "7",
-  //   text: "Rearrange",
-  //   action: A_SWITCH,
-  //   mode: A_SWITCH,
-  //   submode: A_ARRANGE
-  // },
-  // actions
   { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_LINES },
   { code: 88, tag: "X", text: "Prev tool", action: A_PREV, filter: A_LINES },
   { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_CURVE },
@@ -97,8 +88,7 @@ export default class Controls {
     this.grid = grid;
     this.Grid = Grid;
 
-    const mode = store.getState().mode;
-    const hints = this.applyFilter(mode);
+    const hints = this.applyHintsFilter(store.getState().mode);
     store.setState({ hints });
 
     window.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
@@ -108,11 +98,12 @@ export default class Controls {
     window.addEventListener("mousedown", event => this.onMouseDown(event));
     window.addEventListener("mouseup", event => this.onMouseUp(event));
     window.addEventListener("wheel", event => this.onWheel(event));
+    this.getTool = () => this.toolset[this.currentTool];
 
     this.runAction(A_LINES);
   }
 
-  applyFilter(mode) {
+  applyHintsFilter(mode) {
     const result = config
       .map(a => ({ ...a })) // copy
       .filter(i => !i.filter || i.filter === mode);
@@ -121,11 +112,8 @@ export default class Controls {
   }
 
   onKeyUp(keyCode) {
-    if (keyCode === 16) {
-      this.shift = false;
-    } else if (keyCode == 17) {
-      this.ctrl = false;
-    }
+    this.shift = !keyCode === 16;
+    this.ctrl = !keyCode === 17;
 
     const state = store.getState();
     const { hints } = state;
@@ -137,18 +125,15 @@ export default class Controls {
   }
 
   onKeyDown(keyCode) {
-    if (keyCode === 16) {
-      this.shift = true;
-    } else if (keyCode == 17) {
-      this.ctrl = true;
-    }
+    this.shift = keyCode === 16;
+    this.ctrl = keyCode === 17;
 
     const state = store.getState();
     const { mode, hints } = state;
     const index = hints.findIndex(i => i.code === keyCode);
     if (index !== -1) {
       const newMode = hints[index].mode || mode;
-      const newHints = this.applyFilter(newMode);
+      const newHints = this.applyHintsFilter(newMode);
       newHints[index].active = true;
       store.setState({ hints: newHints, mode: newMode });
       this.runAction(hints[index].action);
@@ -169,10 +154,6 @@ export default class Controls {
     var y = event.clientY - bounds.top - state.panY;
     return this.grid.get(this.Grid.pointToHex(x, y));
   }
-  /**  mouse: [0, 0],2
-  mouseDown: false,
-  selection: false,
-  selectionStart: [0, 0], */
 
   onMouseDown(e) {
     const state = store.getState();
@@ -181,7 +162,8 @@ export default class Controls {
     if (state.mode & SELECTABLE) {
       const [x, y] = coords;
       const hit = this.model.findByXY(x, y);
-      !this.shift && this.model.deselect(); // deselect if shift is not pressed
+      // deselect if shift is not pressed
+      !this.shift && this.model.deselect();
       this.model.select(hit);
       if (state.mode & A_BLOCK) {
         this.model.selectGroup(hit);
@@ -194,43 +176,31 @@ export default class Controls {
       this.model.selectedConnection = hit;
     }
 
-    const mouse = {
-      coords,
-      down: e.button === 0,
-      pan: e.button === 1,
-      selection: coords
-    };
+    const down = e.button === 0;
+    const pan = e.button === 1;
+    const mouse = { coords, down, pan, selection: coords };
     store.setState({ mouse });
   }
 
   onMouseUp(e) {
-    const state = store.getState();
-    const coords = this.mouseEventToXY(e);
-
-    const mouse = {
-      coords,
-      down: false,
-      pan: false,
-      selection: null
-    };
-
     if (this.toolset.length) {
       const selectedCell = this.mouseToHex(event);
-      const tool = this.toolset[this.currentTool];
+      const tool = this.getTool();
       selectedCell && this.model.add(selectedCell, tool(selectedCell));
     }
 
+    const coords = this.mouseEventToXY(e);
+    const mouse = { coords, down: false, pan: false, selection: null };
     store.setState({ mouse });
   }
 
   onMouseMove(e) {
     const state = store.getState();
+    const mouse = state.mouse;
     const coords = this.mouseEventToXY(e);
     const cursorCell = this.mouseToHex(e);
 
-    const mouse = state.mouse;
     mouse.coords = coords;
-
     const panX = mouse.pan ? state.panX + e.movementX : state.panX;
     const panY = mouse.pan ? state.panY + e.movementY : state.panY;
 
@@ -242,12 +212,12 @@ export default class Controls {
   }
 
   onWheel(e) {
-    e.preventDefault();
+    e.preventDefault(); // disable page zoom using Ctrl key
+    const { gridWidth, gridHeight, clamp, rotate, ratioX, ratioY } = ts;
     const state = store.getState();
-    const direction = event.wheelDelta > 0 ? 1 : -1;
+    const direction = Math.sign(event.wheelDelta);
 
-    if (state.mode & SELECTABLE || e.ctrlKey) {
-      const { gridWidth, gridHeight, clamp, ratioX, ratioY } = ts;
+    if (e.ctrlKey || state.mode & SELECTABLE) {
       const [mouseX, mouseY] = state.mouse.coords;
       const zoomOld = state.zoom;
       const zoom = clamp(zoomOld * (1 + 0.2 * direction), 0.1, 10);
@@ -257,20 +227,21 @@ export default class Controls {
       const panY = state.panY + gridHeight * zoomDelta * ratioY(mouseY);
       store.setState({ zoom, panX, panY });
     } else {
-      const tool = this.toolset[this.currentTool];
-      direction > 0 ? this.nextTool() : this.prevTool();
-      store.setState({ tool });
+      this.currentTool += direction;
+      this.currentTool = rotate(this.currentTool, 0, this.toolset.length - 1);
+      store.setState({ tool: this.getTool() });
     }
   }
 
   alterSelection(startPoint, endPoint) {
     const state = store.getState();
     // rectangular selection, todo: move to model
+    const { wx, wy } = ts;
     const threshold = 10;
-    const sx = ts.wx(startPoint[0]);
-    const sy = ts.wy(startPoint[1]);
-    const ex = ts.wx(endPoint[0]);
-    const ey = ts.wy(endPoint[1]);
+    const sx = wx(startPoint[0]);
+    const sy = wy(startPoint[1]);
+    const ex = wx(endPoint[0]);
+    const ey = wy(endPoint[1]);
     if (this.model.distance(sx, sy, ex, ey) > threshold) {
       const hit = this.model.findByRect(sx, sy, ex, ey);
       !this.shift && this.model.deselect(); // deselect if shift is not pressed
@@ -279,22 +250,6 @@ export default class Controls {
       if (state.mode & A_BLOCK) {
         this.model.selectGroup(hit);
       }
-    }
-  }
-
-  nextTool() {
-    const toolCount = this.toolset.length - 1;
-    this.currentTool++;
-    if (this.currentTool > toolCount) {
-      this.currentTool = 0;
-    }
-  }
-
-  prevTool() {
-    const toolCount = this.toolset.length - 1;
-    this.currentTool--;
-    if (this.currentTool < 0) {
-      this.currentTool = toolCount;
     }
   }
 
@@ -308,7 +263,7 @@ export default class Controls {
     if (action & TOOLS) {
       this.currentTool = 0;
       this.toolset = tools[action];
-      tool = this.toolset[this.currentTool] || null;
+      tool = this.getTool() || null;
       selectionMode = false;
     }
 

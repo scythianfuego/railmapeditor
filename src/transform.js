@@ -21,6 +21,7 @@ class Transform {
     this.gridHeight = this.CELLS_Y * this.HEX_SIZE * 1.5;
 
     this.clamp = (v, min, max) => (v > max ? max : v < min ? min : v);
+    this.rotate = (v, min, max) => (v > max ? min : v < min ? max : v);
 
     this.ratioX = x =>
       this.clamp((x - this.panX) / (this.gridWidth * this.zoom), 0, 1);

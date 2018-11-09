@@ -74,6 +74,7 @@ export default class Model {
   }
 
   makeConnection(id, x, y) {
+    const [px, py] = [x, y];
     x |= 0;
     y |= 0;
     const key = `${x}-${y}`;
@@ -81,6 +82,8 @@ export default class Model {
       this.connections[key] = {
         x,
         y,
+        px,
+        py,
         items: []
       };
     } else {
