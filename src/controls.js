@@ -242,29 +242,23 @@ export default class Controls {
   }
 
   onWheel(e) {
+    e.preventDefault();
     const state = store.getState();
     const direction = event.wheelDelta > 0 ? 1 : -1;
-    direction > 0 ? this.nextTool() : this.prevTool();
-    const tool = this.toolset[this.currentTool];
 
-    if (state.mode & SELECTABLE) {
-      const oldZoom = state.zoom;
-      const zoom = state.zoom + 0.05 * direction;
+    if (state.mode & SELECTABLE || e.ctrlKey) {
+      const { gridWidth, gridHeight, clamp, ratioX, ratioY } = ts;
+      const [mouseX, mouseY] = state.mouse.coords;
+      const zoomOld = state.zoom;
+      const zoom = clamp(zoomOld * (1 + 0.2 * direction), 0.1, 10);
+      const zoomDelta = zoomOld - zoom;
 
-      // temp
-      const cellSize = 50 / Math.sqrt(3);
-      const xCells = 35;
-      const yCells = 25;
-      const gridWidth = (xCells + 0.5) * cellSize * Math.sqrt(3);
-      const gridHeight = yCells * cellSize * 1.5;
-
-      const oldWidth = gridWidth;
-      const width = oldWidth * zoom;
-      const panXDelta = (oldWidth - width) * 0.5; // rate
-      const panX = state.panX + panXDelta;
-      const panY = state.panY;
-      store.setState({ tool, zoom, panX, panY });
+      const panX = state.panX + gridWidth * zoomDelta * ratioX(mouseX);
+      const panY = state.panY + gridHeight * zoomDelta * ratioY(mouseY);
+      store.setState({ zoom, panX, panY });
     } else {
+      const tool = this.toolset[this.currentTool];
+      direction > 0 ? this.nextTool() : this.prevTool();
       store.setState({ tool });
     }
   }

@@ -15,13 +15,18 @@ export default class Draw {
     this.ctx = canvas.getContext("2d");
     this.ctx.translate(0.5, 0.5);
 
+    // moveable and zoomable parts of canvas
     this.screen = {
       moveTo: (x, y) => this.ctx.moveTo(ts.sx(x), ts.sy(y)),
       lineTo: (x, y) => this.ctx.lineTo(ts.sx(x), ts.sy(y)),
       arc: (x, y, radius, a1, a2, ccw) =>
         this.ctx.arc(ts.sx(x), ts.sy(y), ts.scale(radius), a1, a2, ccw),
       fillText: (text, x, y, maxWidth) =>
-        this.ctx.fillText(text, ts.sx(x), ts.sy(y), maxWidth)
+        this.ctx.fillText(text, ts.sx(x), ts.sy(y), maxWidth),
+      fillRect: (x, y, w, h) =>
+        this.ctx.fillRect(ts.sx(x), ts.sy(y), ts.scale(w), ts.scale(h)),
+      strokeRect: (x, y, w, h) =>
+        this.ctx.strokeRect(ts.sx(x), ts.sy(y), ts.scale(w), ts.scale(h))
     };
 
     store.subscribe(state => {
@@ -108,28 +113,16 @@ export default class Draw {
   }
 
   grid() {
-    const cellSize = 50 / Math.sqrt(3);
-    const xCells = 35;
-    const yCells = 25;
-    const gridWidth = (xCells + 0.5) * cellSize * Math.sqrt(3);
-    const gridHeight = yCells * cellSize * 1.5;
+    const { gridWidth, gridHeight } = ts;
 
     this.ctx.fillStyle = "#1e0b09";
-    this.ctx.fillRect(this.panX, this.panY, gridWidth, gridHeight);
-    111;
+    this.screen.fillRect(0, 0, gridWidth, gridHeight);
     this.ctx.strokeStyle = "#333";
     this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(
-      this.panX - 1,
-      this.panY - 1,
-      gridWidth + 1,
-      gridHeight + 1
-    );
-
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeStyle = "#222";
-    this.ctx.font = "7px Arial";
     this.ctx.fillStyle = "#999";
+    this.ctx.font = "7px Arial";
+
+    this.screen.strokeRect(-1, -1, gridWidth + 1, gridHeight + 1);
     this.hexgrid.forEach(hex => {
       const corners = getCorners(hex);
       this.ctx.beginPath();

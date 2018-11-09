@@ -1,7 +1,9 @@
 import * as Honeycomb from "honeycomb-grid";
-const Hex = Honeycomb.extendHex({ size: 50 / Math.sqrt(3) });
+import ts from "./transform";
+
+const Hex = Honeycomb.extendHex({ size: ts.HEX_SIZE });
 const Grid = Honeycomb.defineGrid(Hex);
-const grid = Grid.rectangle({ width: 35, height: 25 });
+const grid = Grid.rectangle({ width: ts.CELLS_X, height: ts.CELLS_Y });
 
 import Draw from "./draw";
 import Model from "./model";
