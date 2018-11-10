@@ -98,7 +98,8 @@ export default class Controls {
     window.addEventListener("mousedown", event => this.onMouseDown(event));
     window.addEventListener("mouseup", event => this.onMouseUp(event));
     window.addEventListener("wheel", event => this.onWheel(event));
-    this.getTool = () => this.toolset[this.currentTool];
+    this.getTool = () =>
+      this.toolset.length ? this.toolset[this.currentTool] : null;
 
     this.runAction(A_LINES);
   }
@@ -215,7 +216,7 @@ export default class Controls {
     e.preventDefault(); // disable page zoom using Ctrl key
     const { gridWidth, gridHeight, clamp, rotate, ratioX, ratioY } = ts;
     const state = store.getState();
-    const direction = Math.sign(event.wheelDelta);
+    const direction = Math.sign(event.deltaY);
 
     if (e.ctrlKey || state.mode & SELECTABLE) {
       const [mouseX, mouseY] = state.mouse.coords;
@@ -227,10 +228,15 @@ export default class Controls {
       const panY = state.panY + gridHeight * zoomDelta * ratioY(mouseY);
       store.setState({ zoom, panX, panY });
     } else {
-      this.currentTool += direction;
-      this.currentTool = rotate(this.currentTool, 0, this.toolset.length - 1);
+      this.nextTool(direction);
       store.setState({ tool: this.getTool() });
     }
+  }
+
+  nextTool(direction) {
+    const { rotate } = ts;
+    this.currentTool += direction;
+    this.currentTool = rotate(this.currentTool, 0, this.toolset.length - 1);
   }
 
   alterSelection(startPoint, endPoint) {
@@ -255,21 +261,17 @@ export default class Controls {
 
   runAction(action) {
     const state = store.getState();
-    let { tool, selectionMode, blocks } = state;
-
-    this.toolset = [];
+    let { selectionMode, blocks } = state;
 
     // modes
     if (action & TOOLS) {
       this.currentTool = 0;
       this.toolset = tools[action];
-      tool = this.getTool() || null;
       selectionMode = false;
     }
 
     if (action & SELECTABLE) {
       selectionMode = true;
-      tool = null;
     }
 
     if (action & MODES) {
@@ -283,9 +285,9 @@ export default class Controls {
     action & A_GROUP && this.model.group();
     action & A_UNGROUP && this.model.ungroup();
     action & A_DELETE && this.model.deleteSelected();
-    action & A_NEXT && this.nextTool();
-    action & A_PREV && this.prevTool();
+    action & A_NEXT && this.nextTool(1);
+    action & A_PREV && this.nextTool(-1);
 
-    store.setState({ tool, selectionMode, blocks });
+    store.setState({ tool: this.getTool(), selectionMode, blocks });
   }
 }
