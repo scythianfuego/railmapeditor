@@ -6,6 +6,11 @@ const getCorners = hex => {
   return hex.corners().map(corner => corner.add(point));
 };
 
+const hex2rgba = hex => {
+  const [r, g, b, a] = hex.match(/\w\w/g).map(x => parseInt(x, 16));
+  return `rgba(${r},${g},${b},${a ? a * 0.00392156862745098 : 1})`;
+};
+
 export default class Draw {
   constructor(canvas, hexgrid, model) {
     this.canvas = canvas;
@@ -160,6 +165,17 @@ export default class Draw {
     obj.meta && this.state.blocks && this.text(midx, midy, obj.meta.block);
   }
 
+  arcPath(obj) {
+    const { x, y, radius, a1, a2 } = obj;
+    const color = hex2rgba("#FFFFFF4C");
+    this.ctx.strokeStyle = color;
+    this.ctx.lineCap = "round";
+    this.ctx.lineWidth = 12;
+    this.ctx.beginPath();
+    this.screen.arc(x, y, radius, a1, a2);
+    this.ctx.stroke();
+  }
+
   text(x, y, what) {
     this.ctx.font = "10px Arial";
     const w = this.ctx.measureText(what).width;
@@ -191,9 +207,27 @@ export default class Draw {
     // this.point(sx, sy, color);
   }
 
+  linePath(obj) {
+    const { sx, sy, ex, ey } = obj;
+    const color = hex2rgba("#FFFFFF4C");
+    this.ctx.lineCap = "round";
+    this.ctx.lineWidth = 12;
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = color;
+    this.screen.moveTo(sx, sy);
+    this.screen.lineTo(ex, ey);
+    this.ctx.stroke();
+  }
+
   object(obj) {
     this.ctx.save();
     obj.radius ? this.arc(obj) : this.line(obj);
+    this.ctx.restore();
+  }
+
+  objectPath(obj) {
+    this.ctx.save();
+    obj.radius ? this.arcPath(obj) : this.linePath(obj);
     this.ctx.restore();
   }
 
@@ -208,6 +242,12 @@ export default class Draw {
       if (v === this.model.selectedConnection) {
         radius = 15;
         color = "rgba(0, 0, 0, 0.8)";
+
+        // draw items - temp
+        v.items.forEach(i => {
+          const obj = this.model.get(i);
+          this.objectPath(obj);
+        });
       }
 
       this.ctx.fillStyle = color;

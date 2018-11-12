@@ -1,3 +1,5 @@
+import { get } from "https";
+
 // не пытаться разбирать левел обратно - сериализовать данные и сделать экспорт
 // упростить парсер в игре по максимумуму - отрезок - следующий, откуда считать
 
@@ -14,6 +16,7 @@ const MIN_DISTANCE = 5;
 export default class Model {
   constructor() {
     this.store = [];
+    this.storeIndex = new Map();
     this.connections = {};
     this.selectedConnection = null;
     this.switches = [];
@@ -134,7 +137,12 @@ export default class Model {
       o.meta = { id, x, y, key, selected, block };
       this.createConnections(o);
       this.store.push(o);
+      this.storeIndex.set(id, o);
     });
+  }
+
+  get(id) {
+    return this.storeIndex.get(id);
   }
 
   forEach(fn) {
@@ -202,6 +210,11 @@ export default class Model {
   }
 
   deleteSelected() {
+    // remove from index, should use lodash.partition instead
+    this.store
+      .filter(i => i.selected)
+      .forEach(v => this.storeIndex.delete(v.id));
+
     this.store = this.store.filter(i => !i.selected);
   }
 
