@@ -46,7 +46,8 @@ const config = [
   { code: 90, tag: "Z", text: "Group", action: A_GROUP, filter: A_BLOCK },
   { code: 88, tag: "X", text: "Unroup", action: A_UNGROUP, filter: A_BLOCK },
   { code: 90, tag: "Z", text: "Delete", action: A_DELETE, filter: A_SELECT },
-  { code: 90, tag: "Z", text: "Create switch", action: null, filter: A_SWITCH }
+  { code: 90, tag: "Z", text: "Create switch", action: null, filter: A_SWITCH },
+  { code: 90, tag: "Z", text: "Connect", action: null, filter: A_SWITCH }
 ];
 
 // tools controller
