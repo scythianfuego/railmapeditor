@@ -142,27 +142,28 @@ export default class Controls {
   }
 
   mouseEventToXY(event) {
-    var bounds = event.target.getBoundingClientRect();
-    var x = event.clientX - bounds.left;
-    var y = event.clientY - bounds.top;
+    const bounds = event.target.getBoundingClientRect();
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
     return [x, y];
   }
 
   mouseToHex(event) {
-    const state = store.getState();
-    var bounds = event.target.getBoundingClientRect();
-    var x = event.clientX - bounds.left - state.panX;
-    var y = event.clientY - bounds.top - state.panY;
-    return this.grid.get(this.Grid.pointToHex(x, y));
+    const { wx, wy } = ts;
+    const bounds = event.target.getBoundingClientRect();
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+    return this.grid.get(this.Grid.pointToHex(wx(x), wy(y)));
   }
 
   onMouseDown(e) {
     const state = store.getState();
     const coords = this.mouseEventToXY(e);
+    const [x, y] = coords;
+    const { wx, wy } = ts;
 
     if (state.mode & SELECTABLE) {
-      const [x, y] = coords;
-      const hit = this.model.findByXY(x, y);
+      const hit = this.model.findByXY(wx(x), wy(y));
       // deselect if shift is not pressed
       !this.shift && this.model.deselect();
       this.model.select(hit);
@@ -172,8 +173,7 @@ export default class Controls {
     }
 
     if (state.mode & SELECT_CONNECTIONS) {
-      const [x, y] = coords;
-      const hit = this.model.findConnection(x, y);
+      const hit = this.model.findConnection(wx(x), wy(y));
       this.model.selectedConnection = hit;
     }
 
@@ -264,22 +264,19 @@ export default class Controls {
     let { selectionMode, blocks } = state;
 
     // modes
+    if (action & MODES) {
+      blocks = false;
+      this.toolset = [];
+    }
+
     if (action & TOOLS) {
       this.currentTool = 0;
       this.toolset = tools[action];
       selectionMode = false;
     }
 
-    if (action & SELECTABLE) {
-      selectionMode = true;
-    }
-
-    if (action & MODES) {
-      blocks = false;
-    }
-    if (action & A_BLOCK) {
-      blocks = true;
-    }
+    action & SELECTABLE && (selectionMode = true);
+    action & A_BLOCK && (blocks = true);
 
     // actions to run
     action & A_GROUP && this.model.group();
