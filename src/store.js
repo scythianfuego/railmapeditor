@@ -6,7 +6,7 @@ import devtools from "unistore/devtools";
 
 const defaults = {
   // ui
-  mode: 1,
+  mode: 0,
   // drawing
   blocks: false,
   hints: [],

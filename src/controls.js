@@ -4,13 +4,14 @@ import Objects from "./objects";
 const objects = new Objects();
 
 // modes
-const A_LINES = 1;
-const A_CURVE = 2;
-const A_SIDEA = 4;
-const A_SIDEB = 8;
-const A_BLOCK = 16;
-const A_SWITCH = 32;
-const A_SELECT = 64;
+const A_DRAW = 1;
+const A_LINES = 2;
+const A_CURVE = 4;
+const A_SIDEA = 8;
+const A_SIDEB = 16;
+const A_BLOCK = 32;
+const A_SWITCH = 64;
+const A_SELECT = 128;
 
 // actions
 const A_GROUP = 1024;
@@ -21,33 +22,47 @@ const A_PREV = 16384;
 
 const SELECTABLE = A_SELECT | A_BLOCK;
 const SELECT_CONNECTIONS = A_SWITCH;
-const TOOLS = A_LINES | A_CURVE | A_SIDEA | A_SIDEB;
+const TOOLS = A_DRAW | A_LINES | A_CURVE | A_SIDEA | A_SIDEB;
 const MODES = SELECTABLE | TOOLS;
 // const ACTIONS = A_GROUP | A_UNGROUP | A_DELETE | A_NEXT | A_PREV;
 
-const config = [
-  // modes
-  { code: 27, tag: "ESC", text: "Select", action: A_SELECT, mode: A_SELECT },
-  { code: 49, tag: "1", text: "Lines", action: A_LINES, mode: A_LINES },
-  { code: 50, tag: "2", text: "Curve", action: A_CURVE, mode: A_CURVE },
-  { code: 51, tag: "3", text: "SideA", action: A_SIDEA, mode: A_SIDEA },
-  { code: 52, tag: "4", text: "SideB", action: A_SIDEB, mode: A_SIDEB },
-  { code: 53, tag: "5", text: "Block", action: A_BLOCK, mode: A_BLOCK },
-  { code: 54, tag: "6", text: "Switch", action: A_SWITCH, mode: A_SWITCH },
-  { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_LINES },
-  { code: 88, tag: "X", text: "Prev tool", action: A_PREV, filter: A_LINES },
-  { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_CURVE },
-  { code: 88, tag: "X", text: "Prev tool", action: A_PREV, filter: A_CURVE },
-  { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_SIDEA },
-  { code: 88, tag: "X", text: "Prev tool", action: A_PREV, filter: A_SIDEA },
-  { code: 90, tag: "Z", text: "Next tool", action: A_NEXT, filter: A_SIDEB },
-  { code: 88, tag: "X", text: "Prev tool", action: A_PREV, filter: A_SIDEB },
+const keyMap = {
+  "1": 49,
+  "2": 50,
+  "3": 51,
+  "4": 52,
+  "5": 53,
+  "6": 54,
+  "7": 55,
+  Z: 90,
+  X: 88,
+  ESC: 27
+};
 
-  { code: 90, tag: "Z", text: "Group", action: A_GROUP, filter: A_BLOCK },
-  { code: 88, tag: "X", text: "Unroup", action: A_UNGROUP, filter: A_BLOCK },
-  { code: 90, tag: "Z", text: "Delete", action: A_DELETE, filter: A_SELECT },
-  { code: 90, tag: "Z", text: "Create switch", action: null, filter: A_SWITCH },
-  { code: 90, tag: "Z", text: "Connect", action: null, filter: A_SWITCH }
+// modes
+// action - what to do
+// on - what to highlight
+// show/hide - when to show/hide
+const config = [
+  // top level
+  { tag: "Z", text: "Delete", action: A_DELETE, mode: A_SELECT },
+  { tag: "1", text: "Draw", action: A_DRAW, mode: A_SELECT },
+  { tag: "2", text: "Block", action: A_BLOCK, mode: A_SELECT },
+  { tag: "3", text: "Switch", action: A_SWITCH, mode: A_SELECT },
+  { tag: "4", text: "Objects", action: A_SWITCH, mode: A_SELECT },
+  // drawing
+  { tag: "ESC", text: "Back", action: A_SELECT, mode: A_DRAW },
+  { tag: "1", text: "Lines", action: A_LINES, mode: A_DRAW, on: A_LINES },
+  { tag: "2", text: "Curve", action: A_CURVE, mode: A_DRAW, on: A_CURVE },
+  { tag: "3", text: "SideA", action: A_SIDEA, mode: A_DRAW, on: A_SIDEA },
+  { tag: "4", text: "SideB", action: A_SIDEB, mode: A_DRAW, on: A_SIDEB },
+
+  { tag: "Z", text: "Next tool", action: A_NEXT, show: A_DRAW },
+  { tag: "X", text: "Prev tool", action: A_PREV, show: A_DRAW },
+  { tag: "Z", text: "Group", action: A_GROUP, show: A_BLOCK },
+  { tag: "X", text: "Unroup", action: A_UNGROUP, show: A_BLOCK },
+  { tag: "Z", text: "Create switch", action: null, show: A_SWITCH },
+  { tag: "Z", text: "Connect", action: null, show: A_SWITCH }
 ];
 
 // tools controller
@@ -89,7 +104,8 @@ export default class Controls {
     this.grid = grid;
     this.Grid = Grid;
 
-    const hints = this.applyHintsFilter(store.getState().mode);
+    const mode = A_DRAW | A_LINES;
+    const hints = this.applyHintsFilter(mode);
     store.setState({ hints });
 
     window.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
@@ -108,8 +124,9 @@ export default class Controls {
   applyHintsFilter(mode) {
     const result = config
       .map(a => ({ ...a })) // copy
-      .filter(i => !i.filter || i.filter === mode);
-    result.find(i => i.mode === mode).selected = true;
+      .filter(i => i.mode & mode);
+    const selectedItem = result.find(i => i.on & mode);
+    selectedItem && (selectedItem.selected = true);
     return result;
   }
 
@@ -119,7 +136,7 @@ export default class Controls {
 
     const state = store.getState();
     const { hints } = state;
-    const index = hints.findIndex(i => i.code === keyCode);
+    const index = hints.findIndex(i => keyMap[i.tag] === keyCode);
     if (index !== -1) {
       hints[index].active = false;
       store.setState({ hints });
@@ -132,7 +149,7 @@ export default class Controls {
 
     const state = store.getState();
     const { mode, hints } = state;
-    const index = hints.findIndex(i => i.code === keyCode);
+    const index = hints.findIndex(i => keyMap[i.tag] === keyCode);
     if (index !== -1) {
       const newMode = hints[index].mode || mode;
       const newHints = this.applyHintsFilter(newMode);
