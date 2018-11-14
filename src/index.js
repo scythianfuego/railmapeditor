@@ -11,12 +11,16 @@ import Animate from "./animate";
 import Controls from "./controls";
 
 const canvas = document.querySelector("canvas");
-canvas.height = canvas.clientHeight;
 canvas.width = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
 
 let model = new Model();
 const draw = new Draw(canvas, grid, model);
 const controls = new Controls(model, grid, Grid);
+window.addEventListener("resize", e => {
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+});
 
 const animate = new Animate(model, draw);
 animate.start();
