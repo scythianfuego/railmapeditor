@@ -4,14 +4,14 @@ import Objects from "./objects";
 const objects = new Objects();
 
 // modes
-const A_DRAW = 1;
+
+const A_SELECT = 1;
 const A_LINES = 2;
 const A_CURVE = 4;
 const A_SIDEA = 8;
 const A_SIDEB = 16;
 const A_BLOCK = 32;
 const A_SWITCH = 64;
-const A_SELECT = 128;
 
 // actions
 const A_GROUP = 1024;
@@ -20,10 +20,11 @@ const A_DELETE = 4096;
 const A_NEXT = 8192;
 const A_PREV = 16384;
 
+const A_TOOLS = A_LINES | A_CURVE | A_SIDEA | A_SIDEB;
+
 const SELECTABLE = A_SELECT | A_BLOCK;
 const SELECT_CONNECTIONS = A_SWITCH;
-const TOOLS = A_DRAW | A_LINES | A_CURVE | A_SIDEA | A_SIDEB;
-const MODES = SELECTABLE | TOOLS;
+const MODES = SELECTABLE | A_TOOLS;
 // const ACTIONS = A_GROUP | A_UNGROUP | A_DELETE | A_NEXT | A_PREV;
 
 const keyMap = {
@@ -43,22 +44,23 @@ const keyMap = {
 // action - what to do
 // on - what to highlight
 // show/hide - when to show/hide
+// prettier-ignore
 const config = [
   // top level
-  { tag: "Z", text: "Delete", action: A_DELETE, mode: A_SELECT },
-  { tag: "1", text: "Draw", action: A_DRAW, mode: A_SELECT },
-  { tag: "2", text: "Block", action: A_BLOCK, mode: A_SELECT },
-  { tag: "3", text: "Switch", action: A_SWITCH, mode: A_SELECT },
-  { tag: "4", text: "Objects", action: A_SWITCH, mode: A_SELECT },
+  { tag: "1", text: "Draw", action: A_LINES, show: A_SELECT },
+  { tag: "2", text: "Block", action: A_BLOCK, show: A_SELECT },
+  { tag: "3", text: "Switch", action: A_SWITCH, show: A_SELECT },
+  { tag: "4", text: "Objects", action: null, show: A_SELECT },
+  { tag: "Z", text: "Delete", action: A_DELETE, show: A_SELECT },
   // drawing
-  { tag: "ESC", text: "Back", action: A_SELECT, mode: A_DRAW },
-  { tag: "1", text: "Lines", action: A_LINES, mode: A_DRAW, on: A_LINES },
-  { tag: "2", text: "Curve", action: A_CURVE, mode: A_DRAW, on: A_CURVE },
-  { tag: "3", text: "SideA", action: A_SIDEA, mode: A_DRAW, on: A_SIDEA },
-  { tag: "4", text: "SideB", action: A_SIDEB, mode: A_DRAW, on: A_SIDEB },
+  { tag: "ESC", text: "Back", action: A_SELECT, show: A_TOOLS },
+  { tag: "1", text: "Lines", action: A_LINES, show: A_TOOLS, on: A_LINES },
+  { tag: "2", text: "Curve", action: A_CURVE, show: A_TOOLS, on: A_CURVE },
+  { tag: "3", text: "SideA", action: A_SIDEA, show: A_TOOLS, on: A_SIDEA },
+  { tag: "4", text: "SideB", action: A_SIDEB, show: A_TOOLS, on: A_SIDEB },
 
-  { tag: "Z", text: "Next tool", action: A_NEXT, show: A_DRAW },
-  { tag: "X", text: "Prev tool", action: A_PREV, show: A_DRAW },
+  { tag: "Z", text: "Next tool", action: A_NEXT, show: A_TOOLS },
+  { tag: "X", text: "Prev tool", action: A_PREV, show: A_TOOLS },
   { tag: "Z", text: "Group", action: A_GROUP, show: A_BLOCK },
   { tag: "X", text: "Unroup", action: A_UNGROUP, show: A_BLOCK },
   { tag: "Z", text: "Create switch", action: null, show: A_SWITCH },
@@ -104,7 +106,7 @@ export default class Controls {
     this.grid = grid;
     this.Grid = Grid;
 
-    const mode = A_DRAW | A_LINES;
+    const mode = A_LINES;
     const hints = this.applyHintsFilter(mode);
     store.setState({ hints });
 
@@ -124,7 +126,7 @@ export default class Controls {
   applyHintsFilter(mode) {
     const result = config
       .map(a => ({ ...a })) // copy
-      .filter(i => i.mode & mode);
+      .filter(i => i.show & mode);
     const selectedItem = result.find(i => i.on & mode);
     selectedItem && (selectedItem.selected = true);
     return result;
@@ -150,13 +152,8 @@ export default class Controls {
     const state = store.getState();
     const { mode, hints } = state;
     const index = hints.findIndex(i => keyMap[i.tag] === keyCode);
-    if (index !== -1) {
-      const newMode = hints[index].mode || mode;
-      const newHints = this.applyHintsFilter(newMode);
-      newHints[index].active = true;
-      store.setState({ hints: newHints, mode: newMode });
-      this.runAction(hints[index].action);
-    }
+    index !== -1 && this.runAction(hints[index].action, index);
+    index !== -1 && (hints[index].active = true); // new hints!
   }
 
   mouseEventToXY(event) {
@@ -277,9 +274,11 @@ export default class Controls {
     }
   }
 
-  runAction(action) {
+  runAction(action, index) {
     const state = store.getState();
     let { selectionMode, blocks } = state;
+    // set new mode if action is in modes list
+    const mode = action & MODES ? action : state.mode;
 
     // modes
     if (action & MODES) {
@@ -287,7 +286,7 @@ export default class Controls {
       this.toolset = [];
     }
 
-    if (action & TOOLS) {
+    if (action & A_TOOLS) {
       this.currentTool = 0;
       this.toolset = tools[action];
       selectionMode = false;
@@ -303,6 +302,13 @@ export default class Controls {
     action & A_NEXT && this.nextTool(1);
     action & A_PREV && this.nextTool(-1);
 
-    store.setState({ tool: this.getTool(), selectionMode, blocks });
+    const hints = this.applyHintsFilter(mode);
+    store.setState({
+      tool: this.getTool(),
+      selectionMode,
+      blocks,
+      hints,
+      mode
+    });
   }
 }
