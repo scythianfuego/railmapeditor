@@ -12,6 +12,7 @@ const A_SIDEA = 8;
 const A_SIDEB = 16;
 const A_BLOCK = 32;
 const A_SWITCH = 64;
+const A_OBJECT = 128;
 
 // actions
 const A_GROUP = 1024;
@@ -22,9 +23,10 @@ const A_PREV = 16384;
 
 const A_TOOLS = A_LINES | A_CURVE | A_SIDEA | A_SIDEB;
 
-const SELECTABLE = A_SELECT | A_BLOCK;
+const SELECTABLE = A_SELECT | A_BLOCK | A_SWITCH;
 const SELECT_CONNECTIONS = A_SWITCH;
-const MODES = SELECTABLE | A_TOOLS;
+
+const MODES = A_TOOLS | A_SELECT | A_BLOCK | A_OBJECT | A_SWITCH;
 // const ACTIONS = A_GROUP | A_UNGROUP | A_DELETE | A_NEXT | A_PREV;
 
 const keyMap = {
@@ -50,7 +52,7 @@ const config = [
   { tag: "1", text: "Draw", action: A_LINES, show: A_SELECT },
   { tag: "2", text: "Block", action: A_BLOCK, show: A_SELECT },
   { tag: "3", text: "Switch", action: A_SWITCH, show: A_SELECT },
-  { tag: "4", text: "Objects", action: null, show: A_SELECT },
+  { tag: "4", text: "Objects", action: A_OBJECT, show: A_SELECT },
   { tag: "Z", text: "Delete", action: A_DELETE, show: A_SELECT },
   // drawing
   { tag: "ESC", text: "Back", action: A_SELECT, show: A_TOOLS },
@@ -58,13 +60,22 @@ const config = [
   { tag: "2", text: "Curve", action: A_CURVE, show: A_TOOLS, on: A_CURVE },
   { tag: "3", text: "SideA", action: A_SIDEA, show: A_TOOLS, on: A_SIDEA },
   { tag: "4", text: "SideB", action: A_SIDEB, show: A_TOOLS, on: A_SIDEB },
-
   { tag: "Z", text: "Next tool", action: A_NEXT, show: A_TOOLS },
   { tag: "X", text: "Prev tool", action: A_PREV, show: A_TOOLS },
+  // block
+  { tag: "ESC", text: "Back", action: A_SELECT, show: A_BLOCK },
   { tag: "Z", text: "Group", action: A_GROUP, show: A_BLOCK },
   { tag: "X", text: "Unroup", action: A_UNGROUP, show: A_BLOCK },
+
+  // switch
+  { tag: "ESC", text: "Back", action: A_SELECT, show: A_SWITCH },
   { tag: "Z", text: "Create switch", action: null, show: A_SWITCH },
-  { tag: "Z", text: "Connect", action: null, show: A_SWITCH }
+  // todo: find common connection for selection
+  // onclick select switch components - with alteration
+  { tag: "Z", text: "Connect", action: null, show: A_SWITCH },
+
+  // object
+  { tag: "ESC", text: "Back", action: A_SELECT, show: A_OBJECT },
 ];
 
 // tools controller
