@@ -19,9 +19,11 @@ export default class Model {
     this.storeIndex = new Map();
     this.connections = {};
     this.selectedConnection = null;
-    this.switches = [];
     this.blockId = 1;
     this.objectId = 1;
+
+    this.switches = [];
+    this.joins = [];
 
     // horizontal lines:
     //     -  0x10 left right
@@ -236,10 +238,26 @@ export default class Model {
   }
 
   ungroup() {
-    this.store.filter(v => v.selected).map(v => {
-      const groupBlockId = this.blockId++;
-      v.meta.block = groupBlockId;
-    });
+    this.store
+      .filter(v => v.selected)
+      .map(v => {
+        const groupBlockId = this.blockId++;
+        v.meta.block = groupBlockId;
+      });
     this.deselect();
   }
+
+  //   click select - найти в стрелке/соединении. rectangle - игнорировать стрелки/соединения
+  // выделено - соединить - кнопки если 2 - соединение или 3-4 стрелка
+  // выделено -создать -> найти общий коннекшн для группы id.
+  // если стрелка выделена, повторный клик по ней же выделяет ребра
+  findJoinById(id) {
+    return this.joins.find(j => j.left === id || j.right === id);
+  }
+
+  findSwitch(id) {
+    // return this.switches.find(j => j.left === id || j.right === id) ||;
+  }
+
+  createSwitch(l1, l2, r1, r2) {}
 }
