@@ -1,10 +1,14 @@
+import { Hex } from "./transform";
+import IRailLine from "./interfaces/IRailLine";
+import IRailArc from "./interfaces/IRailArc";
+
 export default class Objects {
-  getCorners(hex) {
+  getCorners(hex: Hex) {
     const point = hex.toPoint();
     return hex.corners().map(corner => corner.add(point));
   }
 
-  getTriangleCorners(hex) {
+  getTriangleCorners(hex: Hex) {
     return this.getCorners(hex).filter((v, i) => i % 2 === 1);
   }
 
@@ -12,7 +16,7 @@ export default class Objects {
   //   return getCorners(hex).filter((v, i) => i % 2 === 0);
   // }
 
-  line(hex, index) {
+  line(hex: Hex, index: number): IRailLine {
     const corners = this.getTriangleCorners(hex);
     const pairs = [[1, 0], [2, 0], [2, 1]];
     const [a, b] = pairs[index];
@@ -26,7 +30,7 @@ export default class Objects {
     };
   }
 
-  longArc(hex, index) {
+  longArc(hex: Hex, index: number): IRailArc {
     const corners = this.getTriangleCorners(hex);
     const pairs = [[2, 0], [2, 1], [0, 1], [0, 2], [1, 2], [1, 0]];
     const arc = Math.PI / 3;
@@ -52,7 +56,7 @@ export default class Objects {
     return { x, y, radius, a1, a2, sx, sy, ex, ey, type: 0x20 + index };
   }
 
-  shortArc(hex, index) {
+  shortArc(hex: Hex, index: number): IRailArc {
     const corners = this.getTriangleCorners(hex);
     const points = [1, 0, 2, 1, 0, 2];
     const radius = 3.5 * hex.size; // magic1
@@ -81,7 +85,7 @@ export default class Objects {
     return { x, y, radius, a1, a2, sx, sy, ex, ey, type: 0x30 + index };
   }
 
-  shortArc2(hex, index) {
+  shortArc2(hex: Hex, index: number): IRailArc {
     const corners = this.getTriangleCorners(hex);
     const points = [2, 2, 0, 0, 1, 1];
     const radius = 3.5 * hex.size; // magic1

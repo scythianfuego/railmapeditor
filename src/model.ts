@@ -1,78 +1,17 @@
-import { get } from "https";
-
-// не пытаться разбирать левел обратно - сериализовать данные и сделать экспорт
-// упростить парсер в игре по максимумуму - отрезок - следующий, откуда считать
-
-// ES
-// SS
-// EE
-// SE
-
-// аналогично, соединять в редакторе точки а не типы. пофиг на тип
-// убрать модель с "что с чем коннектится" - точки совпали = коннектится
-
 const MIN_DISTANCE = 5;
 
 export default class Model {
-  constructor() {
-    this.store = [];
-    this.storeIndex = new Map();
-    this.connections = {};
-    this.selectedConnection = null;
-    this.blockId = 1;
-    this.objectId = 1;
+  private store = [];
+  private storeIndex = new Map();
+  private connections = {};
+  private selectedConnection = null;
+  private blockId = 1;
+  private objectId = 1;
 
-    this.switches = [];
-    this.joins = [];
+  private switches = [];
+  private joins = [];
 
-    // horizontal lines:
-    //     -  0x10 left right
-    // \  0x11 top bottom (r to l!)
-    // /  0x12 top bottom
-    // this.allowedConnections = [
-    //   //  <- ->
-    //   {
-    //     left: [0x10, 0x21, 0x31, 0x23, 0x40],
-    //     right: [0x10, 0x20, 0x30, 0x41, 0x24],
-    //     dirL: [1, -1, -1, 1, 1],
-    //     dirR: [1, -1, -1, 1, 1]
-    //   },
-    //   // /v  /^
-    //   {
-    //     left: [0x12, 0x20, 0x43, 0x32, 0x22],
-    //     right: [0x12, 0x25, 0x42, 0x23, 0x33]
-    //   },
-    //   // \v \^
-    //   {
-    //     left: [0x11, 0x25, 0x35, 0x21, 0x44],
-    //     right: [0x11, 0x24, 0x22, 0x34, 0x45]
-    //   },
-    //   {
-    //     left: [0x33],
-    //     right: [0x43]
-    //   },
-    //   {
-    //     left: [0x42],
-    //     right: [0x32]
-    //   },
-    //   {
-    //     left: [0x41],
-    //     right: [0x31]
-    //   },
-    //   {
-    //     left: [0x30],
-    //     right: [0x40]
-    //   },
-    //   {
-    //     left: [0x44],
-    //     right: [0x34]
-    //   },
-    //   {
-    //     left: [0x35],
-    //     right: [0x45]
-    //   }
-    // ];
-  }
+  constructor() {}
 
   distance(x1, y1, x2, y2) {
     return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));

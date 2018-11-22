@@ -1,10 +1,11 @@
 import createStore from "unistore";
-import devtools from "unistore/devtools";
+import unistoreDevTools from "unistore";
+import IState from "./interfaces/IState";
 
 // let store = createStore({ count: 0 });
 // use redux dev tools instead
 
-const defaults = {
+const defaults: IState = {
   // ui
   mode: 0,
   // drawing
@@ -24,18 +25,24 @@ const defaults = {
     pan: false,
     selection: null
   },
-  tool: null,
   // model
   model: null
 };
 
-let store = devtools(createStore(defaults));
+let store = unistoreDevTools(createStore(defaults));
 
-const pick = (object, props) =>
-  props.reduce((acc, curr) => {
+type FlatObject = {
+  [index: string]: any;
+};
+
+// todo: Partial?
+const pick = (object: FlatObject, props: string[]) =>
+  props.reduce((acc: FlatObject, curr: string) => {
     acc[curr] = object[curr];
     return acc;
   }, {});
 
-export const copy = (from, to, props) => Object.assign(to, pick(from, props));
+export const copy = (from: FlatObject, to: FlatObject, props: string[]) =>
+  Object.assign(to, pick(from, props));
+
 export default store;

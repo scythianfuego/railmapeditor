@@ -1,91 +1,31 @@
+import { Hex } from "./transform";
+
 import store from "./store";
 import ts from "./transform";
 import Objects from "./objects";
+import Model from "./model";
+import IHints from "./interfaces/IHints";
+import IRailObject from "./interfaces/IRailObject";
+import config from "./includes/config";
 const objects = new Objects();
 
 // modes
 
-const A_SELECT = 1;
-const A_LINES = 2;
-const A_CURVE = 4;
-const A_SIDEA = 8;
-const A_SIDEB = 16;
-const A_BLOCK = 32;
-const A_SWITCH = 64;
-const A_OBJECT = 128;
+const defaultHints: IHints = config.hints;
+const A = config.actions;
 
-// actions
-const A_GROUP = 1024;
-const A_UNGROUP = 2048;
-const A_DELETE = 4096;
-const A_NEXT = 8192;
-const A_PREV = 16384;
+// tools controller.
+// type it
+type Tool = (hex: Hex) => IRailObject;
+type Tools = { [index: number]: Tool[] };
 
-const A_TOOLS = A_LINES | A_CURVE | A_SIDEA | A_SIDEB;
-
-const SELECTABLE = A_SELECT | A_BLOCK | A_SWITCH;
-const SELECT_CONNECTIONS = A_SWITCH;
-
-const MODES = A_TOOLS | A_SELECT | A_BLOCK | A_OBJECT | A_SWITCH;
-// const ACTIONS = A_GROUP | A_UNGROUP | A_DELETE | A_NEXT | A_PREV;
-
-const keyMap = {
-  "1": 49,
-  "2": 50,
-  "3": 51,
-  "4": 52,
-  "5": 53,
-  "6": 54,
-  "7": 55,
-  Z: 90,
-  X: 88,
-  ESC: 27
-};
-
-// modes
-// action - what to do
-// on - what to highlight
-// show/hide - when to show/hide
-// prettier-ignore
-const config = [
-  // top level
-  { tag: "1", text: "Draw", action: A_LINES, show: A_SELECT },
-  { tag: "2", text: "Block", action: A_BLOCK, show: A_SELECT },
-  { tag: "3", text: "Switch", action: A_SWITCH, show: A_SELECT },
-  { tag: "4", text: "Objects", action: A_OBJECT, show: A_SELECT },
-  { tag: "Z", text: "Delete", action: A_DELETE, show: A_SELECT },
-  // drawing
-  { tag: "ESC", text: "Back", action: A_SELECT, show: A_TOOLS },
-  { tag: "1", text: "Lines", action: A_LINES, show: A_TOOLS, on: A_LINES },
-  { tag: "2", text: "Curve", action: A_CURVE, show: A_TOOLS, on: A_CURVE },
-  { tag: "3", text: "SideA", action: A_SIDEA, show: A_TOOLS, on: A_SIDEA },
-  { tag: "4", text: "SideB", action: A_SIDEB, show: A_TOOLS, on: A_SIDEB },
-  { tag: "Z", text: "Next tool", action: A_NEXT, show: A_TOOLS },
-  { tag: "X", text: "Prev tool", action: A_PREV, show: A_TOOLS },
-  // block
-  { tag: "ESC", text: "Back", action: A_SELECT, show: A_BLOCK },
-  { tag: "Z", text: "Group", action: A_GROUP, show: A_BLOCK },
-  { tag: "X", text: "Unroup", action: A_UNGROUP, show: A_BLOCK },
-
-  // switch
-  { tag: "ESC", text: "Back", action: A_SELECT, show: A_SWITCH },
-  { tag: "Z", text: "Create switch", action: null, show: A_SWITCH },
-  // todo: find common connection for selection
-  // onclick select switch components - with alteration
-  { tag: "Z", text: "Connect", action: null, show: A_SWITCH },
-
-  // object
-  { tag: "ESC", text: "Back", action: A_SELECT, show: A_OBJECT },
-];
-
-// tools controller
-const tools = {
-  [A_LINES]: [
+const tools: Tools = {
+  [A.LINES]: [
     hex => objects.line(hex, 0),
     hex => objects.line(hex, 1),
     hex => objects.line(hex, 2)
   ],
-  [A_CURVE]: [
+  [A.CURVE]: [
     hex => objects.longArc(hex, 0),
     hex => objects.longArc(hex, 1),
     hex => objects.longArc(hex, 2),
@@ -93,7 +33,7 @@ const tools = {
     hex => objects.longArc(hex, 4),
     hex => objects.longArc(hex, 5)
   ],
-  [A_SIDEA]: [
+  [A.SIDEA]: [
     hex => objects.shortArc(hex, 0),
     hex => objects.shortArc(hex, 1),
     hex => objects.shortArc(hex, 2),
@@ -101,7 +41,7 @@ const tools = {
     hex => objects.shortArc(hex, 4),
     hex => objects.shortArc(hex, 5)
   ],
-  [A_SIDEB]: [
+  [A.SIDEB]: [
     hex => objects.shortArc2(hex, 0),
     hex => objects.shortArc2(hex, 1),
     hex => objects.shortArc2(hex, 2),
@@ -112,12 +52,13 @@ const tools = {
 };
 
 export default class Controls {
-  constructor(model, grid, Grid) {
-    this.model = model;
-    this.grid = grid;
-    this.Grid = Grid;
+  private currentTool = 0;
+  private toolset: Tool[] = [];
+  private getTool = () =>
+    this.toolset.length ? this.toolset[this.currentTool] : null;
 
-    const mode = A_LINES;
+  constructor(private model: Model) {
+    const mode = A.LINES;
     const hints = this.applyHintsFilter(mode);
     store.setState({ hints });
 
@@ -128,14 +69,11 @@ export default class Controls {
     window.addEventListener("mousedown", event => this.onMouseDown(event));
     window.addEventListener("mouseup", event => this.onMouseUp(event));
     window.addEventListener("wheel", event => this.onWheel(event));
-    this.getTool = () =>
-      this.toolset.length ? this.toolset[this.currentTool] : null;
-
-    this.runAction(A_LINES);
+    this.runAction(A.LINES);
   }
 
   applyHintsFilter(mode) {
-    const result = config
+    const result = defaultHints
       .map(a => ({ ...a })) // copy
       .filter(i => i.show & mode);
     const selectedItem = result.find(i => i.on & mode);
@@ -149,7 +87,7 @@ export default class Controls {
 
     const state = store.getState();
     const { hints } = state;
-    const index = hints.findIndex(i => keyMap[i.tag] === keyCode);
+    const index = hints.findIndex(i => config.keyMap[i.tag] === keyCode);
     if (index !== -1) {
       hints[index].active = false;
       store.setState({ hints });
@@ -162,7 +100,7 @@ export default class Controls {
 
     const state = store.getState();
     const { mode, hints } = state;
-    const index = hints.findIndex(i => keyMap[i.tag] === keyCode);
+    const index = hints.findIndex(i => config.keyMap[i.tag] === keyCode);
     index !== -1 && this.runAction(hints[index].action, index);
     index !== -1 && (hints[index].active = true); // new hints!
   }
@@ -174,12 +112,11 @@ export default class Controls {
     return [x, y];
   }
 
-  mouseToHex(event) {
-    const { wx, wy } = ts;
+  mouseToHex(event): Hex {
     const bounds = event.target.getBoundingClientRect();
     const x = event.clientX - bounds.left;
     const y = event.clientY - bounds.top;
-    return this.grid.get(this.Grid.pointToHex(wx(x), wy(y)));
+    return ts.pointToHex(x, y);
   }
 
   onMouseDown(e) {
@@ -188,17 +125,17 @@ export default class Controls {
     const [x, y] = coords;
     const { wx, wy } = ts;
 
-    if (state.mode & SELECTABLE) {
+    if (state.mode & A.SELECTABLE) {
       const hit = this.model.findByXY(wx(x), wy(y));
       // deselect if shift is not pressed
       !this.shift && this.model.deselect();
       this.model.select(hit);
-      if (state.mode & A_BLOCK) {
+      if (state.mode & A.BLOCK) {
         this.model.selectGroup(hit);
       }
     }
 
-    if (state.mode & SELECT_CONNECTIONS) {
+    if (state.mode & A.SELECT_CONNECTIONS) {
       const hit = this.model.findConnection(wx(x), wy(y));
       this.model.selectedConnection = hit;
     }
@@ -233,7 +170,7 @@ export default class Controls {
 
     store.setState({ mouse, cursorCell, panX, panY });
 
-    state.mode & SELECTABLE &&
+    state.mode & A.SELECTABLE &&
       state.mouse.selection &&
       this.alterSelection(coords, state.mouse.selection);
   }
@@ -244,7 +181,7 @@ export default class Controls {
     const state = store.getState();
     const direction = Math.sign(event.deltaY);
 
-    if (e.ctrlKey || state.mode & SELECTABLE) {
+    if (e.ctrlKey || state.mode & A.SELECTABLE) {
       const [mouseX, mouseY] = state.mouse.coords;
       const zoomOld = state.zoom;
       const zoom = clamp(zoomOld * (1 + 0.2 * direction), 0.1, 10);
@@ -279,7 +216,7 @@ export default class Controls {
       !this.shift && this.model.deselect(); // deselect if shift is not pressed
       this.model.select(hit);
 
-      if (state.mode & A_BLOCK) {
+      if (state.mode & A.BLOCK) {
         this.model.selectGroup(hit);
       }
     }
@@ -289,29 +226,29 @@ export default class Controls {
     const state = store.getState();
     let { selectionMode, blocks } = state;
     // set new mode if action is in modes list
-    const mode = action & MODES ? action : state.mode;
+    const mode = action & A.MODES ? action : state.mode;
 
     // modes
-    if (action & MODES) {
+    if (action & A.MODES) {
       blocks = false;
       this.toolset = [];
     }
 
-    if (action & A_TOOLS) {
+    if (action & A.TOOLS) {
       this.currentTool = 0;
       this.toolset = tools[action];
       selectionMode = false;
     }
 
-    action & SELECTABLE && (selectionMode = true);
-    action & A_BLOCK && (blocks = true);
+    action & A.SELECTABLE && (selectionMode = true);
+    action & A.BLOCK && (blocks = true);
 
     // actions to run
-    action & A_GROUP && this.model.group();
-    action & A_UNGROUP && this.model.ungroup();
-    action & A_DELETE && this.model.deleteSelected();
-    action & A_NEXT && this.nextTool(1);
-    action & A_PREV && this.nextTool(-1);
+    action & A.GROUP && this.model.group();
+    action & A.UNGROUP && this.model.ungroup();
+    action & A.DELETE && this.model.deleteSelected();
+    action & A.NEXT && this.nextTool(1);
+    action & A.PREV && this.nextTool(-1);
 
     const hints = this.applyHintsFilter(mode);
     store.setState({

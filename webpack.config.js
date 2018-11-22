@@ -1,6 +1,8 @@
+const { CheckerPlugin } = require("awesome-typescript-loader");
+
 module.exports = {
   mode: "development",
-  entry: "./src/index.js",
+  entry: "./src/index.ts",
   output: {
     path: __dirname + "/dist",
     filename: "[name].js"
@@ -8,6 +10,9 @@ module.exports = {
   devtool: "eval-source-map",
   devServer: {
     contentBase: "./src"
+  },
+  resolve: {
+    extensions: [".ts", ".js"]
   },
   module: {
     rules: [
@@ -20,7 +25,12 @@ module.exports = {
             presets: ["@babel/preset-env"]
           }
         }
+      },
+      {
+        test: /\.tsx?$/,
+        loader: "awesome-typescript-loader"
       }
     ]
-  }
+  },
+  plugins: [new CheckerPlugin()]
 };

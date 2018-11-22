@@ -1,40 +1,66 @@
+import * as Honeycomb from "honeycomb-grid";
 import store, { copy } from "./store";
-import ts from "./transform";
+import ts, { Grid } from "./transform";
+import Model from "./model";
+import IState from "./interfaces/IState";
+import IRailObject from "./interfaces/IRailObject";
 
 const getCorners = hex => {
   const point = hex.toPoint();
   return hex.corners().map(corner => corner.add(point));
 };
 
-const hex2rgba = hex => {
+const hex2rgba = (hex: string) => {
   const [r, g, b, a] = hex.match(/\w\w/g).map(x => parseInt(x, 16));
   return `rgba(${r},${g},${b},${a ? a * 0.00392156862745098 : 1})`;
 };
 
+const { sx, sy, scale } = ts;
+
 export default class Draw {
-  constructor(canvas, hexgrid, model) {
+  private ctx: CanvasRenderingContext2D;
+  private hexgrid: Grid;
+
+  private screen = {
+    moveTo: (x: number, y: number) => this.ctx.moveTo(sx(x), sy(y)),
+    lineTo: (x: number, y: number) => this.ctx.lineTo(sx(x), sy(y)),
+    arc: (
+      x: number,
+      y: number,
+      radius: number,
+      a1: number,
+      a2: number,
+      ccw: boolean
+    ) => this.ctx.arc(sx(x), sy(y), scale(radius), a1, a2, ccw),
+    circle: (x: number, y: number, radius: number) =>
+      this.ctx.arc(sx(x), sy(y), radius, 0, 6.29),
+    fillText: (text: string, x: number, y: number, maxWidth: number) =>
+      this.ctx.fillText(text, sx(x), sy(y), maxWidth),
+    fillRect: (x: number, y: number, w: number, h: number) =>
+      this.ctx.fillRect(sx(x), sy(y), scale(w), scale(h)),
+    strokeRect: (x: number, y: number, w: number, h: number) =>
+      this.ctx.strokeRect(sx(x), sy(y), scale(w), scale(h))
+  };
+
+  // state variables, refactor
+  private state: any = null;
+  private hints: any;
+  private tool: any;
+  private selectionMode: any;
+  private cursorCell: any;
+  private zoom: any;
+  private panX: any;
+  private panY: any;
+
+  constructor(private canvas: HTMLCanvasElement, private model: Model) {
     this.canvas = canvas;
-    this.hexgrid = hexgrid;
+    this.ctx = canvas.getContext("2d");
+    this.hexgrid = ts.grid;
     this.model = model;
     this.cursorCell = null;
-    this.ctx = canvas.getContext("2d");
     this.ctx.translate(0.5, 0.5);
 
-    const { sx, sy, scale } = ts;
     // moveable and zoomable parts of canvas
-    this.screen = {
-      moveTo: (x, y) => this.ctx.moveTo(sx(x), sy(y)),
-      lineTo: (x, y) => this.ctx.lineTo(sx(x), sy(y)),
-      arc: (x, y, radius, a1, a2, ccw) =>
-        this.ctx.arc(sx(x), sy(y), scale(radius), a1, a2, ccw),
-      circle: (x, y, radius) => this.ctx.arc(sx(x), sy(y), radius, 0, 6.29),
-      fillText: (text, x, y, maxWidth) =>
-        this.ctx.fillText(text, sx(x), sy(y), maxWidth),
-      fillRect: (x, y, w, h) =>
-        this.ctx.fillRect(sx(x), sy(y), scale(w), scale(h)),
-      strokeRect: (x, y, w, h) =>
-        this.ctx.strokeRect(sx(x), sy(y), scale(w), scale(h))
-    };
 
     store.subscribe(state => {
       copy(state, this, [
@@ -52,7 +78,7 @@ export default class Draw {
     });
   }
 
-  getColor(type, selected) {
+  getColor(type: number, selected: boolean) {
     if (this.selectionMode) {
       return selected ? "red" : "#ccc";
     }
@@ -73,7 +99,7 @@ export default class Draw {
 
   clear() {
     this.ctx.fillStyle = "#0f0605";
-    this.ctx.fillRect(0, 0, canvas.width, canvas.height);
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
   all() {
@@ -81,7 +107,7 @@ export default class Draw {
     this.grid();
     !this.selectionMode && this.cell(this.cursorCell, "#999");
 
-    this.model.forEach(obj => this.object(obj));
+    this.model.forEach((obj: IRailObject) => this.object(obj));
     this.connections();
     this.cursor();
     this.selectionFrame();
@@ -92,7 +118,7 @@ export default class Draw {
     this.tool && this.cursorCell && this.object(this.tool(this.cursorCell));
   }
 
-  cell(hex, style) {
+  cell(hex, style: string) {
     if (!hex) {
       return;
     }

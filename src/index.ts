@@ -1,9 +1,6 @@
-import * as Honeycomb from "honeycomb-grid";
-import ts from "./transform";
+/// <reference path="index.d.ts" />
 
-const Hex = Honeycomb.extendHex({ size: ts.HEX_SIZE });
-const Grid = Honeycomb.defineGrid(Hex);
-const grid = Grid.rectangle({ width: ts.CELLS_X, height: ts.CELLS_Y });
+import ts from "./transform";
 
 import Draw from "./draw";
 import Model from "./model";
@@ -15,8 +12,10 @@ canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 
 let model = new Model();
+const [grid, gridTools] = ts.createGrid();
+
 const draw = new Draw(canvas, grid, model);
-const controls = new Controls(model, grid, Grid);
+const controls = new Controls(model);
 window.addEventListener("resize", e => {
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
@@ -25,7 +24,8 @@ window.addEventListener("resize", e => {
 const animate = new Animate(model, draw);
 animate.start();
 
-window.model = model;
+// debug
+(window as any)["model"] = model;
 
 // let selectedCell = null;
 // let cursorCell = null;
