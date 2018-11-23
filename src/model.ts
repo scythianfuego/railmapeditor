@@ -1,35 +1,36 @@
+import { Hex } from "./transform";
+import IRailObject from "./interfaces/IRailObject";
+import IConnection from "./interfaces/IConnection";
+
 const MIN_DISTANCE = 5;
+const distance = (x1: number, y1: number, x2: number, y2: number) =>
+  Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+
+type ConnectionMap = {
+  [index: string]: IConnection;
+};
 
 export default class Model {
-  private store = [];
+  public selectedConnection: IConnection = null;
+  public connections: ConnectionMap = {}; // TODO: remove public access
+
+  private store: IRailObject[] = [];
   private storeIndex = new Map();
-  private connections = {};
-  private selectedConnection = null;
   private blockId = 1;
   private objectId = 1;
 
-  private switches = [];
-  private joins = [];
+  private switches: number[] = [];
+  private joins: number[] = [];
 
   constructor() {}
 
-  distance(x1, y1, x2, y2) {
-    return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-  }
-
-  makeConnection(id, x, y) {
+  makeConnection(id: number, x: number, y: number) {
     const [px, py] = [x, y];
     x |= 0;
     y |= 0;
     const key = `${x}-${y}`;
     if (!this.connections[key]) {
-      this.connections[key] = {
-        x,
-        y,
-        px,
-        py,
-        items: []
-      };
+      this.connections[key] = { x, y, px, py, items: [] };
     } else {
       throw "Unexpected connection";
     }
@@ -39,17 +40,17 @@ export default class Model {
     }
   }
 
-  addToConnection(connection, id) {
+  addToConnection(connection: IConnection, id: number) {
     !connection.items.includes(id) && connection.items.push(id);
   }
 
-  findConnection(x, y) {
+  findConnection(x: number, y: number) {
     return Object.values(this.connections).find(
-      v => this.distance(x, y, v.x, v.y) < MIN_DISTANCE
+      v => distance(x, y, v.x, v.y) < MIN_DISTANCE
     );
   }
 
-  createConnections(obj) {
+  createConnections(obj: IRailObject) {
     const id = obj.meta.id;
     const points = [[obj.sx, obj.sy], [obj.ex, obj.ey]];
 
@@ -63,62 +64,59 @@ export default class Model {
     });
   }
 
-  add(cell, obj) {
+  add(cell: Hex, obj: IRailObject) {
     if (!obj) {
       return;
     }
 
-    obj = Array.isArray(obj) ? obj : [obj];
-    obj.forEach(o => {
-      const { x, y } = cell;
-      const key = `${x},${y}`;
-      const selected = false;
-      const id = this.objectId++;
-      const block = this.blockId++;
-      o.meta = { id, x, y, key, selected, block };
-      this.createConnections(o);
-      this.store.push(o);
-      this.storeIndex.set(id, o);
-    });
+    const { x, y } = cell;
+    const key = `${x},${y}`;
+    const selected = false;
+    const id = this.objectId++;
+    const block = this.blockId++;
+    obj.meta = { id, x, y, key, selected, block };
+    this.createConnections(obj);
+    this.store.push(obj);
+    this.storeIndex.set(id, obj);
   }
 
-  get(id) {
+  get(id: number): IRailObject {
     return this.storeIndex.get(id);
   }
 
-  forEach(fn) {
+  forEach(fn: (i: IRailObject) => void) {
     this.store.forEach(i => fn(i));
   }
 
-  findByRect(sx, sy, ex, ey) {
+  findByRect(sx: number, sy: number, ex: number, ey: number): IRailObject[] {
     const lx = Math.min(sx, ex);
     const rx = Math.max(sx, ex);
     const ly = Math.min(sy, ey);
     const ry = Math.max(sy, ey);
-    const results = [];
-    const inside = (x, a, b) => a < x && x < b;
-    const insideX = x => inside(x, lx, rx);
-    const insideY = y => inside(y, ly, ry);
-    const insideXY = (x, y) => insideX(x) && insideY(y);
+    const results: IRailObject[] = [];
+    const inside = (x: number, a: number, b: number) => a < x && x < b;
+    const insideX = (x: number) => inside(x, lx, rx);
+    const insideY = (y: number) => inside(y, ly, ry);
+    const insideXY = (x: number, y: number) => insideX(x) && insideY(y);
     this.forEach(
       o => insideXY(o.sx, o.sy) && insideXY(o.ex, o.ey) && results.push(o)
     );
     return results;
   }
 
-  findByXY(x, y) {
+  findByXY(x: number, y: number): IRailObject[] {
     const threshold = 10;
-    const results = [];
+    const results: IRailObject[] = [];
     let angle;
 
     const pi2 = 2 * Math.PI;
-    const normalize = angle => ((angle % pi2) + pi2) % pi2;
-    const inside = (x, a, b) => a < x && x < b;
+    const normalize = (angle: number) => ((angle % pi2) + pi2) % pi2;
+    const inside = (x: number, a: number, b: number) => a < x && x < b;
 
     this.forEach(obj => {
       if (obj.radius) {
         angle = Math.atan2(y - obj.y, x - obj.x);
-        const radius = this.distance(x, y, obj.x, obj.y);
+        const radius = distance(x, y, obj.x, obj.y);
         // check if within sector and close to radius
         if (
           inside(normalize(angle), obj.a1, obj.a2) &&
@@ -143,42 +141,44 @@ export default class Model {
   }
 
   deselect() {
-    this.forEach(v => (v.selected = false));
+    this.forEach(v => (v.meta.selected = false));
   }
 
-  select(selection) {
-    selection.forEach(v => (v.selected = true));
+  select(selection: IRailObject[]) {
+    selection.forEach(v => (v.meta.selected = true));
   }
 
   deleteSelected() {
     // remove from index, should use lodash.partition instead
     this.store
-      .filter(i => i.selected)
-      .forEach(v => this.storeIndex.delete(v.id));
+      .filter(i => i.meta.selected)
+      .forEach(v => this.storeIndex.delete(v.meta.id));
 
-    this.store = this.store.filter(i => !i.selected);
+    this.store = this.store.filter(i => !i.meta.selected);
   }
 
-  selectGroup(selection) {
+  selectGroup(selection: any[]) {
     this.select(selection);
-    const selected = this.store.filter(i => i.selected);
-    const deselected = this.store.filter(i => !i.selected);
+    const selected = this.store.filter(i => i.meta.selected);
+    const deselected = this.store.filter(i => !i.meta.selected);
     selected.forEach(s => {
       deselected.forEach(
-        d => s.meta.block === d.meta.block && (d.selected = true)
+        d => s.meta.block === d.meta.block && (d.meta.selected = true)
       );
     });
   }
 
   group() {
     const groupBlockId = this.blockId++;
-    this.store.filter(v => v.selected).map(v => (v.meta.block = groupBlockId));
+    this.store
+      .filter(v => v.meta.selected)
+      .map(v => (v.meta.block = groupBlockId));
     // this.deselect();
   }
 
   ungroup() {
     this.store
-      .filter(v => v.selected)
+      .filter(v => v.meta.selected)
       .map(v => {
         const groupBlockId = this.blockId++;
         v.meta.block = groupBlockId;
@@ -190,13 +190,14 @@ export default class Model {
   // выделено - соединить - кнопки если 2 - соединение или 3-4 стрелка
   // выделено -создать -> найти общий коннекшн для группы id.
   // если стрелка выделена, повторный клик по ней же выделяет ребра
-  findJoinById(id) {
-    return this.joins.find(j => j.left === id || j.right === id);
+  findJoinById(id: number) {
+    // todo: define join obj
+    // return this.joins.find(j => j.left === id || j.right === id);
   }
 
-  findSwitch(id) {
+  findSwitch(id: number) {
     // return this.switches.find(j => j.left === id || j.right === id) ||;
   }
 
-  createSwitch(l1, l2, r1, r2) {}
+  createSwitch(l1: number, l2: number, r1: number, r2: number) {}
 }

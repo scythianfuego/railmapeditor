@@ -4,4 +4,7 @@ export default interface IHintLine {
   action: number;
   show: number;
   on?: number;
+
+  active?: boolean;
+  selected?: boolean;
 }

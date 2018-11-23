@@ -57,6 +57,9 @@ export default class Controls {
   private getTool = () =>
     this.toolset.length ? this.toolset[this.currentTool] : null;
 
+  private shift: boolean = false;
+  private ctrl: boolean = false;
+
   constructor(private model: Model) {
     const mode = A.LINES;
     const hints = this.applyHintsFilter(mode);
@@ -72,18 +75,19 @@ export default class Controls {
     this.runAction(A.LINES);
   }
 
-  applyHintsFilter(mode) {
+  applyHintsFilter(mode: number) {
     const result = defaultHints
       .map(a => ({ ...a })) // copy
-      .filter(i => i.show & mode);
-    const selectedItem = result.find(i => i.on & mode);
+      .filter(i => (i.show & mode) !== 0);
+
+    const selectedItem = result.find(i => (i.on & mode) !== 0);
     selectedItem && (selectedItem.selected = true);
     return result;
   }
 
-  onKeyUp(keyCode) {
-    this.shift = !keyCode === 16;
-    this.ctrl = !keyCode === 17;
+  onKeyUp(keyCode: number) {
+    this.shift = !(keyCode === 16);
+    this.ctrl = !(keyCode === 17);
 
     const state = store.getState();
     const { hints } = state;
@@ -105,15 +109,16 @@ export default class Controls {
     index !== -1 && (hints[index].active = true); // new hints!
   }
 
-  mouseEventToXY(event) {
-    const bounds = event.target.getBoundingClientRect();
+  mouseEventToXY(event: MouseEvent) {
+    // todo: check target!
+    const bounds = (<HTMLCanvasElement>event.target).getBoundingClientRect();
     const x = event.clientX - bounds.left;
     const y = event.clientY - bounds.top;
     return [x, y];
   }
 
-  mouseToHex(event): Hex {
-    const bounds = event.target.getBoundingClientRect();
+  mouseToHex(event: MouseEvent): Hex {
+    const bounds = (<HTMLCanvasElement>event.target).getBoundingClientRect();
     const x = event.clientX - bounds.left;
     const y = event.clientY - bounds.top;
     return ts.pointToHex(x, y);
@@ -222,7 +227,7 @@ export default class Controls {
     }
   }
 
-  runAction(action, index) {
+  runAction(action, index?) {
     const state = store.getState();
     let { selectionMode, blocks } = state;
     // set new mode if action is in modes list

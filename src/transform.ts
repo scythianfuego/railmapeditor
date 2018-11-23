@@ -52,7 +52,7 @@ class Transform {
     return [this.grid, this.gridTools];
   }
 
-  pointToHex(x: number, y: number) {
+  pointToHex(x: number, y: number): Honeycomb.Hex<HexParams> {
     const { wx, wy } = this;
     return this.grid.get(this.gridTools.pointToHex(wx(x), wy(y)));
   }

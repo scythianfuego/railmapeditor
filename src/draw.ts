@@ -1,11 +1,12 @@
-import * as Honeycomb from "honeycomb-grid";
-import store, { copy } from "./store";
-import ts, { Grid } from "./transform";
+import storeInstance, { copy } from "./store";
+import ts, { Grid, Hex } from "./transform";
 import Model from "./model";
-import IState from "./interfaces/IState";
 import IRailObject from "./interfaces/IRailObject";
+import IHintLine from "./interfaces/IHintLine";
+import IState from "./interfaces/IState";
+import { Listener, Store } from "unistore";
 
-const getCorners = hex => {
+const getCorners = (hex: Hex) => {
   const point = hex.toPoint();
   return hex.corners().map(corner => corner.add(point));
 };
@@ -30,11 +31,11 @@ export default class Draw {
       radius: number,
       a1: number,
       a2: number,
-      ccw: boolean
+      ccw: boolean = false
     ) => this.ctx.arc(sx(x), sy(y), scale(radius), a1, a2, ccw),
     circle: (x: number, y: number, radius: number) =>
       this.ctx.arc(sx(x), sy(y), radius, 0, 6.29),
-    fillText: (text: string, x: number, y: number, maxWidth: number) =>
+    fillText: (text: string, x: number, y: number, maxWidth?: number) =>
       this.ctx.fillText(text, sx(x), sy(y), maxWidth),
     fillRect: (x: number, y: number, w: number, h: number) =>
       this.ctx.fillRect(sx(x), sy(y), scale(w), scale(h)),
@@ -61,8 +62,8 @@ export default class Draw {
     this.ctx.translate(0.5, 0.5);
 
     // moveable and zoomable parts of canvas
-
-    store.subscribe(state => {
+    //(state: K, action?: Action<K>) => void;
+    const subscribeListener: Listener<IState> = (state: IState) => {
       copy(state, this, [
         "hints",
         "tool",
@@ -72,10 +73,11 @@ export default class Draw {
         "panX",
         "panY"
       ]);
-
       this.state = state; // todo: refactor out mouse
       this.canvas.style.cursor = state.mouse.pan ? "grabbing" : "pointer";
-    });
+    };
+
+    storeInstance.subscribe(subscribeListener);
   }
 
   getColor(type: number, selected: boolean) {
@@ -118,7 +120,7 @@ export default class Draw {
     this.tool && this.cursorCell && this.object(this.tool(this.cursorCell));
   }
 
-  cell(hex, style: string) {
+  cell(hex: Hex, style: string) {
     if (!hex) {
       return;
     }
@@ -128,7 +130,7 @@ export default class Draw {
 
     this.ctx.beginPath();
     this.screen.moveTo(firstCorner.x, firstCorner.y); // move the "pen" to the first corner
-    otherCorners.forEach(({ x, y }) => this.screen.lineTo(x, y)); // draw lines to the other corners
+    otherCorners.forEach(corner => this.screen.lineTo(corner.x, corner.y)); // draw lines to the other corners
     this.screen.lineTo(firstCorner.x, firstCorner.y); // finish at the first corner
     this.ctx.stroke();
   }
@@ -154,7 +156,7 @@ export default class Draw {
     });
   }
 
-  point(x, y, style, size) {
+  point(x: number, y: number, style: string, size: number) {
     this.ctx.lineWidth = 1;
     this.ctx.fillStyle = style ? style : "cyan";
     this.ctx.beginPath();
@@ -162,7 +164,7 @@ export default class Draw {
     this.ctx.fill();
   }
 
-  arrow(sx, sy, ex, ey) {
+  arrow(sx: number, sy: number, ex: number, ey: number) {
     this.ctx.strokeStyle = "#999";
     this.ctx.lineWidth = 1;
     this.ctx.beginPath();
@@ -177,9 +179,9 @@ export default class Draw {
     this.ctx.stroke();
   }
 
-  arc(obj) {
-    const { x, y, radius, a1, a2, sx, sy, ex, ey, type, selected } = obj;
-    const color = this.getColor(type, selected);
+  arc(obj: IRailObject) {
+    const { x, y, radius, a1, a2, sx, sy, ex, ey, type, meta } = obj;
+    const color = this.getColor(type, meta.selected);
     this.ctx.strokeStyle = color;
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
@@ -188,10 +190,12 @@ export default class Draw {
 
     const midx = x + radius * Math.cos((a1 + a2) / 2);
     const midy = y + radius * Math.sin((a1 + a2) / 2);
-    obj.meta && this.state.blocks && this.text(midx, midy, obj.meta.block);
+    obj.meta &&
+      this.state.blocks &&
+      this.text(midx, midy, obj.meta.block.toString());
   }
 
-  arcPath(obj) {
+  arcPath(obj: IRailObject) {
     const { x, y, radius, a1, a2 } = obj;
     const color = hex2rgba("#FFFFFF4C");
     this.ctx.strokeStyle = color;
@@ -202,7 +206,7 @@ export default class Draw {
     this.ctx.stroke();
   }
 
-  text(x, y, what) {
+  text(x: number, y: number, what: string) {
     this.ctx.font = "10px Arial";
     const w = this.ctx.measureText(what).width;
     const h = 10;
@@ -217,9 +221,9 @@ export default class Draw {
     this.screen.fillText(what, tx, ty);
   }
 
-  line(obj) {
-    const { sx, sy, ex, ey, type, selected } = obj;
-    const color = selected ? "red" : this.getColor(type, selected);
+  line(obj: IRailObject) {
+    const { sx, sy, ex, ey, type, meta } = obj;
+    const color = meta.selected ? "red" : this.getColor(type, meta.selected);
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.strokeStyle = color;
@@ -229,11 +233,13 @@ export default class Draw {
 
     const midx = (sx + ex) * 0.5;
     const midy = (sy + ey) * 0.5;
-    obj.meta && this.state.blocks && this.text(midx, midy, obj.meta.block);
+    obj.meta &&
+      this.state.blocks &&
+      this.text(midx, midy, obj.meta.block.toString());
     // this.point(sx, sy, color);
   }
 
-  linePath(obj) {
+  linePath(obj: IRailObject) {
     const { sx, sy, ex, ey } = obj;
     const color = hex2rgba("#FFFFFF4C");
     this.ctx.lineCap = "round";
@@ -245,13 +251,13 @@ export default class Draw {
     this.ctx.stroke();
   }
 
-  object(obj) {
+  object(obj: IRailObject) {
     this.ctx.save();
     obj.radius ? this.arc(obj) : this.line(obj);
     this.ctx.restore();
   }
 
-  objectPath(obj) {
+  objectPath(obj: IRailObject) {
     this.ctx.save();
     obj.radius ? this.arcPath(obj) : this.linePath(obj);
     this.ctx.restore();
@@ -313,7 +319,7 @@ export default class Draw {
     this.ctx.fillRect(0, y, this.canvas.width, 20);
 
     // this.ctx
-    hints.forEach(h => {
+    hints.forEach((h: IHintLine) => {
       // tag
       this.ctx.font = boldFont;
       metrics = this.ctx.measureText(h.tag);

@@ -1,5 +1,5 @@
-import createStore from "unistore";
-import unistoreDevTools from "unistore";
+import createStore, { Store } from "unistore";
+import unistoreDevTools from "unistore/devtools";
 import IState from "./interfaces/IState";
 
 // let store = createStore({ count: 0 });
@@ -29,7 +29,11 @@ const defaults: IState = {
   model: null
 };
 
-let store = unistoreDevTools(createStore(defaults));
+let storeInstance: Store<IState> = createStore(defaults);
+
+// export default function createStore<K>(state?: K): Store<K>;
+// export default function unistoreDevTools<K>(store: Store<K>): Store<K>;
+let devInstance: Store<IState> = unistoreDevTools(storeInstance);
 
 type FlatObject = {
   [index: string]: any;
@@ -45,4 +49,4 @@ const pick = (object: FlatObject, props: string[]) =>
 export const copy = (from: FlatObject, to: FlatObject, props: string[]) =>
   Object.assign(to, pick(from, props));
 
-export default store;
+export default storeInstance;

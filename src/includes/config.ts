@@ -1,3 +1,5 @@
+import IHints from "../interfaces/IHints";
+
 const actions = {
   SELECT: 1,
   LINES: 2,
@@ -26,7 +28,7 @@ const A = actions;
 // on - what to highlight
 // show/hide - when to show/hide
 // prettier-ignore
-const hints = [
+const hints: IHints = [
   // top level
   { tag: "1", text: "Draw", action: A.LINES, show: A.SELECT },
   { tag: "2", text: "Block", action: A.BLOCK, show: A.SELECT },
@@ -57,7 +59,9 @@ const hints = [
   { tag: "ESC", text: "Back", action: A.SELECT, show: A.OBJECT }
 ];
 
-const keyMap = {
+const keyMap: {
+  [index: string]: number;
+} = {
   "1": 49,
   "2": 50,
   "3": 51,
