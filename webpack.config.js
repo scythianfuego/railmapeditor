@@ -7,7 +7,7 @@ module.exports = {
     path: __dirname + "/dist",
     filename: "[name].js"
   },
-  devtool: "eval-source-map",
+  devtool: "source-map",
   devServer: {
     contentBase: "./src"
   },
@@ -16,16 +16,6 @@ module.exports = {
   },
   module: {
     rules: [
-      {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: "babel-loader",
-          options: {
-            presets: ["@babel/preset-env"]
-          }
-        }
-      },
       {
         test: /\.tsx?$/,
         loader: "awesome-typescript-loader"

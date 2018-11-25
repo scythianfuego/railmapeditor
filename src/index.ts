@@ -1,5 +1,3 @@
-/// <reference path="index.d.ts" />
-
 import ts from "./transform";
 
 import Draw from "./draw";
@@ -12,9 +10,9 @@ canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 
 let model = new Model();
-const [grid, gridTools] = ts.createGrid();
+ts.createGrid();
 
-const draw = new Draw(canvas, grid, model);
+const draw = new Draw(canvas, model);
 const controls = new Controls(model);
 window.addEventListener("resize", e => {
   canvas.width = canvas.clientWidth;

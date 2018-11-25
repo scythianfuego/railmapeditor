@@ -22,7 +22,11 @@ export default class Model {
   private switches: number[] = [];
   private joins: number[] = [];
 
-  constructor() {}
+  public distance: (x1: number, y1: number, x2: number, y2: number) => number;
+
+  constructor() {
+    this.distance = distance;
+  }
 
   makeConnection(id: number, x: number, y: number) {
     const [px, py] = [x, y];

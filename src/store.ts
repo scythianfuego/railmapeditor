@@ -30,9 +30,7 @@ const defaults: IState = {
 };
 
 let storeInstance: Store<IState> = createStore(defaults);
-
-// export default function createStore<K>(state?: K): Store<K>;
-// export default function unistoreDevTools<K>(store: Store<K>): Store<K>;
+// console.log(unistoreDevTools);
 let devInstance: Store<IState> = unistoreDevTools(storeInstance);
 
 type FlatObject = {
@@ -49,4 +47,4 @@ const pick = (object: FlatObject, props: string[]) =>
 export const copy = (from: FlatObject, to: FlatObject, props: string[]) =>
   Object.assign(to, pick(from, props));
 
-export default storeInstance;
+export default devInstance;

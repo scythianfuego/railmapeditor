@@ -98,7 +98,7 @@ export default class Controls {
     }
   }
 
-  onKeyDown(keyCode) {
+  onKeyDown(keyCode: number) {
     this.shift = keyCode === 16;
     this.ctrl = keyCode === 17;
 
@@ -124,9 +124,9 @@ export default class Controls {
     return ts.pointToHex(x, y);
   }
 
-  onMouseDown(e) {
+  onMouseDown(event: MouseEvent) {
     const state = store.getState();
-    const coords = this.mouseEventToXY(e);
+    const coords = this.mouseEventToXY(event);
     const [x, y] = coords;
     const { wx, wy } = ts;
 
@@ -145,33 +145,34 @@ export default class Controls {
       this.model.selectedConnection = hit;
     }
 
-    const down = e.button === 0;
-    const pan = e.button === 1;
+    const down = event.button === 0;
+    const pan = event.button === 1;
     const mouse = { coords, down, pan, selection: coords };
     store.setState({ mouse });
   }
 
-  onMouseUp(e) {
+  onMouseUp(event: MouseEvent) {
     if (this.toolset.length) {
       const selectedCell = this.mouseToHex(event);
       const tool = this.getTool();
       selectedCell && this.model.add(selectedCell, tool(selectedCell));
     }
 
-    const coords = this.mouseEventToXY(e);
-    const mouse = { coords, down: false, pan: false, selection: null };
+    const coords = this.mouseEventToXY(event);
+    const selection: number[] = null;
+    const mouse = { coords, down: false, pan: false, selection };
     store.setState({ mouse });
   }
 
-  onMouseMove(e) {
+  onMouseMove(event: MouseEvent) {
     const state = store.getState();
     const mouse = state.mouse;
-    const coords = this.mouseEventToXY(e);
-    const cursorCell = this.mouseToHex(e);
+    const coords = this.mouseEventToXY(event);
+    const cursorCell = this.mouseToHex(event);
 
     mouse.coords = coords;
-    const panX = mouse.pan ? state.panX + e.movementX : state.panX;
-    const panY = mouse.pan ? state.panY + e.movementY : state.panY;
+    const panX = mouse.pan ? state.panX + event.movementX : state.panX;
+    const panY = mouse.pan ? state.panY + event.movementY : state.panY;
 
     store.setState({ mouse, cursorCell, panX, panY });
 
@@ -180,13 +181,13 @@ export default class Controls {
       this.alterSelection(coords, state.mouse.selection);
   }
 
-  onWheel(e) {
-    e.preventDefault(); // disable page zoom using Ctrl key
+  onWheel(event: WheelEvent) {
+    event.preventDefault(); // disable page zoom using Ctrl key
     const { gridWidth, gridHeight, clamp, rotate, ratioX, ratioY } = ts;
     const state = store.getState();
     const direction = Math.sign(event.deltaY);
 
-    if (e.ctrlKey || state.mode & A.SELECTABLE) {
+    if (event.ctrlKey || state.mode & A.SELECTABLE) {
       const [mouseX, mouseY] = state.mouse.coords;
       const zoomOld = state.zoom;
       const zoom = clamp(zoomOld * (1 + 0.2 * direction), 0.1, 10);
@@ -201,13 +202,13 @@ export default class Controls {
     }
   }
 
-  nextTool(direction) {
+  nextTool(direction: number) {
     const { rotate } = ts;
     this.currentTool += direction;
     this.currentTool = rotate(this.currentTool, 0, this.toolset.length - 1);
   }
 
-  alterSelection(startPoint, endPoint) {
+  alterSelection(startPoint: number[], endPoint: number[]) {
     const state = store.getState();
     // rectangular selection, todo: move to model
     const { wx, wy } = ts;
@@ -227,7 +228,7 @@ export default class Controls {
     }
   }
 
-  runAction(action, index?) {
+  runAction(action: number, index?: number) {
     const state = store.getState();
     let { selectionMode, blocks } = state;
     // set new mode if action is in modes list
