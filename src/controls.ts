@@ -7,6 +7,7 @@ import Model from "./model";
 import IHints from "./interfaces/IHints";
 import IRailObject from "./interfaces/IRailObject";
 import config from "./includes/config";
+
 const objects = new Objects();
 
 // modes

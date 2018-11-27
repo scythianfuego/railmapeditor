@@ -97,37 +97,30 @@ export default class Model {
     const rx = Math.max(sx, ex);
     const ly = Math.min(sy, ey);
     const ry = Math.max(sy, ey);
-    const results: IRailObject[] = [];
     const inside = (x: number, a: number, b: number) => a < x && x < b;
     const insideX = (x: number) => inside(x, lx, rx);
     const insideY = (y: number) => inside(y, ly, ry);
     const insideXY = (x: number, y: number) => insideX(x) && insideY(y);
-    this.forEach(
-      o => insideXY(o.sx, o.sy) && insideXY(o.ex, o.ey) && results.push(o)
-    );
-    return results;
+    return this.store.filter(o => insideXY(o.sx, o.sy) && insideXY(o.ex, o.ey));
   }
 
   findByXY(x: number, y: number): IRailObject[] {
     const threshold = 10;
-    const results: IRailObject[] = [];
     let angle;
 
-    const pi2 = 2 * Math.PI;
-    const normalize = (angle: number) => ((angle % pi2) + pi2) % pi2;
+    const TAU = 2 * Math.PI;
+    const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
     const inside = (x: number, a: number, b: number) => a < x && x < b;
 
-    this.forEach(obj => {
+    return this.store.filter(obj => {
       if (obj.radius) {
-        angle = Math.atan2(y - obj.y, x - obj.x);
+        angle = normalize(Math.atan2(y - obj.y, x - obj.x));
         const radius = distance(x, y, obj.x, obj.y);
         // check if within sector and close to radius
-        if (
-          inside(normalize(angle), obj.a1, obj.a2) &&
+        return (
+          inside(angle, obj.a1, obj.a2) &&
           Math.abs(radius - obj.radius) < threshold
-        ) {
-          results.push(obj);
-        }
+        );
       } else {
         angle = Math.atan2(obj.ey - obj.sy, obj.ex - obj.sx);
         // rotate bounding box and check if the point is inside
@@ -136,12 +129,9 @@ export default class Model {
         const px = (x - obj.sx) * Math.cos(angle);
         const py = (y - obj.sy) * Math.cos(angle) + threshold * 0.5;
 
-        if (inside(px, 0, ex) && inside(py, 0, ey)) {
-          results.push(obj);
-        }
+        return inside(px, 0, ex) && inside(py, 0, ey);
       }
     });
-    return results;
   }
 
   deselect() {

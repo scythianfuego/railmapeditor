@@ -6,6 +6,8 @@ import IHintLine from "./interfaces/IHintLine";
 import IState from "./interfaces/IState";
 import { Listener, Store } from "unistore";
 
+const TAU = 2 * Math.PI;
+
 const getCorners = (hex: Hex) => {
   const point = hex.toPoint();
   return hex.corners().map(corner => corner.add(point));
@@ -34,7 +36,7 @@ export default class Draw {
       ccw: boolean = false
     ) => this.ctx.arc(sx(x), sy(y), scale(radius), a1, a2, ccw),
     circle: (x: number, y: number, radius: number) =>
-      this.ctx.arc(sx(x), sy(y), radius, 0, 6.29),
+      this.ctx.arc(sx(x), sy(y), radius, 0, TAU),
     fillText: (text: string, x: number, y: number, maxWidth?: number) =>
       this.ctx.fillText(text, sx(x), sy(y), maxWidth),
     fillRect: (x: number, y: number, w: number, h: number) =>
@@ -144,12 +146,10 @@ export default class Draw {
     this.ctx.lineWidth = 1;
     this.ctx.fillStyle = "#999";
     this.ctx.font = "7px Arial";
-
     this.screen.strokeRect(-1, -1, gridWidth + 1, gridHeight + 1);
     this.hexgrid.forEach(hex => {
       const corners = getCorners(hex);
       this.ctx.beginPath();
-      2;
       this.screen.moveTo(corners[1].x, corners[1].y); // move the "pen" to the first corner
       [3, 5, 1].forEach(i => this.screen.lineTo(corners[i].x, corners[i].y));
       this.ctx.stroke();
@@ -160,7 +160,7 @@ export default class Draw {
     this.ctx.lineWidth = 1;
     this.ctx.fillStyle = style ? style : "cyan";
     this.ctx.beginPath();
-    this.ctx.arc(x, y, size ? size : 3, 0, 6.29);
+    this.ctx.arc(x, y, size ? size : 3, 0, TAU);
     this.ctx.fill();
   }
 
@@ -180,7 +180,7 @@ export default class Draw {
   }
 
   arc(obj: IRailObject) {
-    const { x, y, radius, a1, a2, sx, sy, ex, ey, type, meta } = obj;
+    const { x, y, radius, a1, a2, type, meta } = obj;
     const color = this.getColor(type, meta && meta.selected);
     this.ctx.strokeStyle = color;
     this.ctx.lineWidth = 2;
@@ -236,7 +236,6 @@ export default class Draw {
     obj.meta &&
       this.state.blocks &&
       this.text(midx, midy, obj.meta.block.toString());
-    // this.point(sx, sy, color);
   }
 
   linePath(obj: IRailObject) {
@@ -292,6 +291,7 @@ export default class Draw {
   selectionFrame() {
     const { mouse } = this.state;
     if (!mouse.down) {
+      // this.point(sx, sy, color);
       return;
     }
     const [sx, sy] = mouse.selection;
