@@ -1,6 +1,6 @@
 import IHints from "../interfaces/IHints";
 
-const actions = {
+const A: { [index: string]: number } = {
   SELECT: 1,
   LINES: 2,
   CURVE: 4,
@@ -15,13 +15,14 @@ const actions = {
   UNGROUP: 2048,
   DELETE: 4096,
   NEXT: 8192,
-  PREV: 16384,
-  TOOLS: this.LINES | this.CURVE | this.SIDEA | this.SIDEB,
-  SELECTABLE: this.SELECT | this.BLOCK | this.SWITCH,
-  SELECT_CONNECTIONS: this.SWITCH,
-  MODES: this.TOOLS | this.SELECT | this.BLOCK | this.OBJECT | this.SWITCH
+  PREV: 16384
 };
-const A = actions;
+A.TOOLS = A.LINES | A.CURVE | A.SIDEA | A.SIDEB;
+A.SELECTABLE = A.SELECT | A.BLOCK | A.SWITCH;
+A.SELECT_CONNECTIONS = A.SWITCH;
+A.MODES = A.TOOLS | A.SELECT | A.BLOCK | A.OBJECT | A.SWITCH;
+
+const actions = A;
 
 // modes
 // action - what to do
