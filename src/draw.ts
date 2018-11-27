@@ -181,7 +181,7 @@ export default class Draw {
 
   arc(obj: IRailObject) {
     const { x, y, radius, a1, a2, sx, sy, ex, ey, type, meta } = obj;
-    const color = this.getColor(type, meta.selected);
+    const color = this.getColor(type, meta && meta.selected);
     this.ctx.strokeStyle = color;
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
@@ -223,7 +223,7 @@ export default class Draw {
 
   line(obj: IRailObject) {
     const { sx, sy, ex, ey, type, meta } = obj;
-    const color = meta.selected ? "red" : this.getColor(type, meta.selected);
+    const color = this.getColor(type, meta && meta.selected);
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
     this.ctx.strokeStyle = color;
@@ -312,8 +312,8 @@ export default class Draw {
     let x = 0;
     let y = this.canvas.height - 20;
     let metrics;
-    const normalFont = "14px  monospace ";
-    const boldFont = "bold 14px  monospace ";
+    const normalFont = "14px monospace";
+    const boldFont = "bold 14px monospace ";
 
     this.ctx.fillStyle = "#303030";
     this.ctx.fillRect(0, y, this.canvas.width, 20);
