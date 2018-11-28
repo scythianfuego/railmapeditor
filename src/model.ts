@@ -1,3 +1,4 @@
+import { createStore } from "unistore";
 import { Hex } from "./transform";
 import IRailObject from "./interfaces/IRailObject";
 import IConnection from "./interfaces/IConnection";
@@ -20,7 +21,7 @@ export default class Model {
   private objectId = 1;
 
   private switches: number[] = [];
-  private joins: number[] = [];
+  private joins: IJoin[] = [];
 
   public distance: (x1: number, y1: number, x2: number, y2: number) => number;
 
@@ -46,6 +47,7 @@ export default class Model {
 
   addToConnection(connection: IConnection, id: number) {
     !connection.items.includes(id) && connection.items.push(id);
+    connection.items.sort();
   }
 
   findConnection(x: number, y: number) {
@@ -186,11 +188,38 @@ export default class Model {
   // если стрелка выделена, повторный клик по ней же выделяет ребра
   findJoinById(id: number) {
     // todo: define join obj
-    // return this.joins.find(j => j.left === id || j.right === id);
+    return this.joins.find(j => j.a === id || j.b === id);
   }
 
   findSwitch(id: number) {
     // return this.switches.find(j => j.left === id || j.right === id) ||;
+  }
+
+  createJoinFromSelection(): boolean {
+    const selection = this.store
+      .filter(v => v.meta.selected)
+      .map(v => v.meta.id)
+      .sort();
+
+    if (selection.length != 2) {
+      return false;
+    }
+
+    // compares sorted arrays
+    // const equal = (a1: number[], a2: number[]) =>
+    // a1.length === a2.length && a1.every((value, index) => value === a2[index]);
+    const includesAll = (needle: number[], haystack: number[]) =>
+      needle.every(v => haystack.includes(v));
+    const connection = Object.values(this.connections).find(v =>
+      includesAll(selection, v.items)
+    );
+    if (!connection) {
+      return false;
+    }
+
+    const join: IJoin = { a: selection[0], b: selection[1] };
+    this.joins.push(join);
+    this.deselect();
   }
 
   createSwitch(l1: number, l2: number, r1: number, r2: number) {}
