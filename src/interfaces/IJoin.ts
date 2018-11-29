@@ -1,4 +1,1 @@
-interface IJoin {
-  a: number;
-  b: number;
-}
+type IJoin = [number, number];

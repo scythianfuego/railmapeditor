@@ -258,6 +258,7 @@ export default class Controls {
     action & A.PREV && this.nextTool(-1);
 
     action & A.JOIN && this.model.createJoinFromSelection();
+    action & A.SWITCH && this.model.createSwitchFromSelection();
 
     const hints = this.applyHintsFilter(mode);
     store.setState({
