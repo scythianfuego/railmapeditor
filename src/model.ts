@@ -64,11 +64,9 @@ export default class Model {
 
     points.forEach(([x, y]) => {
       const connection = this.findConnection(x, y);
-      if (connection) {
-        this.addToConnection(connection, id);
-      } else {
-        this.makeConnection(id, x, y);
-      }
+      connection
+        ? this.addToConnection(connection, id)
+        : this.makeConnection(id, x, y);
     });
   }
 
