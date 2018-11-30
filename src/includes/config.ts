@@ -5,22 +5,24 @@ const A: { [index: string]: number } = {
   LINES: 2,
   CURVE: 4,
   SIDEA: 8,
-  SIDEB: 16,
-  BLOCK: 32,
-  SWITCH: 64,
-  OBJECT: 128,
+  SIDEB: 0x10,
+  BLOCK: 0x20,
+  CONNECT: 0x40,
+  OBJECT: 0x80,
 
   // actions
-  GROUP: 1024,
-  UNGROUP: 2048,
-  DELETE: 4096,
-  NEXT: 8192,
-  PREV: 16384
+  GROUP: 0x400,
+  UNGROUP: 0x800,
+  DELETE: 0x1000,
+  NEXT: 0x2000,
+  PREV: 0x4000,
+  SWITCH: 0x8000,
+  JOIN: 0x10000
 };
 A.TOOLS = A.LINES | A.CURVE | A.SIDEA | A.SIDEB;
-A.SELECTABLE = A.SELECT | A.BLOCK | A.SWITCH;
-A.SELECT_CONNECTIONS = A.SWITCH;
-A.MODES = A.TOOLS | A.SELECT | A.BLOCK | A.OBJECT | A.SWITCH;
+A.SELECTABLE = A.SELECT | A.BLOCK | A.CONNECT;
+A.SELECT_CONNECTIONS = A.CONNECT;
+A.MODES = A.TOOLS | A.SELECT | A.BLOCK | A.OBJECT | A.CONNECT;
 
 const actions = A;
 
@@ -33,7 +35,7 @@ const hints: IHints = [
   // top level
   { tag: "1", text: "Draw", action: A.LINES, show: A.SELECT },
   { tag: "2", text: "Block", action: A.BLOCK, show: A.SELECT },
-  { tag: "3", text: "Switch", action: A.SWITCH, show: A.SELECT },
+  { tag: "3", text: "Switch", action: A.CONNECT, show: A.SELECT },
   { tag: "4", text: "Objects", action: A.OBJECT, show: A.SELECT },
   { tag: "Z", text: "Delete", action: A.DELETE, show: A.SELECT },
   // drawing
@@ -50,11 +52,11 @@ const hints: IHints = [
   { tag: "X", text: "Unroup", action: A.UNGROUP, show: A.BLOCK },
 
   // switch
-  { tag: "ESC", text: "Back", action: A.SELECT, show: A.SWITCH },
-  { tag: "Z", text: "Create switch", action: null, show: A.SWITCH },
+  { tag: "ESC", text: "Back", action: A.SELECT, show: A.CONNECT },
+  { tag: "Z", text: "Create switch", action: A.SWITCH, show: A.CONNECT },
   // todo: find common connection for selection
   // onclick select switch components - with alteration
-  { tag: "Z", text: "Connect", action: null, show: A.SWITCH },
+  { tag: "X", text: "Connect", action: A.JOIN, show: A.CONNECT },
 
   // object
   { tag: "ESC", text: "Back", action: A.SELECT, show: A.OBJECT }

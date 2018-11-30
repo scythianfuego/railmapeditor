@@ -82,7 +82,7 @@ export default class Draw {
     storeInstance.subscribe(subscribeListener);
   }
 
-  getColor(type: number, selected: boolean) {
+  private getColor(type: number, selected: boolean) {
     if (this.selectionMode) {
       return selected ? "red" : "#ccc";
     }
@@ -101,12 +101,12 @@ export default class Draw {
     return "#ffa834";
   }
 
-  clear() {
+  private clear() {
     this.ctx.fillStyle = "#0f0605";
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
-  all() {
+  public all() {
     this.clear();
     this.grid();
     !this.selectionMode && this.cell(this.cursorCell, "#999");
@@ -118,11 +118,11 @@ export default class Draw {
     this.helpline();
   }
 
-  cursor() {
+  private cursor() {
     this.tool && this.cursorCell && this.object(this.tool(this.cursorCell));
   }
 
-  cell(hex: Hex, style: string) {
+  private cell(hex: Hex, style: string) {
     if (!hex) {
       return;
     }
@@ -137,7 +137,7 @@ export default class Draw {
     this.ctx.stroke();
   }
 
-  grid() {
+  private grid() {
     const { gridWidth, gridHeight } = ts;
 
     this.ctx.fillStyle = "#1e0b09";
@@ -156,7 +156,7 @@ export default class Draw {
     });
   }
 
-  point(x: number, y: number, style: string, size: number) {
+  private point(x: number, y: number, style: string, size: number) {
     this.ctx.lineWidth = 1;
     this.ctx.fillStyle = style ? style : "cyan";
     this.ctx.beginPath();
@@ -164,7 +164,7 @@ export default class Draw {
     this.ctx.fill();
   }
 
-  arrow(sx: number, sy: number, ex: number, ey: number) {
+  private arrow(sx: number, sy: number, ex: number, ey: number) {
     this.ctx.strokeStyle = "#999";
     this.ctx.lineWidth = 1;
     this.ctx.beginPath();
@@ -179,7 +179,7 @@ export default class Draw {
     this.ctx.stroke();
   }
 
-  arc(obj: IRailObject) {
+  private arc(obj: IRailObject) {
     const { x, y, radius, a1, a2, type, meta } = obj;
     const color = this.getColor(type, meta && meta.selected);
     this.ctx.strokeStyle = color;
@@ -195,9 +195,9 @@ export default class Draw {
       this.text(midx, midy, obj.meta.block.toString());
   }
 
-  arcPath(obj: IRailObject) {
+  private arcPath(obj: IRailObject, color?: string) {
     const { x, y, radius, a1, a2 } = obj;
-    const color = hex2rgba("#FFFFFF4C");
+    color = color || hex2rgba("#FFFFFF4C");
     this.ctx.strokeStyle = color;
     this.ctx.lineCap = "round";
     this.ctx.lineWidth = 12;
@@ -206,7 +206,7 @@ export default class Draw {
     this.ctx.stroke();
   }
 
-  text(x: number, y: number, what: string) {
+  private text(x: number, y: number, what: string) {
     this.ctx.font = "10px Arial";
     const w = this.ctx.measureText(what).width;
     const h = 10;
@@ -221,7 +221,7 @@ export default class Draw {
     this.screen.fillText(what, tx, ty);
   }
 
-  line(obj: IRailObject) {
+  private line(obj: IRailObject) {
     const { sx, sy, ex, ey, type, meta } = obj;
     const color = this.getColor(type, meta && meta.selected);
     this.ctx.lineWidth = 2;
@@ -238,9 +238,9 @@ export default class Draw {
       this.text(midx, midy, obj.meta.block.toString());
   }
 
-  linePath(obj: IRailObject) {
+  private linePath(obj: IRailObject, color?: string) {
     const { sx, sy, ex, ey } = obj;
-    const color = hex2rgba("#FFFFFF4C");
+    color = color || hex2rgba("#FFFFFF4C");
     this.ctx.lineCap = "round";
     this.ctx.lineWidth = 12;
     this.ctx.beginPath();
@@ -250,19 +250,19 @@ export default class Draw {
     this.ctx.stroke();
   }
 
-  object(obj: IRailObject) {
+  private object(obj: IRailObject) {
     this.ctx.save();
     obj.radius ? this.arc(obj) : this.line(obj);
     this.ctx.restore();
   }
 
-  objectPath(obj: IRailObject) {
+  private objectPath(obj: IRailObject, color?: string) {
     this.ctx.save();
-    obj.radius ? this.arcPath(obj) : this.linePath(obj);
+    obj.radius ? this.arcPath(obj, color) : this.linePath(obj, color);
     this.ctx.restore();
   }
 
-  connections() {
+  private connections() {
     const c = this.model.connections;
     Object.values(c).forEach(v => {
       const { px, py, items } = v;
@@ -286,9 +286,16 @@ export default class Draw {
       this.screen.circle(px, py, radius);
       this.ctx.fill();
     });
+
+    this.model.switches.forEach(v => {
+      this.objectPath(this.model.get(v.mainA), hex2rgba("#FF00004C"));
+      this.objectPath(this.model.get(v.mainB), hex2rgba("#FF00004C"));
+      this.objectPath(this.model.get(v.secondaryA), hex2rgba("#0099004C"));
+      this.objectPath(this.model.get(v.secondaryB), hex2rgba("#0099004C"));
+    });
   }
 
-  selectionFrame() {
+  private selectionFrame() {
     const { mouse } = this.state;
     if (!mouse.down) {
       // this.point(sx, sy, color);
@@ -303,7 +310,7 @@ export default class Draw {
     this.ctx.setLineDash([]);
   }
 
-  helpline() {
+  private helpline() {
     const hints = this.hints;
     if (!hints) {
       return;

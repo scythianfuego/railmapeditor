@@ -1,0 +1,1 @@
+type IJoin = [number, number];

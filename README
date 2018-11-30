@@ -1,3 +1,3 @@
-This is a hex map editor WIP
+This is a hex map editor with questionable coding style
 
 `npm i && npm run start`

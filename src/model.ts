@@ -1,10 +1,14 @@
 import { Hex } from "./transform";
 import IRailObject from "./interfaces/IRailObject";
 import IConnection from "./interfaces/IConnection";
+import ISwitch from "./interfaces/ISwitch";
 
 const MIN_DISTANCE = 5;
 const distance = (x1: number, y1: number, x2: number, y2: number) =>
   Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+
+const includesAll = (needle: number[], haystack: number[]) =>
+  needle.every(v => haystack.includes(v));
 
 type ConnectionMap = {
   [index: string]: IConnection;
@@ -13,14 +17,13 @@ type ConnectionMap = {
 export default class Model {
   public selectedConnection: IConnection = null;
   public connections: ConnectionMap = {}; // TODO: remove public access
+  public switches: ISwitch[] = [];
+  public joins: IJoin[] = [];
 
   private store: IRailObject[] = [];
   private storeIndex = new Map();
   private blockId = 1;
   private objectId = 1;
-
-  private switches: number[] = [];
-  private joins: number[] = [];
 
   public distance: (x1: number, y1: number, x2: number, y2: number) => number;
 
@@ -46,6 +49,7 @@ export default class Model {
 
   addToConnection(connection: IConnection, id: number) {
     !connection.items.includes(id) && connection.items.push(id);
+    connection.items.sort();
   }
 
   findConnection(x: number, y: number) {
@@ -184,12 +188,50 @@ export default class Model {
   // если стрелка выделена, повторный клик по ней же выделяет ребра
   findJoinById(id: number) {
     // todo: define join obj
-    // return this.joins.find(j => j.left === id || j.right === id);
+    return this.joins.find(j => j[0] === id || j[0] === id);
   }
 
   findSwitch(id: number) {
     // return this.switches.find(j => j.left === id || j.right === id) ||;
   }
 
-  createSwitch(l1: number, l2: number, r1: number, r2: number) {}
+  getSelectedIds(): number[] {
+    return this.store
+      .filter(v => v.meta.selected)
+      .map(v => v.meta.id)
+      .sort();
+  }
+
+  checkAdjacent(ids: number[]) {
+    return !!Object.values(this.connections).find(v =>
+      includesAll(ids, v.items)
+    );
+  }
+
+  createJoinFromSelection(): boolean {
+    const selection = this.getSelectedIds();
+    if (selection.length == 2 && this.checkAdjacent(selection)) {
+      const [a, b] = selection;
+      this.joins.push([a, b]);
+      this.deselect();
+      return true;
+    }
+
+    return false;
+  }
+
+  createSwitchFromSelection() {
+    const selection = this.getSelectedIds();
+    if ([3, 4].includes(selection.length) && this.checkAdjacent(selection)) {
+      const sw: ISwitch = {
+        mainA: selection[0],
+        secondaryA: selection[1],
+        mainB: selection[2],
+        secondaryB: selection[3] || null
+      };
+      this.switches.push(sw);
+      this.deselect();
+      return true;
+    }
+  }
 }
