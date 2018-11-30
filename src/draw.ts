@@ -42,7 +42,23 @@ export default class Draw {
     fillRect: (x: number, y: number, w: number, h: number) =>
       this.ctx.fillRect(sx(x), sy(y), scale(w), scale(h)),
     strokeRect: (x: number, y: number, w: number, h: number) =>
-      this.ctx.strokeRect(sx(x), sy(y), scale(w), scale(h))
+      this.ctx.strokeRect(sx(x), sy(y), scale(w), scale(h)),
+    roundRect: (x: number, y: number, w: number, h: number, r: number) => {
+      r = w < r * 2 ? w * 0.5 : r;
+      r = h < r * 2 ? h * 0.5 : r;
+      // r = scale(r);
+      // x = sx(x);
+      // y = sy(y);
+      // w = scale(w);
+      // h = scale(h);
+      this.ctx.beginPath();
+      this.ctx.moveTo(x + r, y);
+      this.ctx.arcTo(x + w, y, x + w, y + h, r);
+      this.ctx.arcTo(x + w, y + h, x, y + h, r);
+      this.ctx.arcTo(x, y + h, x, y, r);
+      this.ctx.arcTo(x, y, x + w, y, r);
+      this.ctx.closePath();
+    }
   };
 
   // state variables, refactor
@@ -210,15 +226,19 @@ export default class Draw {
     this.ctx.font = "10px Arial";
     const w = this.ctx.measureText(what).width;
     const h = 10;
-    const tx = x - w * 0.5;
-    const ty = y + h * 0.25;
+    const tx = sx(x) - w * 0.5;
+    const ty = sy(y) + h * 0.25;
+
     this.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
     this.ctx.beginPath();
-    this.screen.circle(x, y, 10);
+    // this.screen.circle(x, y, 10);
+    this.screen.roundRect(tx - w * 0.5, ty - h * 1.5, w, h * 2, 5);
     this.ctx.fill();
 
     this.ctx.fillStyle = "#fff";
-    this.screen.fillText(what, tx, ty);
+    this.ctx.fillText(what, tx, ty);
+
+    // this.ctx.fillRect( tx, ty);
   }
 
   private line(obj: IRailObject) {
@@ -262,6 +282,12 @@ export default class Draw {
     this.ctx.restore();
   }
 
+  private pathLabel(path: IRailObject, what: string) {
+    const x = 0.5 * (path.sx + path.ex);
+    const y = 0.5 * (path.sy + path.ey);
+    this.text(x, y, what);
+  }
+
   private connections() {
     const c = this.model.connections;
     Object.values(c).forEach(v => {
@@ -288,11 +314,22 @@ export default class Draw {
     });
 
     this.model.switches.forEach(v => {
-      this.objectPath(this.model.get(v.mainA), hex2rgba("#FF00004C"));
-      this.objectPath(this.model.get(v.mainB), hex2rgba("#FF00004C"));
-      this.objectPath(this.model.get(v.secondaryA), hex2rgba("#0099004C"));
-      this.objectPath(this.model.get(v.secondaryB), hex2rgba("#0099004C"));
+      let path;
+      path = this.model.get(v.mainA);
+      path && this.objectPath(path, hex2rgba("#0099004C"));
+      path && this.pathLabel(path, "1A - Main Left");
+      path = this.model.get(v.mainB);
+      path && this.objectPath(path, hex2rgba("#0099004C"));
+      path && this.pathLabel(path, "1B");
+      path = this.model.get(v.secondaryA);
+      path && this.objectPath(path, hex2rgba("#FF00004C"));
+      path && this.pathLabel(path, "2A");
+      path = this.model.get(v.secondaryB);
+      path && this.objectPath(path, hex2rgba("#FF00004C"));
+      path && this.pathLabel(path, "2B");
     });
+
+    this.model.joins.forEach(v => {});
   }
 
   private selectionFrame() {
