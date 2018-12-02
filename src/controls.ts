@@ -87,8 +87,8 @@ export default class Controls {
   }
 
   onKeyUp(keyCode: number) {
-    this.shift = !(keyCode === 16);
-    this.ctrl = !(keyCode === 17);
+    keyCode === 16 && (this.shift = false);
+    keyCode === 17 && (this.ctrl = false);
 
     const state = store.getState();
     const { hints } = state;
@@ -100,8 +100,8 @@ export default class Controls {
   }
 
   onKeyDown(keyCode: number) {
-    this.shift = keyCode === 16;
-    this.ctrl = keyCode === 17;
+    keyCode === 16 && (this.shift = true);
+    keyCode === 17 && (this.ctrl = true);
 
     const state = store.getState();
     const { mode, hints } = state;
