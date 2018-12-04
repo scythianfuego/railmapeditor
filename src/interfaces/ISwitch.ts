@@ -1,6 +1,3 @@
-export default interface ISwitch {
-  mainA: number;
-  secondaryA: number;
-  mainB: number;
-  secondaryB: number;
-}
+// type ISwitch = [number, number, number, number];
+type ISwitch = number[];
+export default ISwitch;

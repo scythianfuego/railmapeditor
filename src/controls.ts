@@ -260,6 +260,12 @@ export default class Controls {
     action & A.JOIN && this.model.createJoinFromSelection();
     action & A.SWITCH && this.model.createSwitchFromSelection();
 
+    // define const
+    action & A.SWITCH_AP && this.model.setSwitchSegmentType(0);
+    action & A.SWITCH_AS && this.model.setSwitchSegmentType(1);
+    action & A.SWITCH_BP && this.model.setSwitchSegmentType(2);
+    action & A.SWITCH_BS && this.model.setSwitchSegmentType(3);
+
     const hints = this.applyHintsFilter(mode);
     store.setState({
       tool: this.getTool(),

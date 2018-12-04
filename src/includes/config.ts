@@ -17,7 +17,12 @@ const A: { [index: string]: number } = {
   NEXT: 0x2000,
   PREV: 0x4000,
   SWITCH: 0x8000,
-  JOIN: 0x10000
+  JOIN: 0x10000,
+
+  SWITCH_AP: 0x20000,
+  SWITCH_AS: 0x40000,
+  SWITCH_BP: 0x80000,
+  SWITCH_BS: 0x100000
 };
 A.TOOLS = A.LINES | A.CURVE | A.SIDEA | A.SIDEB;
 A.SELECTABLE = A.SELECT | A.BLOCK | A.CONNECT;
@@ -54,6 +59,11 @@ const hints: IHints = [
   // switch
   { tag: "ESC", text: "Back", action: A.SELECT, show: A.CONNECT },
   { tag: "Z", text: "Create switch", action: A.SWITCH, show: A.CONNECT },
+
+  { tag: "1", text: "AP", action: A.SWITCH_AP, show: A.CONNECT },
+  { tag: "2", text: "AS", action: A.SWITCH_AS, show: A.CONNECT },
+  { tag: "3", text: "BP", action: A.SWITCH_BP, show: A.CONNECT },
+  { tag: "4", text: "BS", action: A.SWITCH_BS, show: A.CONNECT },
   // todo: find common connection for selection
   // onclick select switch components - with alteration
   { tag: "X", text: "Connect", action: A.JOIN, show: A.CONNECT },

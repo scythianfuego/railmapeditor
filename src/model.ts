@@ -192,7 +192,7 @@ export default class Model {
   }
 
   findSwitch(id: number) {
-    // return this.switches.find(j => j.left === id || j.right === id) ||;
+    return this.switches.find(v => v.includes(id));
   }
 
   getSelectedIds(): number[] {
@@ -223,15 +223,34 @@ export default class Model {
   createSwitchFromSelection() {
     const selection = this.getSelectedIds();
     if ([3, 4].includes(selection.length) && this.checkAdjacent(selection)) {
-      const sw: ISwitch = {
-        mainA: selection[0],
-        secondaryA: selection[1],
-        mainB: selection[2],
-        secondaryB: selection[3] || null
-      };
+      let sw: ISwitch = <ISwitch>[0, 0, 0, 0].map((v, i) => selection[i] || 0);
       this.switches.push(sw);
       this.deselect();
       return true;
+    }
+  }
+
+  switchToObject(sw: ISwitch) {
+    return {
+      AP: sw[0],
+      AS: sw[1],
+      BP: sw[2],
+      BS: sw[3]
+    };
+  }
+
+  setSwitchSegmentType(newType: number) {
+    if (newType < 0 || newType > 3) {
+      throw new Error("Invalid switch segment type");
+    }
+
+    const selection = this.getSelectedIds();
+    if (selection.length === 1) {
+      const sw = this.findSwitch(selection[0]);
+      const oldType = sw.indexOf(selection[0]);
+      const tmp = sw[newType];
+      sw[newType] = sw[oldType];
+      sw[oldType] = tmp;
     }
   }
 }

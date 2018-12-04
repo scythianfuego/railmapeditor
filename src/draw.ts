@@ -127,8 +127,8 @@ export default class Draw {
     this.grid();
     !this.selectionMode && this.cell(this.cursorCell, "#999");
 
-    this.model.forEach((obj: IRailObject) => this.object(obj));
     this.connections();
+    this.model.forEach((obj: IRailObject) => this.object(obj));
     this.cursor();
     this.selectionFrame();
     this.helpline();
@@ -313,23 +313,31 @@ export default class Draw {
       this.ctx.fill();
     });
 
-    this.model.switches.forEach(v => {
-      let path;
-      path = this.model.get(v.mainA);
-      path && this.objectPath(path, hex2rgba("#0099004C"));
-      path && this.pathLabel(path, "1A - Main Left");
-      path = this.model.get(v.mainB);
-      path && this.objectPath(path, hex2rgba("#0099004C"));
-      path && this.pathLabel(path, "1B");
-      path = this.model.get(v.secondaryA);
-      path && this.objectPath(path, hex2rgba("#FF00004C"));
-      path && this.pathLabel(path, "2A");
-      path = this.model.get(v.secondaryB);
-      path && this.objectPath(path, hex2rgba("#FF00004C"));
-      path && this.pathLabel(path, "2B");
-    });
+    this.model.switches
+      .map(v => this.model.switchToObject(v))
+      .forEach(v => {
+        let path;
+        path = this.model.get(v.AP);
+        path && this.objectPath(path, hex2rgba("#0099004C"));
+        path && this.pathLabel(path, "AP");
+        path = this.model.get(v.AS);
+        path && this.objectPath(path, hex2rgba("#FF00004C"));
+        path && this.pathLabel(path, "AS");
+        path = this.model.get(v.BP);
+        path && this.objectPath(path, hex2rgba("#0099004C"));
+        path && this.pathLabel(path, "BP");
+        path = this.model.get(v.BS);
+        path && this.objectPath(path, hex2rgba("#FF00004C"));
+        path && this.pathLabel(path, "BS");
+      });
 
-    this.model.joins.forEach(v => {});
+    this.model.joins.forEach(v => {
+      let path;
+      path = this.model.get(v[0]);
+      path && this.objectPath(path, hex2rgba("#9999994C"));
+      path = this.model.get(v[1]);
+      path && this.objectPath(path, hex2rgba("#9999994C"));
+    });
   }
 
   private selectionFrame() {
