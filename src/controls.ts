@@ -105,7 +105,7 @@ export default class Controls {
     const state = store.getState();
     const { mode, hints } = state;
     const key = Object.entries(config.keyMap).find(([k, v]) => v === keyCode);
-    this.active = key[0] || "";
+    this.active = (key && key[0]) || "";
     const index = hints.findIndex(i => config.keyMap[i.tag] === keyCode);
     index !== -1 && (hints[index].active = true); // new hints!
     index !== -1 && this.runAction(hints[index].action, index);
@@ -154,7 +154,8 @@ export default class Controls {
   }
 
   onMouseUp(event: MouseEvent) {
-    if (this.toolset.length) {
+    const { pan } = store.getState().mouse;
+    if (this.toolset.length && !pan) {
       const selectedCell = this.mouseToHex(event);
       const tool = this.getTool();
       selectedCell && this.model.add(selectedCell, tool(selectedCell));

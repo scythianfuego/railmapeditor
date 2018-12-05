@@ -155,9 +155,9 @@ export default class Model {
         angle = Math.atan2(obj.ey - obj.sy, obj.ex - obj.sx);
         // rotate bounding box and check if the point is inside
         const ex = (obj.ex - obj.sx) * Math.cos(angle);
-        const ey = (obj.ey - obj.sy) * Math.cos(angle) + threshold;
+        const ey = (obj.ey - obj.sy) * Math.sin(angle) + threshold;
         const px = (x - obj.sx) * Math.cos(angle);
-        const py = (y - obj.sy) * Math.cos(angle) + threshold * 0.5;
+        const py = (y - obj.sy) * Math.sin(angle) + threshold * 0.5;
 
         return inside(px, 0, ex) && inside(py, 0, ey);
       }
