@@ -2,6 +2,7 @@ import { Hex } from "./transform";
 import IRailObject from "./interfaces/IRailObject";
 import IConnection from "./interfaces/IConnection";
 import ISwitch from "./interfaces/ISwitch";
+import LZString from "lz-string";
 
 const MIN_DISTANCE = 5;
 const distance = (x1: number, y1: number, x2: number, y2: number) =>
@@ -29,6 +30,33 @@ export default class Model {
 
   constructor() {
     this.distance = distance;
+  }
+
+  serialize() {
+    return LZString.compressToUTF16(
+      JSON.stringify({
+        store: this.store,
+        blockId: this.blockId,
+        objectId: this.objectId,
+        connections: this.connections,
+        switches: this.switches,
+        joins: this.joins
+      })
+    );
+  }
+
+  unserialize(data: string) {
+    const obj = JSON.parse(LZString.decompressFromUTF16(data));
+    this.store = obj.store;
+    this.blockId = obj.blockId;
+    this.objectId = obj.objectId;
+    this.connections = obj.connections;
+    this.switches = obj.switches;
+    this.joins = obj.joins;
+
+    //reindex
+    this.storeIndex = new Map();
+    this.store.forEach(v => this.storeIndex.set(v.meta.id, v));
   }
 
   makeConnection(id: number, x: number, y: number) {
