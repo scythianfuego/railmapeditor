@@ -60,6 +60,7 @@ export default class Controls {
 
   private shift: boolean = false;
   private ctrl: boolean = false;
+  private active: string = "";
 
   constructor(private model: Model) {
     const mode = A.LINES;
@@ -83,6 +84,8 @@ export default class Controls {
 
     const selectedItem = result.find(i => (i.on & mode) !== 0);
     selectedItem && (selectedItem.selected = true);
+    const activeItem = result.find(i => i.tag === this.active);
+    activeItem && (activeItem.active = true);
     return result;
   }
 
@@ -92,11 +95,7 @@ export default class Controls {
 
     const state = store.getState();
     const { hints } = state;
-    const index = hints.findIndex(i => config.keyMap[i.tag] === keyCode);
-    if (index !== -1) {
-      hints[index].active = false;
-      store.setState({ hints });
-    }
+    hints.forEach(v => (v.active = false));
   }
 
   onKeyDown(keyCode: number) {
@@ -105,9 +104,11 @@ export default class Controls {
 
     const state = store.getState();
     const { mode, hints } = state;
+    const key = Object.entries(config.keyMap).find(([k, v]) => v === keyCode);
+    this.active = key[0] || "";
     const index = hints.findIndex(i => config.keyMap[i.tag] === keyCode);
-    index !== -1 && this.runAction(hints[index].action, index);
     index !== -1 && (hints[index].active = true); // new hints!
+    index !== -1 && this.runAction(hints[index].action, index);
   }
 
   mouseEventToXY(event: MouseEvent) {
@@ -265,6 +266,12 @@ export default class Controls {
     action & A.SWITCH_AS && this.model.setSwitchSegmentType(1);
     action & A.SWITCH_BP && this.model.setSwitchSegmentType(2);
     action & A.SWITCH_BS && this.model.setSwitchSegmentType(3);
+
+    action & A.SAVE &&
+      window.localStorage.setItem("savedata0", this.model.serialize());
+
+    action & A.LOAD &&
+      this.model.unserialize(localStorage.getItem("savedata0"));
 
     const hints = this.applyHintsFilter(mode);
     store.setState({

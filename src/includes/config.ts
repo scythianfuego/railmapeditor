@@ -22,7 +22,9 @@ const A: { [index: string]: number } = {
   SWITCH_AP: 0x20000,
   SWITCH_AS: 0x40000,
   SWITCH_BP: 0x80000,
-  SWITCH_BS: 0x100000
+  SWITCH_BS: 0x100000,
+  SAVE: 0x200000,
+  LOAD: 0x400000
 };
 A.TOOLS = A.LINES | A.CURVE | A.SIDEA | A.SIDEB;
 A.SELECTABLE = A.SELECT | A.BLOCK | A.CONNECT;
@@ -42,6 +44,9 @@ const hints: IHints = [
   { tag: "2", text: "Block", action: A.BLOCK, show: A.SELECT },
   { tag: "3", text: "Switch", action: A.CONNECT, show: A.SELECT },
   { tag: "4", text: "Objects", action: A.OBJECT, show: A.SELECT },
+  { tag: "8", text: "Quicksave", action: A.SAVE, show: A.SELECT },
+  { tag: "9", text: "Quickload", action: A.LOAD, show: A.SELECT },
+  { tag: "0", text: "Export", action: null, show: A.SELECT },
   { tag: "Z", text: "Delete", action: A.DELETE, show: A.SELECT },
   // drawing
   { tag: "ESC", text: "Back", action: A.SELECT, show: A.TOOLS },
@@ -82,6 +87,8 @@ const keyMap: {
   "5": 53,
   "6": 54,
   "7": 55,
+  "8": 56,
+  "9": 57,
   Z: 90,
   X: 88,
   ESC: 27
