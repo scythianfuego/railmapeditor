@@ -123,6 +123,7 @@ export default class Model {
   }
 
   findByRect(sx: number, sy: number, ex: number, ey: number): IRailObject[] {
+    // check if endpoints are within rectangle
     const lx = Math.min(sx, ex);
     const rx = Math.max(sx, ex);
     const ly = Math.min(sy, ey);
@@ -136,32 +137,30 @@ export default class Model {
 
   findByXY(x: number, y: number): IRailObject[] {
     const threshold = 10;
-    let angle;
-
     const TAU = 2 * Math.PI;
     const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
     const inside = (x: number, a: number, b: number) => a < x && x < b;
 
-    return this.store.filter(obj => {
-      if (obj.radius) {
-        angle = normalize(Math.atan2(y - obj.y, x - obj.x));
-        const radius = distance(x, y, obj.x, obj.y);
-        // check if within sector and close to radius
-        return (
-          inside(angle, obj.a1, obj.a2) &&
-          Math.abs(radius - obj.radius) < threshold
-        );
-      } else {
-        angle = Math.atan2(obj.ey - obj.sy, obj.ex - obj.sx);
-        // rotate bounding box and check if the point is inside
-        const ex = (obj.ex - obj.sx) * Math.cos(angle);
-        const ey = (obj.ey - obj.sy) * Math.sin(angle) + threshold;
-        const px = (x - obj.sx) * Math.cos(angle);
-        const py = (y - obj.sy) * Math.sin(angle) + threshold * 0.5;
+    const pointInArc = (x: number, y: number, obj: IRailObject) => {
+      // check if within sector and close to radius
+      const angle = normalize(Math.atan2(y - obj.y, x - obj.x));
+      const radius = distance(x, y, obj.x, obj.y);
+      const withinAngle = inside(angle, obj.a1, obj.a2);
+      const closeToRadius = Math.abs(radius - obj.radius) < threshold;
+      return withinAngle && closeToRadius;
+    };
 
-        return inside(px, 0, ex) && inside(py, 0, ey);
-      }
-    });
+    const pointInLine = (x: number, y: number, obj: IRailObject) => {
+      // check if distance to endpoints matches segment length
+      const ab = distance(obj.ex, obj.ey, x, y);
+      const bc = distance(obj.sx, obj.sy, x, y);
+      const ac = distance(obj.sx, obj.sy, obj.ex, obj.ey);
+      return Math.abs(ab + bc - ac) < threshold;
+    };
+
+    return this.store.filter(obj =>
+      obj.radius ? pointInArc(x, y, obj) : pointInLine(x, y, obj)
+    );
   }
 
   deselect() {
