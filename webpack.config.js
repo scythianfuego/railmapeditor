@@ -9,7 +9,8 @@ module.exports = {
   },
   devtool: "source-map",
   devServer: {
-    contentBase: "./src"
+    contentBase: "./src/html",
+    watchContentBase: true
   },
   resolve: {
     extensions: [".ts", ".js"]

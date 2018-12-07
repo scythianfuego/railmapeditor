@@ -67,13 +67,14 @@ export default class Controls {
     const hints = this.applyHintsFilter(mode);
     store.setState({ hints });
 
-    window.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
-    window.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
-    window.addEventListener("contextmenu", event => event.preventDefault());
-    window.addEventListener("mousemove", event => this.onMouseMove(event));
-    window.addEventListener("mousedown", event => this.onMouseDown(event));
-    window.addEventListener("mouseup", event => this.onMouseUp(event));
-    window.addEventListener("wheel", event => this.onWheel(event));
+    const canvas = document.querySelector("canvas");
+    canvas.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
+    canvas.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
+    canvas.addEventListener("contextmenu", event => event.preventDefault());
+    canvas.addEventListener("mousemove", event => this.onMouseMove(event));
+    canvas.addEventListener("mousedown", event => this.onMouseDown(event));
+    canvas.addEventListener("mouseup", event => this.onMouseUp(event));
+    canvas.addEventListener("wheel", event => this.onWheel(event));
     this.runAction(A.LINES);
   }
 

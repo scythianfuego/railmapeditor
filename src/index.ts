@@ -4,6 +4,7 @@ import Draw from "./draw";
 import Model from "./model";
 import Animate from "./animate";
 import Controls from "./controls";
+import PropertyEditor from "./properties";
 
 const canvas = document.querySelector("canvas");
 canvas.width = canvas.clientWidth;
@@ -24,6 +25,9 @@ animate.start();
 
 // debug
 (window as any)["model"] = model;
+
+let pe = new PropertyEditor();
+pe.create("");
 
 // let selectedCell = null;
 // let cursorCell = null;
