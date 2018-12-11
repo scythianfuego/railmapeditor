@@ -1,4 +1,6 @@
-interface IProperty {
+import css from "raw-loader!./propertyEditor.css";
+
+export interface IProperty {
   label: string;
   type: "label" | "text" | "select" | "boolean";
   id?: string;
@@ -6,46 +8,55 @@ interface IProperty {
   options?: string[];
 }
 
-// prettier-ignore
-const defaults: IProperty[] = [
-  { label:"Layout", type:"label" },
-  { label:"Width", type:"text", id:"width", value: 250},
-  { label:"Height", type:"text", id:"height", value: 0},
-  { label:"Data loading", type:"label" },
-  { label:"Data url", type:"text", id:"url", value:"https://webix.com/data"},
-  { label:"Type", type:"select", options:["json","xml","csv"], id:"type", value: 'xml'},
-  { label:"Position", type:"select", options:["1", "2", "3"], id:"position"},
-  { label:"Color", type:"text", options: [], id:"color"},
-  { label:"Color", type:"boolean", value: false, id:"color"},
-  { label:"Use JSONP", type:"text", id:"jsonp"}
-];
-
 type KeyValue = {
   [index: string]: any;
 };
 
-export default class PropertyEditor {
+export default class PropertyEditor extends HTMLElement {
   // private data:
+  public render: any;
+  private _data: IProperty[];
 
-  constructor() {}
+  public set data(data: any) {
+    this._data = data;
+    this.create(data);
+  }
 
-  read() {
+  public get data() {
+    return this.data;
+  }
+
+  constructor() {
+    super();
+
+    const shadowRoot = this.attachShadow({ mode: "open" });
+    shadowRoot.innerHTML = `<style>${css}</style>
+      <div class="properties-box"></div>`;
+
+    this.render = () => {
+      console.log("r");
+    };
+  }
+
+  public get userInput() {
     const values: string[] = Array.from(
       document.querySelectorAll(".property-value")
     ).map((v: HTMLInputElement) => v.value);
 
-    const ids = defaults.map(v => v.id);
+    const ids = this._data.map(v => v.id);
     return ids.reduce((acc: KeyValue, curr, i) => {
       acc[curr] = values[i];
       return acc;
     }, {});
   }
 
-  create(json: string) {
-    const container = document.querySelector(".properties-box");
+  connectedCallback() {}
+
+  create(data: IProperty[]) {
+    const container = this.shadowRoot.querySelector(".properties-box");
     container.innerHTML = "";
 
-    defaults.forEach(line => {
+    data.forEach(line => {
       if (line.type === "label") {
         const label = document.createElement("div");
         label.classList.add("property-title");
