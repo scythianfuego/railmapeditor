@@ -16,6 +16,7 @@ export default class PropertyEditor extends HTMLElement {
   // private data:
   public render: any;
   private _data: IProperty[];
+  private root: ShadowRoot;
 
   public set data(data: any) {
     this._data = data;
@@ -29,8 +30,8 @@ export default class PropertyEditor extends HTMLElement {
   constructor() {
     super();
 
-    const shadowRoot = this.attachShadow({ mode: "open" });
-    shadowRoot.innerHTML = `<style>${css}</style>
+    this.root = this.attachShadow({ mode: "closed" });
+    this.root.innerHTML = `<style>${css}</style>
       <div class="properties-box"></div>`;
 
     this.render = () => {
@@ -50,10 +51,24 @@ export default class PropertyEditor extends HTMLElement {
     }, {});
   }
 
-  connectedCallback() {}
+  get hidden() {
+    return this.hasAttribute("hidden");
+  }
+
+  set hidden(val) {
+    // Reflect the value of `disabled` as an attribute.
+    const container: HTMLElement = this.root.querySelector(".properties-box");
+    if (val) {
+      this.setAttribute("hidden", "");
+      container.style.display == "none";
+    } else {
+      this.removeAttribute("hidden");
+      container.style.display == "block";
+    }
+  }
 
   create(data: IProperty[]) {
-    const container = this.shadowRoot.querySelector(".properties-box");
+    const container = this.root.querySelector(".properties-box");
     container.innerHTML = "";
 
     data.forEach(line => {
