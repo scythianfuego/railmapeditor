@@ -1,12 +1,5 @@
 import css from "raw-loader!./propertyEditor.css";
-
-export interface IProperty {
-  label: string;
-  type: "label" | "text" | "select" | "boolean";
-  id?: string;
-  value?: number | string | boolean;
-  options?: string[];
-}
+import { IProperty } from "../interfaces/IProperty";
 
 type KeyValue = {
   [index: string]: any;
@@ -20,7 +13,7 @@ export default class PropertyEditor extends HTMLElement {
 
   public set data(data: any) {
     this._data = data;
-    this.create(data);
+    this.populate(data);
   }
 
   public get data() {
@@ -67,7 +60,7 @@ export default class PropertyEditor extends HTMLElement {
     }
   }
 
-  create(data: IProperty[]) {
+  populate(data: IProperty[]) {
     const container = this.root.querySelector(".properties-box");
     container.innerHTML = "";
 
@@ -118,6 +111,10 @@ export default class PropertyEditor extends HTMLElement {
           value.setAttribute("disabled", "disabled");
           value.innerText = v;
           break;
+      }
+
+      if (line.onChange) {
+        value.addEventListener("change", line.onChange);
       }
 
       container.append(name, value);

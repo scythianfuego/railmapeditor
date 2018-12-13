@@ -1,3 +1,4 @@
+import { IProperty } from "./interfaces/IProperty";
 import { Hex } from "./transform";
 
 import store from "./store";
@@ -7,6 +8,7 @@ import Model from "./model";
 import IHints from "./interfaces/IHints";
 import IRailObject from "./interfaces/IRailObject";
 import config from "./includes/config";
+import PropertyEditor from "./components/properties";
 
 const objects = new Objects();
 
@@ -283,5 +285,42 @@ export default class Controls {
       hints,
       mode
     });
+  }
+
+  showPropertyBox(selected: number = 0) {
+    // data?
+    let pe = <PropertyEditor>document.querySelector("property-box");
+    pe.hidden = false;
+
+    const selectedType = config.ObjectDefaults[selected].type;
+    const props = Object.entries(config.ObjectDefaults[selected]);
+    const extra = props.map(([key, value]) => {
+      const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+      const type = Array.isArray(value)
+        ? "select"
+        : typeof value === "boolean"
+        ? "boolean"
+        : "text";
+      const options = type === "select" ? value : null;
+      value = type === "select" ? value[0] : value;
+      const result: IProperty = {
+        label: capitalize(key),
+        id: key,
+        type,
+        options,
+        value
+      };
+      return result;
+    });
+    const objdata = config.ObjectCommon.concat(extra);
+    const typeSelector = objdata.find(v => v.id === "type");
+    typeSelector.value = selected;
+    typeSelector.onChange = () => {
+      console.log("typechange");
+      const selected = 1;
+      this.showPropertyBox(selected);
+    };
+
+    pe.data = objdata;
   }
 }

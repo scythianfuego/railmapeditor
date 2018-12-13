@@ -1,3 +1,4 @@
+import { IProperty } from "./../interfaces/IProperty";
 import IHints from "../interfaces/IHints";
 
 const A: { [index: string]: number } = {
@@ -94,8 +95,33 @@ const keyMap: {
   ESC: 27
 };
 
+const ObjectDefaults = [
+  { type: "End of line", texture: ["end1.png", "end07.png"] },
+  { type: "Depot", texture: "depot.png" },
+  { type: "Building", texture: ["house1.png", "house2.png"] }
+];
+
+const ObjectTypes = ObjectDefaults.map(v => v.type);
+
+const ObjectCommon: IProperty[] = [
+  { label: "Object", type: "label" },
+  {
+    label: "Type",
+    type: "select",
+    options: ObjectTypes,
+    id: "type"
+  },
+  { label: "Position", type: "label" },
+  { label: "X", type: "text", id: "width", value: 0 },
+  { label: "Y", type: "text", id: "height", value: 0 },
+  { label: "Z-index", type: "text", id: "height", value: 0 },
+  { label: "Properties", type: "label" }
+];
+
 export default {
   hints,
   keyMap,
-  actions
+  actions,
+  ObjectDefaults,
+  ObjectCommon
 };
