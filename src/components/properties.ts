@@ -1,9 +1,6 @@
 import css from "raw-loader!./propertyEditor.css";
 import { IProperty } from "../interfaces/IProperty";
-
-type KeyValue = {
-  [index: string]: any;
-};
+import IKeyValue from "../interfaces/IKeyValue";
 
 export default class PropertyEditor extends HTMLElement {
   // private data:
@@ -38,7 +35,7 @@ export default class PropertyEditor extends HTMLElement {
     ).map((v: HTMLInputElement) => v.value);
 
     const ids = this._data.map(v => v.id);
-    return ids.reduce((acc: KeyValue, curr, i) => {
+    return ids.reduce((acc: IKeyValue, curr, i) => {
       acc[curr] = values[i];
       return acc;
     }, {});

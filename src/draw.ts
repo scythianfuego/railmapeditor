@@ -7,15 +7,20 @@ import IState from "./interfaces/IState";
 import { Listener, Store } from "unistore";
 
 const TAU = 2 * Math.PI;
+const hex2rgba = (hex: string) => {
+  const [r, g, b, a] = hex.match(/\w\w/g).map(x => parseInt(x, 16));
+  return `rgba(${r},${g},${b},${a ? a * 0.00392156862745098 : 1})`;
+};
+
+const colors = {
+  background: "#000",
+  grid: "#777",
+  gridBackground: "#553835"
+};
 
 const getCorners = (hex: Hex) => {
   const point = hex.toPoint();
   return hex.corners().map(corner => corner.add(point));
-};
-
-const hex2rgba = (hex: string) => {
-  const [r, g, b, a] = hex.match(/\w\w/g).map(x => parseInt(x, 16));
-  return `rgba(${r},${g},${b},${a ? a * 0.00392156862745098 : 1})`;
 };
 
 const { sx, sy, scale } = ts;
@@ -118,7 +123,7 @@ export default class Draw {
   }
 
   private clear() {
-    this.ctx.fillStyle = "#0f0605";
+    this.ctx.fillStyle = colors.background;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
@@ -156,9 +161,9 @@ export default class Draw {
   private grid() {
     const { gridWidth, gridHeight } = ts;
 
-    this.ctx.fillStyle = "#1e0b09";
+    this.ctx.fillStyle = colors.gridBackground;
     this.screen.fillRect(0, 0, gridWidth, gridHeight);
-    this.ctx.strokeStyle = "#333";
+    this.ctx.strokeStyle = colors.grid;
     this.ctx.lineWidth = 1;
     this.ctx.fillStyle = "#999";
     this.ctx.font = "7px Arial";

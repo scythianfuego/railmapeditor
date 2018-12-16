@@ -24,7 +24,7 @@ export default class Model {
   private store: IRailObject[] = [];
   private storeIndex = new Map();
   private blockId = 1;
-  private objectId = 1;
+  private objectId = 2; // odd id means start of segment, even - end
 
   public distance: (x1: number, y1: number, x2: number, y2: number) => number;
 
@@ -106,7 +106,8 @@ export default class Model {
     const { x, y } = cell;
     const key = `${x},${y}`;
     const selected = false;
-    const id = this.objectId++;
+    const id = this.objectId;
+    this.objectId += 2;
     const block = this.blockId++;
     obj.meta = { id, x, y, key, selected, block };
     this.createConnections(obj);
