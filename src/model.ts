@@ -32,6 +32,27 @@ export default class Model {
     this.distance = distance;
   }
 
+  export() {
+    return JSON.stringify({
+      rails: this.store.map(i => ({
+        id: i.meta.id,
+        block: i.meta.block,
+        type: i.type,
+        sx: i.sx,
+        sy: i.sy,
+        ex: i.ex,
+        ey: i.ey,
+        x: i.x,
+        y: i.y,
+        a1: i.a1,
+        a2: i.a2,
+        radius: i.radius
+      })),
+      switches: this.switches,
+      joins: this.joins
+    });
+  }
+
   serialize() {
     return LZString.compressToUTF16(
       JSON.stringify({
