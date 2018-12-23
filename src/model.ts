@@ -6,7 +6,7 @@ import LZString from "lz-string";
 
 const magic = 0x7ffffffe;
 
-const MIN_DISTANCE = 5;
+const MIN_DISTANCE = 0.1;
 const distance = (x1: number, y1: number, x2: number, y2: number) =>
   Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 
@@ -19,13 +19,14 @@ type ConnectionMap = {
 
 export default class Model {
   public selectedConnection: IConnection = null;
-  public connections: ConnectionMap = {}; // TODO: remove public access
+  public connections: IConnection[] = []; // TODO: remove public access
   public switches: ISwitch[] = [];
   public joins: IJoin[] = [];
 
   private store: IRailObject[] = [];
   private storeIndex = new Map();
   private blockId = 1;
+  private connectionId = 1;
   private objectId = 2; // odd id means start of segment, even - end
 
   public distance: (x1: number, y1: number, x2: number, y2: number) => number;
@@ -83,19 +84,8 @@ export default class Model {
   }
 
   makeConnection(pointId: number, x: number, y: number) {
-    const [px, py] = [x, y];
-    x |= 0;
-    y |= 0;
-    const key = `${x}-${y}`;
-    if (!this.connections[key]) {
-      this.connections[key] = { x, y, px, py, items: [] };
-    } else {
-      throw "Unexpected connection";
-    }
-    const items = this.connections[key].items;
-    if (!items.includes(pointId)) {
-      items.push(pointId);
-    }
+    const id = this.connectionId++;
+    this.connections.push({ x, y, items: [pointId] });
   }
 
   addToConnection(pointId: number, connection: IConnection) {
@@ -104,9 +94,7 @@ export default class Model {
   }
 
   findConnection(x: number, y: number) {
-    return Object.values(this.connections).find(
-      v => distance(x, y, v.x, v.y) < MIN_DISTANCE
-    );
+    return this.connections.find(v => distance(x, y, v.x, v.y) < MIN_DISTANCE);
   }
 
   createConnections(obj: IRailObject) {
@@ -132,12 +120,11 @@ export default class Model {
     }
 
     const { x, y } = cell;
-    const key = `${x},${y}`;
     const selected = false;
     const id = this.objectId;
     this.objectId += 2;
     const block = this.blockId++;
-    obj.meta = { id, x, y, key, selected, block };
+    obj.meta = { id, x, y, selected, block };
     this.createConnections(obj);
     this.store.push(obj);
     this.storeIndex.set(id, obj);
@@ -165,7 +152,6 @@ export default class Model {
   }
 
   findByXY(x: number, y: number): IRailObject[] {
-    const threshold = 10;
     const TAU = 2 * Math.PI;
     const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
     const inside = (x: number, a: number, b: number) => a < x && x < b;
@@ -175,7 +161,7 @@ export default class Model {
       const angle = normalize(Math.atan2(y - obj.y, x - obj.x));
       const radius = distance(x, y, obj.x, obj.y);
       const withinAngle = inside(angle, obj.a1, obj.a2);
-      const closeToRadius = Math.abs(radius - obj.radius) < threshold;
+      const closeToRadius = Math.abs(radius - obj.radius) < MIN_DISTANCE;
       return withinAngle && closeToRadius;
     };
 
@@ -184,7 +170,7 @@ export default class Model {
       const ab = distance(obj.ex, obj.ey, x, y);
       const bc = distance(obj.sx, obj.sy, x, y);
       const ac = distance(obj.sx, obj.sy, obj.ex, obj.ey);
-      return Math.abs(ab + bc - ac) < threshold;
+      return Math.abs(ab + bc - ac) < MIN_DISTANCE;
     };
 
     return this.store.filter(obj =>

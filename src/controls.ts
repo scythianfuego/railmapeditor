@@ -196,7 +196,7 @@ export default class Controls {
     if (event.ctrlKey || state.mode & A.SELECTABLE) {
       const [mouseX, mouseY] = state.mouse.coords;
       const zoomOld = state.zoom;
-      const zoom = clamp(zoomOld * (1 + 0.2 * direction), 0.1, 10);
+      const zoom = clamp(zoomOld * (1 + 0.2 * direction), 5, 500);
       const zoomDelta = zoomOld - zoom;
 
       const panX = state.panX + gridWidth * zoomDelta * ratioX(mouseX);
@@ -218,11 +218,11 @@ export default class Controls {
     const state = store.getState();
     // rectangular selection, todo: move to model
     const { wx, wy } = ts;
-    const threshold = 10;
     const sx = wx(startPoint[0]);
     const sy = wy(startPoint[1]);
     const ex = wx(endPoint[0]);
     const ey = wy(endPoint[1]);
+    const threshold = 0.1; // model MIN_DISTANCE
     if (this.model.distance(sx, sy, ex, ey) > threshold) {
       const hit = this.model.findByRect(sx, sy, ex, ey);
       !this.shift && this.model.deselect(); // deselect if shift is not pressed

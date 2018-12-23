@@ -10,7 +10,7 @@ export type Grid = Grid;
 
 // handles world to screen transformations and back
 class Transform {
-  public HEX_SIZE = 50 / Math.sqrt(3);
+  public HEX_SIZE = 1 / Math.sqrt(3);
   public CELLS_X = 7;
   public CELLS_Y = 5;
   public zoom = 0;
@@ -24,6 +24,7 @@ class Transform {
   public wx = (x: number) => (x - this.panX) / this.zoom;
   public wy = (y: number) => (y - this.panY) / this.zoom;
   public scale = (v: number) => v * this.zoom;
+  public pixels = (v: number) => v / this.zoom;
   public clamp = (v: number, min: number, max: number) =>
     v > max ? max : v < min ? min : v;
   public rotate = (v: number, min: number, max: number) =>

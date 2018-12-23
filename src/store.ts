@@ -17,7 +17,7 @@ const defaults: IState = {
   // display scale
   panX: 0,
   panY: 0,
-  zoom: 1,
+  zoom: 50,
   // mouse selection
   mouse: {
     coords: [0, 0],

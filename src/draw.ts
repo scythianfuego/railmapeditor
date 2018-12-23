@@ -23,7 +23,7 @@ const getCorners = (hex: Hex) => {
   return hex.corners().map(corner => corner.add(point));
 };
 
-const { sx, sy, scale } = ts;
+const { sx, sy, scale, pixels } = ts;
 
 export default class Draw {
   private ctx: CanvasRenderingContext2D;
@@ -75,6 +75,8 @@ export default class Draw {
   private zoom: any;
   private panX: any;
   private panY: any;
+
+  private labelCache: [number, number, string][] = [];
 
   constructor(private canvas: HTMLCanvasElement, private model: Model) {
     this.canvas = canvas;
@@ -128,6 +130,7 @@ export default class Draw {
   }
 
   public all() {
+    this.labelCache = [];
     this.clear();
     this.grid();
     !this.selectionMode && this.cell(this.cursorCell, "#999");
@@ -135,6 +138,7 @@ export default class Draw {
     this.connections();
     this.model.forEach((obj: IRailObject) => this.object(obj));
     this.cursor();
+    this.labelCache.forEach(([x, y, what]) => this.text(x, y, what));
     this.selectionFrame();
     this.helpline();
   }
@@ -167,7 +171,9 @@ export default class Draw {
     this.ctx.lineWidth = 1;
     this.ctx.fillStyle = "#999";
     this.ctx.font = "7px Arial";
-    this.screen.strokeRect(-1, -1, gridWidth + 1, gridHeight + 1);
+    const n1px = pixels(-1);
+    const p1px = pixels(1);
+    this.screen.strokeRect(n1px, n1px, gridWidth + p1px, gridHeight + p1px);
     this.hexgrid.forEach(hex => {
       const corners = getCorners(hex);
       this.ctx.beginPath();
@@ -213,7 +219,7 @@ export default class Draw {
     const midy = y + radius * Math.sin((a1 + a2) / 2);
     obj.meta &&
       this.state.blocks &&
-      this.text(midx, midy, obj.meta.block.toString());
+      this.label(midx, midy, obj.meta.block.toString());
   }
 
   private arcPath(obj: IRailObject, color?: string) {
@@ -227,23 +233,29 @@ export default class Draw {
     this.ctx.stroke();
   }
 
+  private label(x: number, y: number, what: string) {
+    this.labelCache.push([x, y, what]);
+  }
+
   private text(x: number, y: number, what: string) {
     this.ctx.font = "10px Arial";
     const w = this.ctx.measureText(what).width;
     const h = 10;
     const tx = sx(x) - w * 0.5;
-    const ty = sy(y) + h * 0.25;
+    const ty = sy(y) + h * 0.5;
+    const rectW = w + 10;
+    const rectH = h + 10;
+    const rectX = sx(x) - rectW * 0.5;
+    const rectY = sy(y) - rectH * 0.5;
 
     this.ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
     this.ctx.beginPath();
     // this.screen.circle(x, y, 10);
-    this.screen.roundRect(tx - w * 0.5, ty - h * 1.5, w, h * 2, 5);
+    this.screen.roundRect(rectX, rectY, rectW, rectH, 5);
     this.ctx.fill();
 
     this.ctx.fillStyle = "#fff";
     this.ctx.fillText(what, tx, ty);
-
-    // this.ctx.fillRect( tx, ty);
   }
 
   private line(obj: IRailObject) {
@@ -260,7 +272,7 @@ export default class Draw {
     const midy = (sy + ey) * 0.5;
     obj.meta &&
       this.state.blocks &&
-      this.text(midx, midy, obj.meta.block.toString());
+      this.label(midx, midy, obj.meta.block.toString());
   }
 
   private linePath(obj: IRailObject, color?: string) {
@@ -290,16 +302,16 @@ export default class Draw {
   private pathLabel(path: IRailObject, what: string) {
     const x = 0.5 * (path.sx + path.ex);
     const y = 0.5 * (path.sy + path.ey);
-    this.text(x, y, what);
+    this.label(x, y, what);
   }
 
   private connections() {
     const c = this.model.connections;
     Object.values(c).forEach(v => {
-      const { px, py, items } = v;
+      const { x, y, items } = v;
       const isSimple = items.length <= 2;
 
-      let radius = isSimple ? 2 : 5;
+      let radius = isSimple ? 3 : 5;
       let color = isSimple ? "green" : "red";
       if (v === this.model.selectedConnection) {
         radius = 15;
@@ -314,7 +326,7 @@ export default class Draw {
 
       this.ctx.fillStyle = color;
       this.ctx.beginPath();
-      this.screen.circle(px, py, radius);
+      this.screen.circle(x, y, radius);
       this.ctx.fill();
     });
 
