@@ -4,6 +4,8 @@ import IConnection from "./interfaces/IConnection";
 import ISwitch from "./interfaces/ISwitch";
 import LZString from "lz-string";
 
+const magic = 0x7ffffffe;
+
 const MIN_DISTANCE = 5;
 const distance = (x1: number, y1: number, x2: number, y2: number) =>
   Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
@@ -80,7 +82,7 @@ export default class Model {
     this.store.forEach(v => this.storeIndex.set(v.meta.id, v));
   }
 
-  makeConnection(id: number, x: number, y: number) {
+  makeConnection(pointId: number, x: number, y: number) {
     const [px, py] = [x, y];
     x |= 0;
     y |= 0;
@@ -91,13 +93,13 @@ export default class Model {
       throw "Unexpected connection";
     }
     const items = this.connections[key].items;
-    if (!items.includes(id)) {
-      items.push(id);
+    if (!items.includes(pointId)) {
+      items.push(pointId);
     }
   }
 
-  addToConnection(connection: IConnection, id: number) {
-    !connection.items.includes(id) && connection.items.push(id);
+  addToConnection(pointId: number, connection: IConnection) {
+    !connection.items.includes(pointId) && connection.items.push(pointId);
     connection.items.sort();
   }
 
@@ -108,15 +110,20 @@ export default class Model {
   }
 
   createConnections(obj: IRailObject) {
-    const id = obj.meta.id;
-    const points = [[obj.sx, obj.sy], [obj.ex, obj.ey]];
+    const startId = obj.meta.id;
+    const endId = startId + 1;
+    const { sx, sy, ex, ey } = obj;
+    let connection: IConnection = null;
 
-    points.forEach(([x, y]) => {
-      const connection = this.findConnection(x, y);
-      connection
-        ? this.addToConnection(connection, id)
-        : this.makeConnection(id, x, y);
-    });
+    connection = this.findConnection(sx, sy);
+    connection
+      ? this.addToConnection(startId, connection)
+      : this.makeConnection(startId, sx, sy);
+
+    connection = this.findConnection(ex, ey);
+    connection
+      ? this.addToConnection(endId, connection)
+      : this.makeConnection(endId, ex, ey);
   }
 
   add(cell: Hex, obj: IRailObject) {
@@ -136,8 +143,8 @@ export default class Model {
     this.storeIndex.set(id, obj);
   }
 
-  get(id: number): IRailObject {
-    return this.storeIndex.get(id);
+  get(pointId: number): IRailObject {
+    return this.storeIndex.get(pointId & magic);
   }
 
   forEach(fn: (i: IRailObject) => void) {
@@ -231,17 +238,12 @@ export default class Model {
     this.deselect();
   }
 
-  //   click select - найти в стрелке/соединении. rectangle - игнорировать стрелки/соединения
-  // выделено - соединить - кнопки если 2 - соединение или 3-4 стрелка
-  // выделено -создать -> найти общий коннекшн для группы id.
-  // если стрелка выделена, повторный клик по ней же выделяет ребра
-  findJoinById(id: number) {
-    // todo: define join obj
-    return this.joins.find(j => j[0] === id || j[0] === id);
+  findJoin(id: number) {
+    return this.joins.find(j => (j[0] & magic) === id || (j[1] & magic) === id);
   }
 
   findSwitch(id: number) {
-    return this.switches.find(v => v.includes(id));
+    return this.switches.find(v => v.map(i => i & magic).includes(id));
   }
 
   getSelectedIds(): number[] {
@@ -251,32 +253,50 @@ export default class Model {
       .sort();
   }
 
-  checkAdjacent(ids: number[]) {
-    return !!Object.values(this.connections).find(v =>
-      includesAll(ids, v.items)
+  getAdjacentEndpoints(ids: number[]): number[] {
+    // converting object id to points id here
+    // objects have odd ids, points: start = id, end = id + 1
+    const connection = Object.values(this.connections).find(v =>
+      includesAll(ids, v.items.map(i => i & magic))
     );
+
+    return connection
+      ? connection.items.filter(i => ids.includes(i & magic))
+      : null;
   }
 
   createJoinFromSelection(): boolean {
     const selection = this.getSelectedIds();
-    if (selection.length == 2 && this.checkAdjacent(selection)) {
-      const [a, b] = selection;
-      this.joins.push([a, b]);
-      this.deselect();
-      return true;
+    if (selection.length != 2) {
+      return false;
     }
 
-    return false;
+    const items = this.getAdjacentEndpoints(selection);
+    if (!items) {
+      return false;
+    }
+
+    const [a, b] = items;
+    this.joins.push([a, b]);
+    this.deselect();
+    return true;
   }
 
-  createSwitchFromSelection() {
+  createSwitchFromSelection(): boolean {
     const selection = this.getSelectedIds();
-    if ([3, 4].includes(selection.length) && this.checkAdjacent(selection)) {
-      let sw: ISwitch = <ISwitch>[0, 0, 0, 0].map((v, i) => selection[i] || 0);
-      this.switches.push(sw);
-      this.deselect();
-      return true;
+    if (![3, 4].includes(selection.length)) {
+      return false;
     }
+
+    const items = this.getAdjacentEndpoints(selection);
+    if (!items) {
+      return false;
+    }
+
+    let sw: ISwitch = <ISwitch>[0, 0, 0, 0].map((v, i) => items[i] || 0);
+    this.switches.push(sw);
+    this.deselect();
+    return true;
   }
 
   switchToObject(sw: ISwitch) {
@@ -296,7 +316,7 @@ export default class Model {
     const selection = this.getSelectedIds();
     if (selection.length === 1) {
       const sw = this.findSwitch(selection[0]);
-      const oldType = sw.indexOf(selection[0]);
+      const oldType = sw.findIndex(i => (i & magic) === selection[0]);
       const tmp = sw[newType];
       sw[newType] = sw[oldType];
       sw[oldType] = tmp;

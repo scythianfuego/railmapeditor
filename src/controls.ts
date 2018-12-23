@@ -70,8 +70,8 @@ export default class Controls {
     store.setState({ hints });
 
     const canvas = document.querySelector("canvas");
-    canvas.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
-    canvas.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
+    window.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
+    window.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
     canvas.addEventListener("contextmenu", event => event.preventDefault());
     canvas.addEventListener("mousemove", event => this.onMouseMove(event));
     canvas.addEventListener("mousedown", event => this.onMouseDown(event));
