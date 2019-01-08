@@ -36,6 +36,11 @@ export default class Model {
   }
 
   export() {
+    const autojoins: IJoin[] = this.connections
+      .filter(c => c.items.length === 2)
+      .map(c => c.items as IJoin);
+
+    const joins = this.joins.concat(autojoins);
     return JSON.stringify({
       rails: this.store.map(i => ({
         id: i.meta.id,
@@ -52,7 +57,7 @@ export default class Model {
         radius: i.radius
       })),
       switches: this.switches,
-      joins: this.joins
+      joins
     });
   }
 
