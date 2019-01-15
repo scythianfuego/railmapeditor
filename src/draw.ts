@@ -330,23 +330,21 @@ export default class Draw {
       this.ctx.fill();
     });
 
-    this.model.switches
-      .map(v => this.model.switchToObject(v))
-      .forEach(v => {
-        let path;
-        path = this.model.get(v.AP);
-        path && this.objectPath(path, hex2rgba("#0099004C"));
-        path && this.pathLabel(path, "AP");
-        path = this.model.get(v.AS);
-        path && this.objectPath(path, hex2rgba("#FF00004C"));
-        path && this.pathLabel(path, "AS");
-        path = this.model.get(v.BP);
-        path && this.objectPath(path, hex2rgba("#0099004C"));
-        path && this.pathLabel(path, "BP");
-        path = this.model.get(v.BS);
-        path && this.objectPath(path, hex2rgba("#FF00004C"));
-        path && this.pathLabel(path, "BS");
-      });
+    this.model.switches.forEach(v => {
+      let path;
+      path = this.model.get(v[0]);
+      path && this.objectPath(path, hex2rgba("#0099004C"));
+      path && this.pathLabel(path, "A1");
+      path = this.model.get(v[1]);
+      path && this.objectPath(path, hex2rgba("#FF00004C"));
+      path && this.pathLabel(path, "A2");
+      path = this.model.get(v[2]);
+      path && this.objectPath(path, hex2rgba("#0099004C"));
+      path && this.pathLabel(path, "B1");
+      path = this.model.get(v[3]);
+      path && this.objectPath(path, hex2rgba("#FF00004C"));
+      path && this.pathLabel(path, "B2");
+    });
 
     this.model.joins.forEach(v => {
       let path;

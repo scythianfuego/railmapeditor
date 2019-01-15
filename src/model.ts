@@ -290,15 +290,6 @@ export default class Model {
     return true;
   }
 
-  switchToObject(sw: ISwitch) {
-    return {
-      AP: sw[0],
-      AS: sw[1],
-      BP: sw[2],
-      BS: sw[3]
-    };
-  }
-
   setSwitchSegmentType(newType: number) {
     if (newType < 0 || newType > 3) {
       throw new Error("Invalid switch segment type");

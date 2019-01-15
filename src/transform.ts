@@ -11,8 +11,8 @@ export type Grid = Grid;
 // handles world to screen transformations and back
 class Transform {
   public HEX_SIZE = 1 / Math.sqrt(3);
-  public CELLS_X = 7;
-  public CELLS_Y = 5;
+  public CELLS_X = 70;
+  public CELLS_Y = 50;
   public zoom = 0;
   public panX = 0;
   public panY = 0;
