@@ -1,16 +1,11 @@
-import { Hex } from "./transform";
+import ts, { Hex } from "./transform";
 import IRailLine from "./interfaces/IRailLine";
 import IRailArc from "./interfaces/IRailArc";
 
 export default class Objects {
-  getCorners(hex: Hex) {
-    const point = hex.toPoint();
-    return hex.corners().map(corner => corner.add(point));
-  }
-
   getTriangleCorners(hex: Hex) {
     // triangle corners are: 0 - right, 1 - left, 2 - top
-    return this.getCorners(hex).filter((v, i) => i % 2 === 1);
+    return ts.getCorners(hex).filter((v, i) => i % 2 === 1);
   }
 
   // getInverseTriangleCorners(hex) {

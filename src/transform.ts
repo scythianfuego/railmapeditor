@@ -1,6 +1,6 @@
 import { GridTools } from "./transform";
 import * as Honeycomb from "honeycomb-grid";
-import { Hex, Grid, GridFactory } from "honeycomb-grid";
+import { Hex, Grid, GridFactory, Point } from "honeycomb-grid";
 import store, { copy } from "./store";
 
 type HexParams = { size: number };
@@ -37,6 +37,8 @@ class Transform {
   private gridTools: GridTools = null;
   public grid: Grid = null;
 
+  public corners: Map<string, Point[]> = null;
+
   constructor() {
     store.subscribe(state => copy(state, this, ["zoom", "panX", "panY"]));
   }
@@ -50,8 +52,23 @@ class Transform {
       width: this.CELLS_X,
       height: this.CELLS_Y
     });
+
+    const cornerArray = Hex().corners();
+    this.corners = new Map();
+    this.grid.forEach((hex: Honeycomb.Hex<HexParams>) => {
+      const point = hex.toPoint();
+      const cornerValues = cornerArray.map(corner => corner.add(point));
+      const key = `${hex.x},${hex.y}`;
+      this.corners.set(key, cornerValues);
+    });
+
     return [this.grid, this.gridTools];
   }
+
+  getCorners = (hex: Honeycomb.Hex<HexParams>) => {
+    const key = `${hex.x},${hex.y}`;
+    return this.corners.get(key);
+  };
 
   pointToHex(x: number, y: number): Honeycomb.Hex<HexParams> {
     const { wx, wy } = this;

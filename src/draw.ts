@@ -17,12 +17,7 @@ const colors = {
   gridBackground: "#553835"
 };
 
-const getCorners = (hex: Hex) => {
-  const point = hex.toPoint();
-  return hex.corners().map(corner => corner.add(point));
-};
-
-const { sx, sy, scale, pixels } = ts;
+const { sx, sy, scale, pixels, getCorners } = ts;
 
 export default class Draw {
   private ctx: CanvasRenderingContext2D;
@@ -162,6 +157,7 @@ export default class Draw {
   }
 
   private grid() {
+    // todo: renew only when transform changed
     const { gridWidth, gridHeight } = ts;
 
     this.ctx.fillStyle = colors.gridBackground;
@@ -173,19 +169,27 @@ export default class Draw {
     this.screen.strokeRect(n1px, n1px, gridWidth + p1px, gridHeight + p1px);
 
     // hexes
-    this.hexgrid.forEach(hex => {
-      this.cell(hex, "#825651");
+    this.ctx.beginPath();
+    ts.corners.forEach(corners => {
+      this.ctx.strokeStyle = "#825651";
+      // const corners = getCorners(hex);
+      const [firstCorner, ...otherCorners] = corners;
+
+      this.screen.moveTo(firstCorner.x, firstCorner.y); // move the "pen" to the first corner
+      otherCorners.forEach(corner => this.screen.lineTo(corner.x, corner.y)); // draw lines to the other corners
+      this.screen.lineTo(firstCorner.x, firstCorner.y); // finish at the first corner
     });
+    this.ctx.stroke();
 
     // triangles
     this.ctx.strokeStyle = "#603f3c";
-    this.hexgrid.forEach(hex => {
-      const corners = getCorners(hex);
-      this.ctx.beginPath();
+    this.ctx.beginPath();
+    ts.corners.forEach(corners => {
+      // const corners = getCorners(hex);
       this.screen.moveTo(corners[1].x, corners[1].y); // move the "pen" to the first corner
       [3, 5, 1].forEach(i => this.screen.lineTo(corners[i].x, corners[i].y));
-      this.ctx.stroke();
     });
+    this.ctx.stroke();
   }
 
   // private point(x: number, y: number, style: string, size: number) {
