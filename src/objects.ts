@@ -9,7 +9,7 @@ export default class Objects {
   }
 
   getTriangleCorners(hex: Hex) {
-    // right, left, top
+    // triangle corners are: 0 - right, 1 - left, 2 - top
     return this.getCorners(hex).filter((v, i) => i % 2 === 1);
   }
 
@@ -53,18 +53,20 @@ export default class Objects {
     radius: number,
     arc: number,
     baseType: number,
-    outer: boolean
+    inner: boolean = true
   ) {
+    // triangle corners are: 0 - right, 1 - left, 2 - top
     const corners = this.getTriangleCorners(hex);
-    const points = outer ? [2, 2, 0, 0, 1, 1] : [1, 0, 2, 1, 0, 2];
+    const points = inner ? [1, 0, 2, 1, 0, 2] : [2, 2, 0, 0, 1, 1];
+    const sign = inner ? 1 : -1;
+    const baseAngle = (sign * Math.PI) / 2;
 
-    const rot1 = (2 / 3) * Math.PI;
-    const rot2 = (4 / 3) * Math.PI;
+    const rot1 = (2 / 3) * Math.PI; // 120
+    const rot2 = (4 / 3) * Math.PI; // 240
     const rotation = [0, 0, rot1, rot1, rot2, rot2];
 
-    const sign = outer ? -1 : 1;
     const angles = [0, 1, 2, 3, 4, 5]
-      .map(v => (sign * Math.PI) / 2 + rotation[v])
+      .map(v => baseAngle + rotation[v])
       .map((v, i) => (i % 2 === 0 ? [v - arc, v] : [v, v + arc]));
 
     const p = points[index];
@@ -85,18 +87,18 @@ export default class Objects {
   longArc(hex: Hex, index: number): IRailArc {
     const radius = 6 * hex.size;
     const arc = Math.PI / 3;
-    return this.baseArc(hex, index, radius, arc, 0x20, false);
+    return this.baseArc(hex, index, radius, arc, 0x20);
   }
 
   shortArc(hex: Hex, index: number): IRailArc {
     const radius = 3.5 * Math.sqrt(3); //3.5 * hex.size; // magic1
     const arc = 0.3802512067; // 1 / 3; magic2
-    return this.baseArc(hex, index, radius, arc, 0x30, false);
+    return this.baseArc(hex, index, radius, arc, 0x30);
   }
 
   shortArc2(hex: Hex, index: number): IRailArc {
     const radius = 3.5 * Math.sqrt(3); // 3.5 * hex.size; // magic1
     const arc = 0.3802512067; // 2*Math.acos(9 / sqrt(84)) //1 / 3; // magic2
-    return this.baseArc(hex, index, radius, arc, 0x40, true);
+    return this.baseArc(hex, index, radius, arc, 0x40, false);
   }
 }
