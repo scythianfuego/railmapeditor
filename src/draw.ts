@@ -14,7 +14,6 @@ const hex2rgba = (hex: string) => {
 
 const colors = {
   background: "#000",
-  grid: "#777",
   gridBackground: "#553835"
 };
 
@@ -133,7 +132,7 @@ export default class Draw {
     this.labelCache = [];
     this.clear();
     this.grid();
-    !this.selectionMode && this.cell(this.cursorCell, "#999");
+    !this.selectionMode && this.cell(this.cursorCell, "#fff");
 
     this.connections();
     this.model.forEach((obj: IRailObject) => this.object(obj));
@@ -167,13 +166,19 @@ export default class Draw {
 
     this.ctx.fillStyle = colors.gridBackground;
     this.screen.fillRect(0, 0, gridWidth, gridHeight);
-    this.ctx.strokeStyle = colors.grid;
     this.ctx.lineWidth = 1;
-    this.ctx.fillStyle = "#999";
     this.ctx.font = "7px Arial";
     const n1px = pixels(-1);
     const p1px = pixels(1);
     this.screen.strokeRect(n1px, n1px, gridWidth + p1px, gridHeight + p1px);
+
+    // hexes
+    this.hexgrid.forEach(hex => {
+      this.cell(hex, "#825651");
+    });
+
+    // triangles
+    this.ctx.strokeStyle = "#603f3c";
     this.hexgrid.forEach(hex => {
       const corners = getCorners(hex);
       this.ctx.beginPath();
@@ -183,28 +188,28 @@ export default class Draw {
     });
   }
 
-  private point(x: number, y: number, style: string, size: number) {
-    this.ctx.lineWidth = 1;
-    this.ctx.fillStyle = style ? style : "cyan";
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, size ? size : 3, 0, TAU);
-    this.ctx.fill();
-  }
+  // private point(x: number, y: number, style: string, size: number) {
+  //   this.ctx.lineWidth = 1;
+  //   this.ctx.fillStyle = style ? style : "cyan";
+  //   this.ctx.beginPath();
+  //   this.ctx.arc(x, y, size ? size : 3, 0, TAU);
+  //   this.ctx.fill();
+  // }
 
-  private arrow(sx: number, sy: number, ex: number, ey: number) {
-    this.ctx.strokeStyle = "#999";
-    this.ctx.lineWidth = 1;
-    this.ctx.beginPath();
-    const h = 10; // length of head in pixels
-    const a = Math.atan2(ey - sy, ex - sx);
-    const a1 = Math.PI / 12;
-    this.screen.moveTo(sx, sy);
-    this.screen.lineTo(ex, ey);
-    this.screen.lineTo(ex - h * Math.cos(a - a1), ey - h * Math.sin(a - a1));
-    this.screen.moveTo(ex, ey);
-    this.screen.lineTo(ex - h * Math.cos(a + a1), ey - h * Math.sin(a + a1));
-    this.ctx.stroke();
-  }
+  // private arrow(sx: number, sy: number, ex: number, ey: number) {
+  //   this.ctx.strokeStyle = "#999";
+  //   this.ctx.lineWidth = 1;
+  //   this.ctx.beginPath();
+  //   const h = 10; // length of head in pixels
+  //   const a = Math.atan2(ey - sy, ex - sx);
+  //   const a1 = Math.PI / 12;
+  //   this.screen.moveTo(sx, sy);
+  //   this.screen.lineTo(ex, ey);
+  //   this.screen.lineTo(ex - h * Math.cos(a - a1), ey - h * Math.sin(a - a1));
+  //   this.screen.moveTo(ex, ey);
+  //   this.screen.lineTo(ex - h * Math.cos(a + a1), ey - h * Math.sin(a + a1));
+  //   this.ctx.stroke();
+  // }
 
   private arc(obj: IRailObject) {
     const { x, y, radius, a1, a2, type, meta } = obj;
