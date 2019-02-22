@@ -36,29 +36,41 @@ export default class Model {
   }
 
   export() {
+    const TAU = 2 * Math.PI;
+    const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
+
     const autojoins: IJoin[] = this.connections
       .filter(c => c.items.length === 2)
       .map(c => c.items as IJoin);
 
     const joins = this.joins.concat(autojoins);
-    return JSON.stringify({
-      rails: this.store.map(i => ({
-        id: i.meta.id,
-        block: i.meta.block,
-        type: i.type,
-        sx: i.sx,
-        sy: i.sy,
-        ex: i.ex,
-        ey: i.ey,
-        x: i.x,
-        y: i.y,
-        a1: i.a1,
-        a2: i.a2,
-        radius: i.radius
-      })),
-      switches: this.switches,
-      joins
-    });
+    const result = JSON.stringify(
+      {
+        rails: this.store.map(i => ({
+          id: i.meta.id,
+          block: i.meta.block,
+          type: i.type,
+          sx: i.sx,
+          sy: i.sy,
+          ex: i.ex,
+          ey: i.ey,
+          x: i.x,
+          y: i.y,
+          a1: normalize(i.a1),
+          a2: normalize(i.a2),
+          radius: i.radius
+        })),
+        switches: this.switches,
+        joins
+      },
+      null
+      //, 2
+    );
+    window.open(
+      "",
+      "",
+      "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes"
+    ).document.body.innerHTML = `<pre>${result}</pre>`;
   }
 
   serialize() {
@@ -159,13 +171,14 @@ export default class Model {
   findByXY(x: number, y: number): IRailObject[] {
     const TAU = 2 * Math.PI;
     const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
-    const inside = (x: number, a: number, b: number) => a < x && x < b;
+    const inside = (x: number, a: number, b: number) =>
+      a < b ? a <= x && x <= b : a <= x || x <= b;
 
     const pointInArc = (x: number, y: number, obj: IRailObject) => {
       // check if within sector and close to radius
       const angle = normalize(Math.atan2(y - obj.y, x - obj.x));
       const radius = distance(x, y, obj.x, obj.y);
-      const withinAngle = inside(angle, obj.a1, obj.a2);
+      const withinAngle = inside(angle, normalize(obj.a1), normalize(obj.a2));
       const closeToRadius = Math.abs(radius - obj.radius) < MIN_DISTANCE;
       return withinAngle && closeToRadius;
     };

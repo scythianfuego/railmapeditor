@@ -8,9 +8,10 @@ const A: { [index: string]: number } = {
   CURVE: 4,
   SIDEA: 8,
   SIDEB: 0x10,
-  BLOCK: 0x20,
-  CONNECT: 0x40,
-  OBJECT: 0x80,
+  LONG: 0x20,
+  BLOCK: 0x40,
+  CONNECT: 0x80,
+  OBJECT: 0x100,
 
   // actions
   GROUP: 0x400,
@@ -26,9 +27,10 @@ const A: { [index: string]: number } = {
   SWITCH_BP: 0x80000,
   SWITCH_BS: 0x100000,
   SAVE: 0x200000,
-  LOAD: 0x400000
+  LOAD: 0x400000,
+  EXPORT: 0x800000
 };
-A.TOOLS = A.LINES | A.CURVE | A.SIDEA | A.SIDEB;
+A.TOOLS = A.LINES | A.CURVE | A.SIDEA | A.SIDEB | A.LONG;
 A.SELECTABLE = A.SELECT | A.BLOCK | A.CONNECT;
 A.SELECT_CONNECTIONS = A.CONNECT;
 A.MODES = A.TOOLS | A.SELECT | A.BLOCK | A.OBJECT | A.CONNECT;
@@ -48,7 +50,7 @@ const hints: IHints = [
   { tag: "4", text: "Objects", action: A.OBJECT, show: A.SELECT },
   { tag: "8", text: "Quicksave", action: A.SAVE, show: A.SELECT },
   { tag: "9", text: "Quickload", action: A.LOAD, show: A.SELECT },
-  { tag: "0", text: "Export", action: null, show: A.SELECT },
+  { tag: "0", text: "Export", action: A.EXPORT, show: A.SELECT },
   { tag: "Z", text: "Delete", action: A.DELETE, show: A.SELECT },
   // drawing
   { tag: "ESC", text: "Back", action: A.SELECT, show: A.TOOLS },
@@ -56,6 +58,7 @@ const hints: IHints = [
   { tag: "2", text: "Curve", action: A.CURVE, show: A.TOOLS, on: A.CURVE },
   { tag: "3", text: "SideA", action: A.SIDEA, show: A.TOOLS, on: A.SIDEA },
   { tag: "4", text: "SideB", action: A.SIDEB, show: A.TOOLS, on: A.SIDEB },
+  { tag: "5", text: "Inf L", action: A.LONG, show: A.TOOLS, on: A.LONG },
   { tag: "Z", text: "Next tool", action: A.NEXT, show: A.TOOLS },
   { tag: "X", text: "Prev tool", action: A.PREV, show: A.TOOLS },
   // block
@@ -91,6 +94,7 @@ const keyMap: {
   "7": 55,
   "8": 56,
   "9": 57,
+  "0": 48,
   Z: 90,
   X: 88,
   ESC: 27

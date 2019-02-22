@@ -9,6 +9,7 @@ export default class Objects {
   }
 
   getTriangleCorners(hex: Hex) {
+    // right, left, top
     return this.getCorners(hex).filter((v, i) => i % 2 === 1);
   }
 
@@ -30,6 +31,22 @@ export default class Objects {
     };
   }
 
+  infiniLine(hex: Hex, index: number): IRailLine {
+    const corners = this.getTriangleCorners(hex);
+    const pairs = [[1, 0], [2, 0], [2, 1], [0, 1], [0, 2], [1, 2]];
+    const [a, b] = pairs[index];
+    let [sx, sy, ex, ey] = [
+      corners[a].x,
+      corners[a].y,
+      corners[b].x,
+      corners[b].y
+    ];
+    ex = (ex - sx) * 10 + ex;
+    ey = (ey - sy) * 10 + ey;
+
+    return { sx, sy, ex, ey, type: 0x10 + index };
+  }
+
   longArc(hex: Hex, index: number): IRailArc {
     const corners = this.getTriangleCorners(hex);
     const pairs = [[2, 0], [2, 1], [0, 1], [0, 2], [1, 2], [1, 0]];
@@ -45,8 +62,10 @@ export default class Objects {
 
     const [a, b] = pairs[index];
     const [a1, a2] = angles[index];
-    const radius = 3 * hex.size;
-    const center = corners[a].add(corners[a].subtract(corners[b]));
+    const radius = 6 * hex.size;
+    const center = corners[a].add(
+      corners[a].subtract(corners[b]).multiply(3, 3)
+    );
     const { x, y } = center;
 
     const sx = x + radius * Math.cos(a1);
@@ -59,8 +78,8 @@ export default class Objects {
   shortArc(hex: Hex, index: number): IRailArc {
     const corners = this.getTriangleCorners(hex);
     const points = [1, 0, 2, 1, 0, 2];
-    const radius = 3.5 * hex.size; // magic1
-    const arc = 2 / 3; // magic2
+    const radius = 3.5 * Math.sqrt(3); //3.5 * hex.size; // magic1
+    const arc = 0.3802512067; // 1 / 3; magic2
 
     const rot1 = (2 / 3) * Math.PI;
     const rot2 = (4 / 3) * Math.PI;
@@ -88,8 +107,8 @@ export default class Objects {
   shortArc2(hex: Hex, index: number): IRailArc {
     const corners = this.getTriangleCorners(hex);
     const points = [2, 2, 0, 0, 1, 1];
-    const radius = 3.5 * hex.size; // magic1
-    const arc = 2 / 3; // magic2
+    const radius = 3.5 * Math.sqrt(3); // 3.5 * hex.size; // magic1
+    const arc = 0.3802512067; // 2*Math.acos(9 / sqrt(84)) //1 / 3; // magic2
 
     const rot1 = (2 / 3) * Math.PI;
     const rot2 = (4 / 3) * Math.PI;

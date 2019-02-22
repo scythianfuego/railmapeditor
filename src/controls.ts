@@ -51,6 +51,14 @@ const tools: Tools = {
     hex => objects.shortArc2(hex, 3),
     hex => objects.shortArc2(hex, 4),
     hex => objects.shortArc2(hex, 5)
+  ],
+  [A.LONG]: [
+    hex => objects.infiniLine(hex, 0),
+    hex => objects.infiniLine(hex, 1),
+    hex => objects.infiniLine(hex, 2),
+    hex => objects.infiniLine(hex, 3),
+    hex => objects.infiniLine(hex, 4),
+    hex => objects.infiniLine(hex, 5)
   ]
 };
 
@@ -271,6 +279,7 @@ export default class Controls {
     action & A.SWITCH_BP && this.model.setSwitchSegmentType(2);
     action & A.SWITCH_BS && this.model.setSwitchSegmentType(3);
 
+    action & A.EXPORT && this.model.export();
     action & A.SAVE &&
       window.localStorage.setItem("savedata0", this.model.serialize());
 
