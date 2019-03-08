@@ -6,6 +6,7 @@ interface IState {
   hints: any[];
   tool: any; // ?
   cursorCell: any;
+  cursorType: number;
   selectionMode: boolean;
   // display scale
   panX: number;

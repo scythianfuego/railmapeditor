@@ -3,10 +3,14 @@ import IRailObject from "./interfaces/IRailObject";
 import IConnection from "./interfaces/IConnection";
 import ISwitch from "./interfaces/ISwitch";
 import LZString from "lz-string";
+import { LZMA } from "lzma/src/lzma_worker-min.js";
+import IGameObject from "./interfaces/IGameObject";
 
 const magic = 0x7ffffffe;
 
 const MIN_DISTANCE = 0.1;
+const inside = (x: number, a: number, b: number) =>
+  a < b ? a <= x && x <= b : a <= x || x <= b;
 const distance = (x1: number, y1: number, x2: number, y2: number) =>
   Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 
@@ -19,9 +23,12 @@ type ConnectionMap = {
 
 export default class Model {
   public selectedConnection: IConnection = null;
+  public selectedGameObject: IGameObject = null;
+
   public connections: IConnection[] = []; // TODO: remove public access
   public switches: ISwitch[] = [];
   public joins: IJoin[] = [];
+  public gameobjects: IGameObject[] = [];
 
   private store: IRailObject[] = [];
   private storeIndex = new Map();
@@ -43,34 +50,42 @@ export default class Model {
       .filter(c => c.items.length === 2)
       .map(c => c.items as IJoin);
 
+    // LZMA.compress(string || byte_array, mode, on_finish(result, error) {}, on_progress(percent) {});
+    // LZMA.decompress(byte_array, on_finish(result, error) {}, on_progress(percent) {});
+    const trim = (n: number) => (n ? Math.floor(n * 1000) : 0);
     const joins = this.joins.concat(autojoins);
+
     const result = JSON.stringify(
       {
-        rails: this.store.map(i => ({
-          id: i.meta.id,
-          block: i.meta.block,
-          type: i.type,
-          sx: i.sx,
-          sy: i.sy,
-          ex: i.ex,
-          ey: i.ey,
-          x: i.x,
-          y: i.y,
-          a1: normalize(i.a1),
-          a2: normalize(i.a2),
-          radius: i.radius
-        })),
+        rails: this.store.map(i => [
+          i.meta.id,
+          i.meta.block,
+          i.type,
+          trim(i.sx),
+          trim(i.sy),
+          trim(i.ex),
+          trim(i.ey),
+          trim(i.x),
+          trim(i.y),
+          trim(normalize(i.a1)),
+          trim(normalize(i.a2)),
+          trim(i.radius)
+        ]),
         switches: this.switches,
-        joins
+        joins,
+        objects: this.gameobjects
       },
       null
       //, 2
     );
+    const compressed = LZMA.compress(result).map((i: number) => i & 255);
+    const unsigned = Uint8Array.from(compressed);
+    const b64encoded = btoa(String.fromCharCode.apply(null, unsigned));
     window.open(
       "",
       "",
       "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes"
-    ).document.body.innerHTML = `<pre>${result}</pre>`;
+    ).document.body.innerHTML = `<pre>${b64encoded}</pre>`;
   }
 
   serialize() {
@@ -81,7 +96,8 @@ export default class Model {
         objectId: this.objectId,
         connections: this.connections,
         switches: this.switches,
-        joins: this.joins
+        joins: this.joins,
+        gameobjects: this.gameobjects
       })
     );
   }
@@ -94,6 +110,7 @@ export default class Model {
     this.connections = obj.connections;
     this.switches = obj.switches;
     this.joins = obj.joins;
+    this.gameobjects = obj.gameobjects;
 
     //reindex
     this.storeIndex = new Map();
@@ -161,7 +178,6 @@ export default class Model {
     const rx = Math.max(sx, ex);
     const ly = Math.min(sy, ey);
     const ry = Math.max(sy, ey);
-    const inside = (x: number, a: number, b: number) => a < x && x < b;
     const insideX = (x: number) => inside(x, lx, rx);
     const insideY = (y: number) => inside(y, ly, ry);
     const insideXY = (x: number, y: number) => insideX(x) && insideY(y);
@@ -171,8 +187,6 @@ export default class Model {
   findByXY(x: number, y: number): IRailObject[] {
     const TAU = 2 * Math.PI;
     const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
-    const inside = (x: number, a: number, b: number) =>
-      a < b ? a <= x && x <= b : a <= x || x <= b;
 
     const pointInArc = (x: number, y: number, obj: IRailObject) => {
       // check if within sector and close to radius
@@ -316,5 +330,31 @@ export default class Model {
       sw[newType] = sw[oldType];
       sw[oldType] = tmp;
     }
+  }
+
+  // objects
+  addGameObject(x: number, y: number) {
+    const o: IGameObject = {
+      x,
+      y,
+      type: "none",
+      zindex: 0
+    };
+
+    this.gameobjects.push(o);
+  }
+
+  deleteSelectedGameObject() {
+    this.selectedGameObject &&
+      (this.gameobjects = this.gameobjects.filter(
+        o => o !== this.selectedGameObject
+      ));
+  }
+
+  findGameObjectByXY(x: number, y: number) {
+    const d = 1.28 * 0.5;
+    return this.gameobjects.find(
+      o => inside(x, o.x - d, o.x + d) && inside(y, o.y - d, o.y + d)
+    );
   }
 }

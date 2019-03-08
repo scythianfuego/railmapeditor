@@ -14,7 +14,7 @@ export default class PropertyEditor extends HTMLElement {
   }
 
   public get data() {
-    return this.data;
+    return this._data;
   }
 
   constructor() {
@@ -30,15 +30,36 @@ export default class PropertyEditor extends HTMLElement {
   }
 
   public get userInput() {
-    const values: string[] = Array.from(
-      document.querySelectorAll(".property-value")
-    ).map((v: HTMLInputElement) => v.value);
+    const values: IKeyValue[] = Array.from(
+      this.root.querySelectorAll(".property-value")
+    ).map((v: HTMLInputElement) => ({
+      id: v.getAttribute("data-id"),
+      type: v.getAttribute("data-type"),
+      value: v.value
+    }));
 
-    const ids = this._data.map(v => v.id);
-    return ids.reduce((acc: IKeyValue, curr, i) => {
-      acc[curr] = values[i];
+    return values.reduce((acc: IKeyValue, curr: IKeyValue) => {
+      let { id, type, value } = curr;
+      // type conversion
+      switch (type) {
+        case "boolean":
+          value = value === 1 ? true : false;
+          break;
+
+        case "number":
+          value = Number.parseFloat(value);
+
+        default:
+          break;
+      }
+      acc[id] = value;
       return acc;
     }, {});
+    // const ids = this._data.map(v => v.id).filter(v => v != null);
+    // return ids.reduce((acc: IKeyValue, curr, i) => {
+    //   acc[curr] = values[i];
+    //   return acc;
+    // }, {});
   }
 
   get hidden() {
@@ -77,23 +98,30 @@ export default class PropertyEditor extends HTMLElement {
       let value: HTMLElement;
       const v = line.value != null ? line.value.toString() : "";
 
+      let type = line.type;
+      let options = line.options;
       if (line.type === "boolean") {
-        line.type = "select";
-        line.options = ["true", "false"];
+        type = "select";
+        options = ["true", "false"];
       }
 
-      switch (line.type) {
+      switch (type) {
         case "text":
+        case "number":
           value = document.createElement("input");
           value.classList.add("property-value");
-          value.setAttribute("type", "text");
+          value.setAttribute("type", type);
           value.setAttribute("value", v);
+          value.setAttribute("data-id", line.id);
+          value.setAttribute("data-type", line.type);
           break;
 
         case "select":
           value = document.createElement("select");
           value.classList.add("property-value");
-          line.options.forEach(o => {
+          value.setAttribute("data-id", line.id);
+          value.setAttribute("data-type", line.type);
+          options.forEach(o => {
             const option = document.createElement("option");
             option.innerText = o;
             o === v && option.setAttribute("selected", "selected");
@@ -106,6 +134,8 @@ export default class PropertyEditor extends HTMLElement {
           value.classList.add("property-value");
           value.setAttribute("type", "text");
           value.setAttribute("disabled", "disabled");
+          value.setAttribute("data-id", line.id);
+          value.setAttribute("data-type", line.type);
           value.innerText = v;
           break;
       }
@@ -122,7 +152,13 @@ export default class PropertyEditor extends HTMLElement {
     const save = document.createElement("div");
     save.classList.add("properties-save");
     save.innerText = "Save";
-    save.addEventListener("click", () => alert("saved"));
+    save.addEventListener("click", () => {
+      const changeEvent = new Event("change", {
+        bubbles: true,
+        cancelable: false
+      });
+      this.dispatchEvent(changeEvent);
+    });
     submit.append(save);
     container.append(submit);
   }

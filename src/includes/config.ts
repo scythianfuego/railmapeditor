@@ -28,11 +28,17 @@ const A: { [index: string]: number } = {
   SWITCH_BS: 0x100000,
   SAVE: 0x200000,
   LOAD: 0x400000,
-  EXPORT: 0x800000
+  EXPORT: 0x800000,
+
+  OBJECTNEW: 0x1000000,
+  OBJECTEDIT: 0x2000000,
+  OBJECTMOVE: 0x4000000,
+  OBJECTDELETE: 0x8000000
 };
 A.TOOLS = A.LINES | A.CURVE | A.SIDEA | A.SIDEB | A.LONG;
 A.SELECTABLE = A.SELECT | A.BLOCK | A.CONNECT;
 A.SELECT_CONNECTIONS = A.CONNECT;
+A.SELECT_OBJECTS = A.OBJECT;
 A.MODES = A.TOOLS | A.SELECT | A.BLOCK | A.OBJECT | A.CONNECT;
 
 const actions = A;
@@ -70,16 +76,20 @@ const hints: IHints = [
   { tag: "ESC", text: "Back", action: A.SELECT, show: A.CONNECT },
   { tag: "Z", text: "Create switch", action: A.SWITCH, show: A.CONNECT },
 
-  { tag: "1", text: "AP", action: A.SWITCH_AP, show: A.CONNECT },
-  { tag: "2", text: "AS", action: A.SWITCH_AS, show: A.CONNECT },
-  { tag: "3", text: "BP", action: A.SWITCH_BP, show: A.CONNECT },
-  { tag: "4", text: "BS", action: A.SWITCH_BS, show: A.CONNECT },
+  { tag: "1", text: "A1", action: A.SWITCH_AP, show: A.CONNECT },
+  { tag: "2", text: "A2", action: A.SWITCH_AS, show: A.CONNECT },
+  { tag: "3", text: "B1", action: A.SWITCH_BP, show: A.CONNECT },
+  { tag: "4", text: "B2", action: A.SWITCH_BS, show: A.CONNECT },
   // todo: find common connection for selection
   // onclick select switch components - with alteration
   { tag: "X", text: "Connect", action: A.JOIN, show: A.CONNECT },
 
   // object
-  { tag: "ESC", text: "Back", action: A.SELECT, show: A.OBJECT }
+  { tag: "ESC", text: "Back", action: A.SELECT, show: A.OBJECT },
+  { tag: "1", text: "New", action: A.OBJECTNEW, show: A.OBJECT },
+  { tag: "2", text: "Edit", action: A.OBJECTEDIT, show: A.OBJECT },
+  { tag: "3", text: "Move", action: A.OBJECTMOVE, show: A.OBJECT },
+  { tag: "Z", text: "Delete", action: A.OBJECTDELETE, show: A.OBJECT }
 ];
 
 const keyMap: {
@@ -101,6 +111,7 @@ const keyMap: {
 };
 
 const objectDefaults: IKeyValue[] = [
+  { type: "none" },
   { type: "End of line", texture: ["end1.png", "end07.png"] },
   { type: "Depot", texture: "depot.png", house: "single" },
   { type: "Building", texture: ["house1.png", "house2.png"] }
@@ -108,18 +119,14 @@ const objectDefaults: IKeyValue[] = [
 
 const objectTypes = objectDefaults.map(v => v.type);
 
+// prettier-ignore
 const objectCommon: IProperty[] = [
   { label: "Object", type: "label" },
-  {
-    label: "Type",
-    type: "select",
-    options: objectTypes,
-    id: "type"
-  },
+  { label: "Type", type: "select", options: objectTypes, id: "type" },
   { label: "Position", type: "label" },
-  { label: "X", type: "text", id: "width", value: 0 },
-  { label: "Y", type: "text", id: "height", value: 0 },
-  { label: "Z-index", type: "text", id: "height", value: 0 },
+  { label: "X", type: "number", id: "x", value: 0 },
+  { label: "Y", type: "number", id: "y", value: 0 },
+  { label: "Zindex", type: "number", id: "zindex", value: 0 },
   { label: "Properties", type: "label" }
 ];
 
@@ -128,5 +135,6 @@ export default {
   keyMap,
   actions,
   objectDefaults,
-  objectCommon
+  objectCommon,
+  objectTypes
 };

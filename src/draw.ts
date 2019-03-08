@@ -5,6 +5,7 @@ import IRailObject from "./interfaces/IRailObject";
 import IHintLine from "./interfaces/IHintLine";
 import IState from "./interfaces/IState";
 import { Listener, Store } from "unistore";
+import IGameObject from "./interfaces/IGameObject";
 
 const TAU = 2 * Math.PI;
 const hex2rgba = (hex: string) => {
@@ -131,6 +132,7 @@ export default class Draw {
 
     this.connections();
     this.model.forEach((obj: IRailObject) => this.object(obj));
+    this.model.gameobjects.forEach((obj: IGameObject) => this.gameObject(obj));
     this.cursor();
     this.labelCache.forEach(([x, y, what]) => this.text(x, y, what));
     this.selectionFrame();
@@ -138,7 +140,15 @@ export default class Draw {
   }
 
   private cursor() {
-    this.tool && this.cursorCell && this.object(this.tool(this.cursorCell));
+    switch (this.state.cursorType) {
+      case 0:
+        this.tool && this.cursorCell && this.object(this.tool(this.cursorCell));
+        break;
+
+      case 1:
+        this.drawObjectCursor();
+        break;
+    }
   }
 
   private cell(hex: Hex, style: string) {
@@ -190,6 +200,40 @@ export default class Draw {
       [3, 5, 1].forEach(i => this.screen.lineTo(corners[i].x, corners[i].y));
     });
     this.ctx.stroke();
+  }
+
+  private drawObjectCursor() {
+    const [x, y] = this.state.mouse.coords;
+
+    const objW = scale(1.28); // 64/50
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = "#ffffff";
+    this.ctx.rect(x - objW * 0.5, y - objW * 0.5, objW, objW);
+    this.ctx.moveTo(x - objW * 0.5, y - objW * 0.5);
+    this.ctx.lineTo(x + objW * 0.5, y + objW * 0.5);
+    this.ctx.moveTo(x - objW * 0.5, y + objW * 0.5);
+    this.ctx.lineTo(x + objW * 0.5, y - objW * 0.5);
+    this.ctx.stroke();
+  }
+
+  private gameObject(obj: IGameObject) {
+    const { x, y } = obj; // refactor object frame out
+
+    const objW = 1.28; // 64/50
+    this.ctx.beginPath();
+    this.ctx.strokeStyle =
+      obj === this.model.selectedGameObject ? "#ff0000" : "#008000";
+    this.screen.strokeRect(x - objW * 0.5, y - objW * 0.5, objW, objW);
+    this.screen.moveTo(x - objW * 0.5, y - objW * 0.5);
+    this.screen.lineTo(x + objW * 0.5, y + objW * 0.5);
+    this.screen.moveTo(x - objW * 0.5, y + objW * 0.5);
+    this.screen.lineTo(x + objW * 0.5, y - objW * 0.5);
+    this.ctx.stroke();
+
+    const desc = `${obj.type}`;
+    this.ctx.font = "12px Arial";
+    this.ctx.fillStyle = "#ffffff";
+    this.screen.fillText(desc, x - objW * 0.5, y - objW * 0.5 + pixels(12));
   }
 
   // private point(x: number, y: number, style: string, size: number) {

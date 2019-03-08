@@ -9,6 +9,8 @@ import IHints from "./interfaces/IHints";
 import IRailObject from "./interfaces/IRailObject";
 import config from "./includes/config";
 import PropertyEditor from "./components/properties";
+import IGameObject from "./interfaces/IGameObject";
+import IKeyValue from "./interfaces/IKeyValue";
 
 const objects = new Objects();
 
@@ -63,6 +65,7 @@ const tools: Tools = {
 };
 
 export default class Controls {
+  private createObjectMode: boolean = false;
   private currentTool = 0;
   private toolset: Tool[] = [];
   private getTool = () =>
@@ -72,8 +75,12 @@ export default class Controls {
   private ctrl: boolean = false;
   private active: string = "";
 
+  private propertyEditor: PropertyEditor = null;
+  private editedObject: IGameObject = null;
+
   constructor(private model: Model) {
-    const mode = A.LINES;
+    // const mode = A.LINES;
+    const mode = A.OBJECT; //debug
     const hints = this.applyHintsFilter(mode);
     store.setState({ hints });
 
@@ -85,7 +92,7 @@ export default class Controls {
     canvas.addEventListener("mousedown", event => this.onMouseDown(event));
     canvas.addEventListener("mouseup", event => this.onMouseUp(event));
     canvas.addEventListener("wheel", event => this.onWheel(event));
-    this.runAction(A.LINES);
+    this.runAction(mode);
   }
 
   applyHintsFilter(mode: number) {
@@ -156,6 +163,17 @@ export default class Controls {
     if (state.mode & A.SELECT_CONNECTIONS) {
       const hit = this.model.findConnection(wx(x), wy(y));
       this.model.selectedConnection = hit;
+    }
+
+    if (state.mode & A.SELECT_OBJECTS) {
+      const hit = this.model.findGameObjectByXY(wx(x), wy(y));
+      this.model.selectedGameObject = hit;
+    }
+
+    if (this.createObjectMode) {
+      this.model.addGameObject(wx(x), wy(y));
+      this.createObjectMode = false;
+      store.setState({ cursorType: 0 });
     }
 
     const down = event.button === 0;
@@ -286,17 +304,48 @@ export default class Controls {
     action & A.LOAD &&
       this.model.unserialize(localStorage.getItem("savedata0"));
 
+    action & A.OBJECTNEW && (this.createObjectMode = true);
+    action & A.OBJECTDELETE && this.model.deleteSelectedGameObject();
+    action & A.OBJECTEDIT &&
+      this.showPropertyBox(this.model.selectedGameObject);
+
+    if (action & A.SELECT) {
+      this.editedObject = null;
+      this.propertyEditor.hidden = true;
+    }
+
+    const cursorType = this.createObjectMode ? 1 : 0;
     const hints = this.applyHintsFilter(mode);
     store.setState({
       tool: this.getTool(),
       selectionMode,
+      cursorType,
       blocks,
       hints,
       mode
     });
   }
 
-  getObjectDefaultProperties(type: string): IProperty[] {
+  objectToPropertyList(obj: IGameObject) {
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    const values = Object.entries(obj).filter(v => v[0] !== "type");
+
+    return values.map(([key, value]) => {
+      // const type = getType(value);
+      const options = Array.isArray(value) ? value : null;
+      value = Array.isArray(value) ? value[0] : value;
+      const result: IProperty = {
+        label: key,
+        id: key,
+        type: "text",
+        options,
+        value
+      };
+      return result;
+    });
+  }
+
+  makeObjectProperties(obj: IGameObject): IProperty[] {
     const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
     const getType = (value: any) =>
       Array.isArray(value)
@@ -305,10 +354,9 @@ export default class Controls {
         ? "boolean"
         : "text";
 
-    const found = config.objectDefaults.find(v => v.type === type);
-    const defaults = Object.entries(found).filter(v => v[0] !== "type");
-
-    return defaults.map(([key, value]) => {
+    const found = config.objectDefaults.find(v => v.type === obj.type);
+    const valueArr = Object.entries(found).filter(v => v[0] !== "type");
+    let properties: IProperty[] = valueArr.map(([key, value]) => {
       const type = getType(value);
       const options = Array.isArray(value) ? value : null;
       value = Array.isArray(value) ? value[0] : value;
@@ -321,6 +369,19 @@ export default class Controls {
       };
       return result;
     });
+
+    // add common header
+    properties = config.objectCommon.concat(properties);
+
+    // set values in properties with corresponding from object
+    Object.entries(obj).forEach(([key, value]) => {
+      const item = properties.find(v => v.id === key);
+      if (item) {
+        item.value = value;
+      }
+    });
+
+    return properties;
   }
 
   // if data -> show data
@@ -330,17 +391,53 @@ export default class Controls {
   // if type changes -> reset defauts
   // common stays
 
-  showPropertyBox(type: string) {
-    // data?
-    const { objectCommon } = config;
+  showPropertyBox(obj: IGameObject) {
+    if (!obj) {
+      return;
+    }
 
-    const pe = <PropertyEditor>document.querySelector("property-box");
-    pe.hidden = false;
+    if (!this.editedObject) {
+      this.editedObject = obj;
+    }
 
-    const data = objectCommon.concat(this.getObjectDefaultProperties(type));
-    const typeSelector = data.find(v => v.id === "type");
-    typeSelector.value = type;
-    typeSelector.onChange = () => this.showPropertyBox(type);
-    pe.data = data;
+    if (!this.propertyEditor) {
+      this.propertyEditor = <PropertyEditor>(
+        document.querySelector("property-box")
+      );
+      this.propertyEditor.addEventListener("change", () => {
+        console.log("Save A -> B");
+        console.log(this.editedObject);
+        console.log(this.propertyEditor.userInput);
+        const index = this.model.gameobjects.indexOf(this.editedObject);
+        this.model.gameobjects[index] = <IGameObject>(
+          this.propertyEditor.userInput
+        );
+        this.editedObject = null;
+        this.propertyEditor.hidden = true;
+      });
+    }
+    this.propertyEditor.hidden = false;
+
+    // const data = config.objectCommon;
+    const data = this.makeObjectProperties(obj);
+
+    // recreate type selector dropdown
+    const selector = data.find(v => v.id === "type");
+    selector.options = config.objectTypes;
+    selector.value = obj.type;
+    selector.type = "select";
+    selector.onChange = () => {
+      const input: IKeyValue = this.propertyEditor.userInput;
+      if (input.type === this.editedObject.type) {
+        // reset values
+        setTimeout(() => this.showPropertyBox(this.editedObject), 0);
+      } else {
+        const { type, x, y, zindex } = input;
+        const emptyObject: IGameObject = { type, x, y, zindex };
+        this.showPropertyBox(emptyObject);
+      }
+      console.log("changed");
+    };
+    this.propertyEditor.data = data;
   }
 }
