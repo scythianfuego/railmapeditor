@@ -10,7 +10,11 @@ module.exports = {
   devtool: "source-map",
   devServer: {
     contentBase: "./src/html",
-    watchContentBase: true
+    watchContentBase: true,
+    port: 8080,
+    proxy: {
+      "/assets/": "http://localhost:8081"
+    }
   },
   resolve: {
     extensions: [".ts", ".js"]

@@ -8,6 +8,7 @@ interface IState {
   cursorCell: any;
   cursorType: number;
   selectionMode: boolean;
+  thickLines: boolean;
   // display scale
   panX: number;
   panY: number;

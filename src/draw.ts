@@ -20,9 +20,15 @@ const colors = {
 
 const { sx, sy, scale, pixels, getCorners } = ts;
 
+type TextureAtlas = {
+  [index: string]: HTMLImageElement;
+};
+
 export default class Draw {
   private ctx: CanvasRenderingContext2D;
   private hexgrid: Grid;
+
+  private textures: TextureAtlas = {};
 
   private screen = {
     moveTo: (x: number, y: number) => this.ctx.moveTo(sx(x), sy(y)),
@@ -130,7 +136,7 @@ export default class Draw {
     this.grid();
     !this.selectionMode && this.cell(this.cursorCell, "#fff");
 
-    this.connections();
+    !this.state.thickLines && this.connections();
     this.model.forEach((obj: IRailObject) => this.object(obj));
     this.model.gameobjects.forEach((obj: IGameObject) => this.gameObject(obj));
     this.cursor();
@@ -146,7 +152,7 @@ export default class Draw {
         break;
 
       case 1:
-        this.drawObjectCursor();
+        // none
         break;
     }
   }
@@ -202,38 +208,62 @@ export default class Draw {
     this.ctx.stroke();
   }
 
-  private drawObjectCursor() {
-    const [x, y] = this.state.mouse.coords;
-
-    const objW = scale(1.28); // 64/50
-    this.ctx.beginPath();
-    this.ctx.strokeStyle = "#ffffff";
-    this.ctx.rect(x - objW * 0.5, y - objW * 0.5, objW, objW);
-    this.ctx.moveTo(x - objW * 0.5, y - objW * 0.5);
-    this.ctx.lineTo(x + objW * 0.5, y + objW * 0.5);
-    this.ctx.moveTo(x - objW * 0.5, y + objW * 0.5);
-    this.ctx.lineTo(x + objW * 0.5, y - objW * 0.5);
-    this.ctx.stroke();
-  }
-
   private gameObject(obj: IGameObject) {
-    const { x, y } = obj; // refactor object frame out
+    const { x, y, texture, rotation } = obj; // refactor object frame out
 
-    const objW = 1.28; // 64/50
-    this.ctx.beginPath();
+    const atlas = this.textures;
+
+    if (texture && atlas[texture] === undefined) {
+      atlas[texture] = null;
+      const image = new Image();
+      image.src = `assets/${texture}`;
+      image.onload = () => (atlas[texture] = image);
+    }
+
+    let objW = 1.28; // 64/50
+    const pxUnit = 50;
+    const img = atlas[texture] || null;
+
+    const cx = sx(x); // image center
+    const cy = sy(y);
+    const w = scale(img ? img.width : 64) / pxUnit;
+    const h = scale(img ? img.height : 64) / pxUnit;
     this.ctx.strokeStyle =
       obj === this.model.selectedGameObject ? "#ff0000" : "#008000";
-    this.screen.strokeRect(x - objW * 0.5, y - objW * 0.5, objW, objW);
-    this.screen.moveTo(x - objW * 0.5, y - objW * 0.5);
-    this.screen.lineTo(x + objW * 0.5, y + objW * 0.5);
-    this.screen.moveTo(x - objW * 0.5, y + objW * 0.5);
-    this.screen.lineTo(x + objW * 0.5, y - objW * 0.5);
+
+    // transform
+    this.ctx.save();
+    this.ctx.translate(cx, cy);
+    rotation && this.ctx.rotate((rotation * Math.PI) / 180);
+    this.ctx.translate(-w * 0.5, -h * 0.5);
+
+    // texture
+    if (img) {
+      // this.ctx.globalAlpha = 0.5;
+      this.ctx.drawImage(img, 0, 0, w, h);
+      this.ctx.globalAlpha = 1;
+    }
+
+    // outline
+    this.ctx.beginPath();
+    this.ctx.strokeRect(0, 0, w, h);
+    this.ctx.moveTo(0, 0);
+    this.ctx.lineTo(w, h);
+    this.ctx.moveTo(0, h);
+    this.ctx.lineTo(w, 0);
+    this.ctx.arc(w, 0, 5, 0, 6.29);
     this.ctx.stroke();
+
+    this.ctx.beginPath();
+    this.ctx.arc(w * 0.5, h * 0.5, scale(1.28 * 0.5), 0, 6.29);
+    this.ctx.stroke();
+
+    this.ctx.restore();
 
     const desc = `${obj.type}`;
     this.ctx.font = "12px Arial";
     this.ctx.fillStyle = "#ffffff";
-    this.screen.fillText(desc, x - objW * 0.5, y - objW * 0.5 + pixels(12));
+    this.screen.fillText(desc, x, y - pixels(12));
   }
 
   // private point(x: number, y: number, style: string, size: number) {
@@ -263,7 +293,7 @@ export default class Draw {
     const { x, y, radius, a1, a2, type, meta } = obj;
     const color = this.getColor(type, meta && meta.selected);
     this.ctx.strokeStyle = color;
-    this.ctx.lineWidth = 2;
+    this.ctx.lineWidth = this.state.thickLines ? scale(0.5) : 2;
     this.ctx.beginPath();
     this.screen.arc(x, y, radius, a1, a2);
     this.ctx.stroke();
@@ -314,7 +344,7 @@ export default class Draw {
   private line(obj: IRailObject) {
     const { sx, sy, ex, ey, type, meta } = obj;
     const color = this.getColor(type, meta && meta.selected);
-    this.ctx.lineWidth = 2;
+    this.ctx.lineWidth = this.state.thickLines ? scale(0.5) : 2;
     this.ctx.beginPath();
     this.ctx.strokeStyle = color;
     this.screen.moveTo(sx, sy);

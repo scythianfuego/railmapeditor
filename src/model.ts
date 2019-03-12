@@ -104,13 +104,13 @@ export default class Model {
 
   unserialize(data: string) {
     const obj = JSON.parse(LZString.decompressFromUTF16(data));
-    this.store = obj.store;
-    this.blockId = obj.blockId;
-    this.objectId = obj.objectId;
-    this.connections = obj.connections;
-    this.switches = obj.switches;
-    this.joins = obj.joins;
-    this.gameobjects = obj.gameobjects;
+    this.store = obj.store || [];
+    this.blockId = obj.blockId || [];
+    this.objectId = obj.objectId || [];
+    this.connections = obj.connections || [];
+    this.switches = obj.switches || [];
+    this.joins = obj.joins || [];
+    this.gameobjects = obj.gameobjects || [];
 
     //reindex
     this.storeIndex = new Map();
@@ -333,7 +333,7 @@ export default class Model {
   }
 
   // objects
-  addGameObject(x: number, y: number) {
+  addGameObject(x: number, y: number): IGameObject {
     const o: IGameObject = {
       x,
       y,
@@ -342,6 +342,15 @@ export default class Model {
     };
 
     this.gameobjects.push(o);
+    return o;
+  }
+
+  cloneGameObject(): IGameObject {
+    if (this.selectedGameObject) {
+      const clone = { ...this.selectedGameObject };
+      this.gameobjects.push(clone);
+      return clone;
+    }
   }
 
   deleteSelectedGameObject() {

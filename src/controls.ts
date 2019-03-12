@@ -92,6 +92,14 @@ export default class Controls {
     canvas.addEventListener("mousedown", event => this.onMouseDown(event));
     canvas.addEventListener("mouseup", event => this.onMouseUp(event));
     canvas.addEventListener("wheel", event => this.onWheel(event));
+
+    this.propertyEditor = <PropertyEditor>(
+      document.querySelector("property-box")
+    );
+    this.propertyEditor.addEventListener("change", () =>
+      this.onPropertyEditorSave()
+    );
+
     this.runAction(mode);
   }
 
@@ -171,8 +179,8 @@ export default class Controls {
     }
 
     if (this.createObjectMode) {
-      this.model.addGameObject(wx(x), wy(y));
       this.createObjectMode = false;
+      this.editedObject = null;
       store.setState({ cursorType: 0 });
     }
 
@@ -207,6 +215,13 @@ export default class Controls {
     const panY = mouse.pan ? state.panY + event.movementY : state.panY;
 
     store.setState({ mouse, cursorCell, panX, panY });
+
+    if (this.createObjectMode && this.editedObject) {
+      const [x, y] = coords;
+      const { wx, wy } = ts;
+      this.editedObject.x = wx(x);
+      this.editedObject.y = wy(y);
+    }
 
     state.mode & A.SELECTABLE &&
       state.mouse.selection &&
@@ -262,13 +277,15 @@ export default class Controls {
 
   runAction(action: number, index?: number) {
     const state = store.getState();
-    let { selectionMode, blocks } = state;
+    let { selectionMode, blocks, thickLines } = state;
+    const { wx, wy } = ts;
     // set new mode if action is in modes list
     const mode = action & A.MODES ? action : state.mode;
 
     // modes
     if (action & A.MODES) {
       blocks = false;
+      thickLines = false;
       this.toolset = [];
     }
 
@@ -279,6 +296,7 @@ export default class Controls {
     }
 
     action & A.SELECTABLE && (selectionMode = true);
+    action & A.OBJECT && (thickLines = true);
     action & A.BLOCK && (blocks = true);
 
     // actions to run
@@ -304,10 +322,23 @@ export default class Controls {
     action & A.LOAD &&
       this.model.unserialize(localStorage.getItem("savedata0"));
 
-    action & A.OBJECTNEW && (this.createObjectMode = true);
+    if (action & A.OBJECTNEW) {
+      this.createObjectMode = true;
+      const [x, y] = state.mouse.coords;
+      this.editedObject = this.model.addGameObject(wx(x), wy(y));
+    }
+    if (action & A.OBJECTMOVE) {
+      this.createObjectMode = true;
+      this.editedObject = this.model.selectedGameObject;
+    }
     action & A.OBJECTDELETE && this.model.deleteSelectedGameObject();
     action & A.OBJECTEDIT &&
       this.showPropertyBox(this.model.selectedGameObject);
+
+    if (action & A.OBJECTCLONE) {
+      this.createObjectMode = true;
+      this.editedObject = this.model.cloneGameObject();
+    }
 
     if (action & A.SELECT) {
       this.editedObject = null;
@@ -320,6 +351,7 @@ export default class Controls {
       tool: this.getTool(),
       selectionMode,
       cursorType,
+      thickLines,
       blocks,
       hints,
       mode
@@ -391,6 +423,16 @@ export default class Controls {
   // if type changes -> reset defauts
   // common stays
 
+  onPropertyEditorSave() {
+    console.log("Save A -> B");
+    console.log(this.editedObject);
+    console.log(this.propertyEditor.userInput);
+    const index = this.model.gameobjects.indexOf(this.editedObject);
+    this.model.gameobjects[index] = <IGameObject>this.propertyEditor.userInput;
+    this.editedObject = null;
+    this.propertyEditor.hidden = true;
+  }
+
   showPropertyBox(obj: IGameObject) {
     if (!obj) {
       return;
@@ -398,25 +440,8 @@ export default class Controls {
 
     if (!this.editedObject) {
       this.editedObject = obj;
+      this.propertyEditor.hidden = false;
     }
-
-    if (!this.propertyEditor) {
-      this.propertyEditor = <PropertyEditor>(
-        document.querySelector("property-box")
-      );
-      this.propertyEditor.addEventListener("change", () => {
-        console.log("Save A -> B");
-        console.log(this.editedObject);
-        console.log(this.propertyEditor.userInput);
-        const index = this.model.gameobjects.indexOf(this.editedObject);
-        this.model.gameobjects[index] = <IGameObject>(
-          this.propertyEditor.userInput
-        );
-        this.editedObject = null;
-        this.propertyEditor.hidden = true;
-      });
-    }
-    this.propertyEditor.hidden = false;
 
     // const data = config.objectCommon;
     const data = this.makeObjectProperties(obj);

@@ -33,7 +33,8 @@ const A: { [index: string]: number } = {
   OBJECTNEW: 0x1000000,
   OBJECTEDIT: 0x2000000,
   OBJECTMOVE: 0x4000000,
-  OBJECTDELETE: 0x8000000
+  OBJECTCLONE: 0x8000000,
+  OBJECTDELETE: 0x10000000
 };
 A.TOOLS = A.LINES | A.CURVE | A.SIDEA | A.SIDEB | A.LONG;
 A.SELECTABLE = A.SELECT | A.BLOCK | A.CONNECT;
@@ -54,8 +55,8 @@ const hints: IHints = [
   { tag: "2", text: "Block", action: A.BLOCK, show: A.SELECT },
   { tag: "3", text: "Switch", action: A.CONNECT, show: A.SELECT },
   { tag: "4", text: "Objects", action: A.OBJECT, show: A.SELECT },
-  { tag: "8", text: "Quicksave", action: A.SAVE, show: A.SELECT },
-  { tag: "9", text: "Quickload", action: A.LOAD, show: A.SELECT },
+  { tag: "S", text: "Quicksave", action: A.SAVE, show: A.SELECT },
+  { tag: "L", text: "Quickload", action: A.LOAD, show: A.SELECT },
   { tag: "0", text: "Export", action: A.EXPORT, show: A.SELECT },
   { tag: "Z", text: "Delete", action: A.DELETE, show: A.SELECT },
   // drawing
@@ -89,6 +90,7 @@ const hints: IHints = [
   { tag: "1", text: "New", action: A.OBJECTNEW, show: A.OBJECT },
   { tag: "2", text: "Edit", action: A.OBJECTEDIT, show: A.OBJECT },
   { tag: "3", text: "Move", action: A.OBJECTMOVE, show: A.OBJECT },
+  { tag: "4", text: "Clone", action: A.OBJECTCLONE, show: A.OBJECT },
   { tag: "Z", text: "Delete", action: A.OBJECTDELETE, show: A.OBJECT }
 ];
 
@@ -107,14 +109,16 @@ const keyMap: {
   "0": 48,
   Z: 90,
   X: 88,
+  S: 83,
+  L: 76,
   ESC: 27
 };
 
 const objectDefaults: IKeyValue[] = [
   { type: "none" },
-  { type: "End of line", texture: ["end1.png", "end07.png"] },
-  { type: "Depot", texture: "depot.png", house: "single" },
-  { type: "Building", texture: ["house1.png", "house2.png"] }
+  { type: "forest", texture: ["forest1.png", "bridge1.png"] },
+  { type: "depot", texture: "depot.png", house: "single" },
+  { type: "building", texture: ["house1.png", "house2.png"] }
 ];
 
 const objectTypes = objectDefaults.map(v => v.type);
@@ -126,6 +130,7 @@ const objectCommon: IProperty[] = [
   { label: "Position", type: "label" },
   { label: "X", type: "number", id: "x", value: 0 },
   { label: "Y", type: "number", id: "y", value: 0 },
+  { label: "Rotation", type: "number", id: "rotation", value: 0 },
   { label: "Zindex", type: "number", id: "zindex", value: 0 },
   { label: "Properties", type: "label" }
 ];
