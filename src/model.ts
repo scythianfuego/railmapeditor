@@ -219,12 +219,27 @@ export default class Model {
   }
 
   deleteSelected() {
-    // remove from index, should use lodash.partition instead
-    this.store
-      .filter(i => i.meta.selected)
-      .forEach(v => this.storeIndex.delete(v.meta.id));
+    let ids = this.store.filter(i => i.meta.selected).map(i => i.meta.id);
+    ids = ids.concat(ids.map(i => i + 1)); // add reverse links
 
+    // remove from store
     this.store = this.store.filter(i => !i.meta.selected);
+
+    ids.forEach(id => {
+      // remove from index, should use lodash.partition instead
+      this.storeIndex.delete(id);
+
+      // remove from joins and switches
+      this.joins = this.joins.filter(i => !i.includes(id));
+      this.switches = this.switches.filter(i => !i.includes(id));
+
+      // remove from connections
+      this.connections.forEach(i => {
+        i.items = i.items.filter(v => v !== id);
+      });
+    });
+    // delete empty connections
+    this.connections = this.connections.filter(i => i.items.length);
   }
 
   selectGroup(selection: any[]) {

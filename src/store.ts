@@ -15,6 +15,7 @@ const defaults: IState = {
   cursorCell: null,
   selectionMode: false,
   cursorType: 0,
+  thickLines: false,
   // display scale
   panX: 0,
   panY: 0,
