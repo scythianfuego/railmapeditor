@@ -379,12 +379,18 @@ export default class Controls {
 
   makeObjectProperties(obj: IGameObject): IProperty[] {
     const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-    const getType = (value: any) =>
-      Array.isArray(value)
-        ? "select"
-        : typeof value === "boolean"
-        ? "boolean"
-        : "text";
+    const getType = (value: any) => {
+      if (Array.isArray(value)) {
+        return "select";
+      }
+      if (typeof value === "boolean") {
+        return "boolean";
+      }
+      if (typeof value === "number") {
+        return "number";
+      }
+      return "text";
+    };
 
     const found = config.objectDefaults.find(v => v.type === obj.type);
     const valueArr = Object.entries(found).filter(v => v[0] !== "type");

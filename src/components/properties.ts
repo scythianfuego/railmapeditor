@@ -43,7 +43,7 @@ export default class PropertyEditor extends HTMLElement {
       // type conversion
       switch (type) {
         case "boolean":
-          value = value === 1 ? true : false;
+          value = value === "true" ? true : false;
           break;
 
         case "number":
@@ -102,7 +102,7 @@ export default class PropertyEditor extends HTMLElement {
       let options = line.options;
       if (line.type === "boolean") {
         type = "select";
-        options = ["true", "false"];
+        options = ["false", "true"];
       }
 
       switch (type) {

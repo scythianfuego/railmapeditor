@@ -114,9 +114,50 @@ const keyMap: {
   ESC: 27
 };
 
+const layers = [
+  "grass",
+  "rails",
+  "shadow",
+  "forest",
+  "train",
+  "platform",
+  "roof",
+  "highground",
+  "highrail",
+  "bridge",
+  "switch",
+  "topmost"
+];
+
 const objectDefaults: IKeyValue[] = [
   { type: "none" },
-  { type: "forest", texture: ["forest1.png", "bridge1.png"] },
+  {
+    type: "static",
+    texture: [
+      "forest1.png",
+      "bridge1.png",
+      "river.png",
+      "platform.png",
+      "fog1.png",
+      "sandpatch.png"
+    ],
+    layer: layers,
+    alpha: 1,
+    shadow: false,
+    width: 0
+  },
+  {
+    type: "light",
+    texture: [
+      "pointlight.png",
+      "pointup.png",
+      "pointdown.png",
+      "spotlight.png"
+    ],
+    layer: layers,
+    color: 0,
+    width: 50
+  },
   { type: "depot", texture: "depot.png", house: "single" },
   { type: "building", texture: ["house1.png", "house2.png"] }
 ];

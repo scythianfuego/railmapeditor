@@ -224,10 +224,26 @@ export default class Draw {
     const pxUnit = 50;
     const img = atlas[texture] || null;
 
+    let width = 64;
+    let height = 64;
+    if (img) {
+      width = img.width;
+      height = img.height;
+    }
+    if (img && Number(obj.width)) {
+      const aspect = img.height / img.width;
+      width = Number(obj.width);
+      if (img && obj.height) {
+        height = obj.height;
+      } else {
+        height = aspect * width;
+      }
+    }
+
     const cx = sx(x); // image center
     const cy = sy(y);
-    const w = scale(img ? img.width : 64) / pxUnit;
-    const h = scale(img ? img.height : 64) / pxUnit;
+    const w = scale(width) / pxUnit;
+    const h = scale(height) / pxUnit;
     this.ctx.strokeStyle =
       obj === this.model.selectedGameObject ? "#ff0000" : "#008000";
 
