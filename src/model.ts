@@ -381,4 +381,22 @@ export default class Model {
       o => inside(x, o.x - d, o.x + d) && inside(y, o.y - d, o.y + d)
     );
   }
+
+  private bring(forward: boolean) {
+    if (this.selectedGameObject) {
+      const index = this.gameobjects.indexOf(this.selectedGameObject);
+      const removed = this.gameobjects.splice(index, 1);
+      forward
+        ? this.gameobjects.push(removed[0])
+        : this.gameobjects.unshift(removed[0]);
+    }
+  }
+
+  bringForward() {
+    return this.bring(true);
+  }
+
+  bringBack() {
+    return this.bring(false);
+  }
 }

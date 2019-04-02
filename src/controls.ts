@@ -340,6 +340,9 @@ export default class Controls {
       this.editedObject = this.model.cloneGameObject();
     }
 
+    action & A.OBJECTFWD && this.model.bringForward();
+    action & A.OBJECTBACK && this.model.bringBack();
+
     if (action & A.SELECT) {
       this.editedObject = null;
       this.propertyEditor.hidden = true;

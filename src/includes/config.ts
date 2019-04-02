@@ -34,7 +34,9 @@ const A: { [index: string]: number } = {
   OBJECTEDIT: 0x2000000,
   OBJECTMOVE: 0x4000000,
   OBJECTCLONE: 0x8000000,
-  OBJECTDELETE: 0x10000000
+  OBJECTDELETE: 0x10000000,
+  OBJECTFWD: 0x40000000,
+  OBJECTBACK: 0x80000000
 };
 A.TOOLS = A.LINES | A.CURVE | A.SIDEA | A.SIDEB | A.LONG;
 A.SELECTABLE = A.SELECT | A.BLOCK | A.CONNECT;
@@ -91,6 +93,8 @@ const hints: IHints = [
   { tag: "2", text: "Edit", action: A.OBJECTEDIT, show: A.OBJECT },
   { tag: "3", text: "Move", action: A.OBJECTMOVE, show: A.OBJECT },
   { tag: "4", text: "Clone", action: A.OBJECTCLONE, show: A.OBJECT },
+  { tag: "5", text: "Forward", action: A.OBJECTFWD, show: A.OBJECT },
+  { tag: "6", text: "Back", action: A.OBJECTBACK, show: A.OBJECT },
   { tag: "Z", text: "Delete", action: A.OBJECTDELETE, show: A.OBJECT }
 ];
 
@@ -139,7 +143,11 @@ const objectDefaults: IKeyValue[] = [
       "river.png",
       "platform.png",
       "fog1.png",
-      "sandpatch.png"
+      "sandpatch.png",
+      "chalkpatch.png",
+      "redfog.png",
+      "blackfog.png",
+      "grasspatch.png"
     ],
     layer: layers,
     alpha: 1,
