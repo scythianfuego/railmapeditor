@@ -274,12 +274,12 @@ export default class Controls {
     }
   }
 
-  runAction(action: number, index?: number) {
+  runAction(action: number): void {
     const state = store.getState();
-    let { selectionMode, blocks, thickLines } = state;
     const { wx, wy } = ts;
+    let { selectionMode, blocks, thickLines } = state;
     // set new mode if action is in modes list
-    const mode = AG.MODES.includes(action) ? action : state.mode;
+    let mode = AG.MODES.includes(action) ? action : state.mode;
 
     // modes
     if (AG.MODES.includes(action)) {
@@ -315,11 +315,28 @@ export default class Controls {
     action === A.SWITCH_BS && this.model.setSwitchSegmentType(3);
 
     action === A.EXPORT && this.model.export();
-    action === A.SAVE &&
-      window.localStorage.setItem("savedata0", this.model.serialize());
 
-    action === A.LOAD &&
-      this.model.unserialize(localStorage.getItem("savedata0"));
+    if (AG.SAVESLOT.includes(action)) {
+      const slot = AG.SAVESLOT.indexOf(action);
+
+      // backup
+      const data = localStorage.getItem(`savedata${slot}`);
+      const hId = Number(localStorage.getItem(`historyId`)) || 0;
+      if (data) {
+        window.localStorage.setItem(`history${hId}`, data);
+        window.localStorage.setItem(`historyId`, `${(hId + 1) % 20}`);
+      }
+
+      window.localStorage.setItem(`savedata${slot}`, this.model.serialize());
+      mode = A.SELECT;
+    }
+
+    if (AG.LOADSLOT.includes(action)) {
+      const slot = AG.LOADSLOT.indexOf(action);
+      const data = localStorage.getItem(`savedata${slot}`);
+      data && this.model.unserialize(data);
+      mode = A.SELECT;
+    }
 
     if (action === A.OBJECTNEW) {
       this.createObjectMode = true;
@@ -345,6 +362,15 @@ export default class Controls {
     if (action === A.SELECT) {
       this.editedObject = null;
       this.propertyEditor.hidden = true;
+    }
+
+    if (
+      action === A.POINTS &&
+      (!this.model.selectedGameObject ||
+        !["Polygon", "Rope"].includes(this.model.selectedGameObject.type))
+    ) {
+      console.log("Point editor: wrong object", this.model.selectedGameObject);
+      return this.runAction(A.OBJECT);
     }
 
     const cursorType = this.createObjectMode ? 1 : 0;

@@ -89,21 +89,22 @@ export default class Model {
   }
 
   serialize() {
-    return LZString.compressToUTF16(
-      JSON.stringify({
-        store: this.store,
-        blockId: this.blockId,
-        objectId: this.objectId,
-        connections: this.connections,
-        switches: this.switches,
-        joins: this.joins,
-        gameobjects: this.gameobjects
-      })
-    );
+    // return LZString.compressToUTF16(
+    return JSON.stringify({
+      store: this.store,
+      blockId: this.blockId,
+      objectId: this.objectId,
+      connections: this.connections,
+      switches: this.switches,
+      joins: this.joins,
+      gameobjects: this.gameobjects
+    });
+    // );
   }
 
   unserialize(data: string) {
-    const obj = JSON.parse(LZString.decompressFromUTF16(data));
+    // LZString.decompressFromUTF16(data)
+    const obj = JSON.parse(data);
     this.store = obj.store || [];
     this.blockId = obj.blockId || [];
     this.objectId = obj.objectId || [];
