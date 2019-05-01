@@ -14,10 +14,9 @@ import IKeyValue from "./interfaces/IKeyValue";
 
 const objects = new Objects();
 
-// modes
-
 const defaultHints: IHints = config.hints;
 const A = config.actions;
+const AG = config.actionGroups;
 
 // tools controller.
 // type it
@@ -106,9 +105,9 @@ export default class Controls {
   applyHintsFilter(mode: number) {
     const result = defaultHints
       .map(a => ({ ...a })) // copy
-      .filter(i => (i.show & mode) !== 0);
+      .filter(i => i.show.includes(mode));
 
-    const selectedItem = result.find(i => (i.on & mode) !== 0);
+    const selectedItem = result.find(i => i.on === mode);
     selectedItem && (selectedItem.selected = true);
     const activeItem = result.find(i => i.tag === this.active);
     activeItem && (activeItem.active = true);
@@ -158,22 +157,22 @@ export default class Controls {
     const [x, y] = coords;
     const { wx, wy } = ts;
 
-    if (state.mode & A.SELECTABLE) {
+    if (AG.SELECTABLE.includes(state.mode)) {
       const hit = this.model.findByXY(wx(x), wy(y));
       // deselect if shift is not pressed
       !this.shift && this.model.deselect();
       this.model.select(hit);
-      if (state.mode & A.BLOCK) {
+      if (state.mode === A.BLOCK) {
         this.model.selectGroup(hit);
       }
     }
 
-    if (state.mode & A.SELECT_CONNECTIONS) {
+    if (AG.SELECT_CONNECTIONS.includes(state.mode)) {
       const hit = this.model.findConnection(wx(x), wy(y));
       this.model.selectedConnection = hit;
     }
 
-    if (state.mode & A.SELECT_OBJECTS) {
+    if (AG.SELECT_OBJECTS.includes(state.mode)) {
       const hit = this.model.findGameObjectByXY(wx(x), wy(y));
       this.model.selectedGameObject = hit;
     }
@@ -223,7 +222,7 @@ export default class Controls {
       this.editedObject.y = wy(y);
     }
 
-    state.mode & A.SELECTABLE &&
+    AG.SELECTABLE.includes(state.mode) &&
       state.mouse.selection &&
       this.alterSelection(coords, state.mouse.selection);
   }
@@ -234,7 +233,7 @@ export default class Controls {
     const state = store.getState();
     const direction = Math.sign(event.deltaY);
 
-    if (event.ctrlKey || state.mode & A.SELECTABLE) {
+    if (event.ctrlKey || AG.SELECTABLE.includes(state.mode)) {
       const [mouseX, mouseY] = state.mouse.coords;
       const zoomOld = state.zoom;
       const zoom = clamp(zoomOld * (1 + 0.2 * direction), 5, 500);
@@ -269,7 +268,7 @@ export default class Controls {
       !this.shift && this.model.deselect(); // deselect if shift is not pressed
       this.model.select(hit);
 
-      if (state.mode & A.BLOCK) {
+      if (state.mode === A.BLOCK) {
         this.model.selectGroup(hit);
       }
     }
@@ -280,70 +279,70 @@ export default class Controls {
     let { selectionMode, blocks, thickLines } = state;
     const { wx, wy } = ts;
     // set new mode if action is in modes list
-    const mode = action & A.MODES ? action : state.mode;
+    const mode = AG.MODES.includes(action) ? action : state.mode;
 
     // modes
-    if (action & A.MODES) {
+    if (AG.MODES.includes(action)) {
       blocks = false;
       thickLines = false;
       this.toolset = [];
     }
 
-    if (action & A.TOOLS) {
+    if (AG.TOOLS.includes(action)) {
       this.currentTool = 0;
       this.toolset = tools[action];
       selectionMode = false;
     }
 
-    action & A.SELECTABLE && (selectionMode = true);
-    action & A.OBJECT && (thickLines = true);
-    action & A.BLOCK && (blocks = true);
+    AG.SELECTABLE.includes(action) && (selectionMode = true);
+    action === A.OBJECT && (thickLines = true);
+    action === A.BLOCK && (blocks = true);
 
     // actions to run
-    action & A.GROUP && this.model.group();
-    action & A.UNGROUP && this.model.ungroup();
-    action & A.DELETE && this.model.deleteSelected();
-    action & A.NEXT && this.nextTool(1);
-    action & A.PREV && this.nextTool(-1);
+    action === A.GROUP && this.model.group();
+    action === A.UNGROUP && this.model.ungroup();
+    action === A.DELETE && this.model.deleteSelected();
+    action === A.NEXT && this.nextTool(1);
+    action === A.PREV && this.nextTool(-1);
 
-    action & A.JOIN && this.model.createJoinFromSelection();
-    action & A.SWITCH && this.model.createSwitchFromSelection();
+    action === A.JOIN && this.model.createJoinFromSelection();
+    action === A.SWITCH && this.model.createSwitchFromSelection();
 
     // define const
-    action & A.SWITCH_AP && this.model.setSwitchSegmentType(0);
-    action & A.SWITCH_AS && this.model.setSwitchSegmentType(1);
-    action & A.SWITCH_BP && this.model.setSwitchSegmentType(2);
-    action & A.SWITCH_BS && this.model.setSwitchSegmentType(3);
+    action === A.SWITCH_AP && this.model.setSwitchSegmentType(0);
+    action === A.SWITCH_AS && this.model.setSwitchSegmentType(1);
+    action === A.SWITCH_BP && this.model.setSwitchSegmentType(2);
+    action === A.SWITCH_BS && this.model.setSwitchSegmentType(3);
 
-    action & A.EXPORT && this.model.export();
-    action & A.SAVE &&
+    action === A.EXPORT && this.model.export();
+    action === A.SAVE &&
       window.localStorage.setItem("savedata0", this.model.serialize());
 
-    action & A.LOAD &&
+    action === A.LOAD &&
       this.model.unserialize(localStorage.getItem("savedata0"));
 
-    if (action & A.OBJECTNEW) {
+    if (action === A.OBJECTNEW) {
       this.createObjectMode = true;
       const [x, y] = state.mouse.coords;
       this.editedObject = this.model.addGameObject(wx(x), wy(y));
     }
-    if (action & A.OBJECTMOVE) {
+    if (action === A.OBJECTMOVE) {
       this.createObjectMode = true;
       this.editedObject = this.model.selectedGameObject;
     }
-    action & A.OBJECTDELETE && this.model.deleteSelectedGameObject();
-    action & A.OBJECTEDIT &&
+    action === A.OBJECTDELETE && this.model.deleteSelectedGameObject();
+    action === A.OBJECTEDIT &&
       this.showPropertyBox(this.model.selectedGameObject);
 
-    if (action & A.OBJECTCLONE) {
+    if (action === A.OBJECTCLONE) {
       this.createObjectMode = true;
       this.editedObject = this.model.cloneGameObject();
     }
 
-    action & A.OBJECTFWD && this.model.bringForward();
-    action & A.OBJECTBACK && this.model.bringBack();
+    action === A.OBJECTFWD && this.model.bringForward();
+    action === A.OBJECTBACK && this.model.bringBack();
 
-    if (action & A.SELECT) {
+    if (action === A.SELECT) {
       this.editedObject = null;
       this.propertyEditor.hidden = true;
     }
