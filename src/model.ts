@@ -487,7 +487,7 @@ export default class Model {
       return;
     }
 
-    if (index < 1 || index > points.length - 2) {
+    if (index < 2 || index > points.length - 2) {
       console.log("Cant interpolate at this point");
       return;
     }
