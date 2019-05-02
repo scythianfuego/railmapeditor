@@ -133,7 +133,7 @@ export default class Controls {
     this.active = (key && key[0]) || "";
     const index = hints.findIndex(i => config.keyMap[i.tag] === keyCode);
     index !== -1 && (hints[index].active = true); // new hints!
-    index !== -1 && this.runAction(hints[index].action, index);
+    index !== -1 && this.runAction(hints[index].action);
   }
 
   mouseEventToXY(event: MouseEvent) {
@@ -177,6 +177,11 @@ export default class Controls {
       this.model.selectedGameObject = hit;
     }
 
+    if (AG.POINTTOOLS.includes(state.mode)) {
+      const point = this.model.findPointByXY(wx(x), wy(y));
+      this.model.selectedPointIndex = point;
+    }
+
     if (this.createObjectMode) {
       this.createObjectMode = false;
       this.editedObject = null;
@@ -190,14 +195,28 @@ export default class Controls {
   }
 
   onMouseUp(event: MouseEvent) {
-    const { pan } = store.getState().mouse;
+    const state = store.getState();
+    const { pan } = state.mouse;
+    const coords = this.mouseEventToXY(event);
+
     if (this.toolset.length && !pan) {
       const selectedCell = this.mouseToHex(event);
       const tool = this.getTool();
       selectedCell && this.model.add(selectedCell, tool(selectedCell));
     }
 
-    const coords = this.mouseEventToXY(event);
+    if (AG.POINTTOOLS.includes(state.mode)) {
+      if (state.mode === A.POINTADD) {
+        const [x, y] = coords;
+        const { wx, wy } = ts;
+        this.model.addPoint(wx(x), wy(y));
+      }
+      state.mode === A.POINTSPLIT && this.model.splitPoint();
+      state.mode === A.POINTINTERPOLATE && this.model.splitInterpolate();
+      state.mode === A.POINTDELETE && this.model.deletePoint();
+    }
+    this.model.selectedPointIndex = -1;
+
     const selection: number[] = null;
     const mouse = { coords, down: false, pan: false, selection };
     store.setState({ mouse });
@@ -220,6 +239,14 @@ export default class Controls {
       const { wx, wy } = ts;
       this.editedObject.x = wx(x);
       this.editedObject.y = wy(y);
+    }
+
+    if (AG.POINTTOOLS.includes(state.mode)) {
+      if (state.mode === A.POINTMOVE) {
+        const [x, y] = coords;
+        const { wx, wy } = ts;
+        this.model.movePoint(wx(x), wy(y));
+      }
     }
 
     AG.SELECTABLE.includes(state.mode) &&
@@ -277,6 +304,7 @@ export default class Controls {
   runAction(action: number): void {
     const state = store.getState();
     const { wx, wy } = ts;
+    const [x, y] = state.mouse.coords;
     let { selectionMode, blocks, thickLines } = state;
     // set new mode if action is in modes list
     let mode = AG.MODES.includes(action) ? action : state.mode;
@@ -340,7 +368,6 @@ export default class Controls {
 
     if (action === A.OBJECTNEW) {
       this.createObjectMode = true;
-      const [x, y] = state.mouse.coords;
       this.editedObject = this.model.addGameObject(wx(x), wy(y));
     }
     if (action === A.OBJECTMOVE) {
@@ -364,14 +391,24 @@ export default class Controls {
       this.propertyEditor.hidden = true;
     }
 
-    if (
-      action === A.POINTS &&
-      (!this.model.selectedGameObject ||
-        !["Polygon", "Rope"].includes(this.model.selectedGameObject.type))
-    ) {
-      console.log("Point editor: wrong object", this.model.selectedGameObject);
-      return this.runAction(A.OBJECT);
+    if (action === A.POINTS) {
+      if (
+        this.model.selectedGameObject &&
+        ["polygon", "rope"].includes(this.model.selectedGameObject.type)
+      ) {
+        this.model.selectedGameObject.points === 0 &&
+          this.model.createDefaultPoints();
+        mode = A.POINTMOVE;
+      } else {
+        console.log("Point editor bad object", this.model.selectedGameObject);
+        return this.runAction(A.OBJECT);
+      }
     }
+
+    // actions are not run on mouse!!
+    // action && A.POINTMOVE && this.modelMovePoints();
+    // action && A.POINTDELETE && this.model.deletePoints();
+    // action && A.POINTSPLIT && this.model.splitPoints();
 
     const cursorType = this.createObjectMode ? 1 : 0;
     const hints = this.applyHintsFilter(mode);
@@ -458,6 +495,7 @@ export default class Controls {
   // common stays
 
   onPropertyEditorSave() {
+    // TODO: remove points here if type has changed
     console.log("Save A -> B");
     console.log(this.editedObject);
     console.log(this.propertyEditor.userInput);

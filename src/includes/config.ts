@@ -57,29 +57,41 @@ enum A {
   OBJECTFWD,
   OBJECTBACK,
 
-  POINTADD,
   POINTMOVE,
+  POINTADD,
   POINTDELETE,
   POINTSPLIT,
+  POINTINTERPOLATE,
 
   EMPTY
 }
 
 const tools = [A.LINES, A.CURVE, A.SIDEA, A.SIDEB, A.LONG];
+const pointtools = [
+  A.POINTMOVE,
+  A.POINTADD,
+  A.POINTDELETE,
+  A.POINTSPLIT,
+  A.POINTINTERPOLATE
+];
+const extramodes = [
+  A.SAVE,
+  A.LOAD,
+  A.SELECT,
+  A.BLOCK,
+  A.OBJECT,
+  A.CONNECT,
+  A.POINTS
+];
+const modes = tools.concat(pointtools).concat(extramodes);
+
 const AG: { [index: string]: A[] } = {
   TOOLS: tools,
+  POINTTOOLS: pointtools,
   SELECTABLE: [A.SELECT, A.BLOCK, A.CONNECT],
   SELECT_CONNECTIONS: [A.CONNECT],
   SELECT_OBJECTS: [A.OBJECT],
-  MODES: tools.concat([
-    A.SAVE,
-    A.LOAD,
-    A.SELECT,
-    A.BLOCK,
-    A.OBJECT,
-    A.CONNECT,
-    A.POINTS
-  ]),
+  MODES: modes,
   LOADSLOT: [
     A.LOADSLOT1,
     A.LOADSLOT2,
@@ -174,8 +186,12 @@ const hints: IHints = [
   { tag: "DEL", text: "Delete", action: A.OBJECTDELETE, show: [A.OBJECT] },
 
   // object polygon points
-  { tag: "ESC", text: "Back", action: A.OBJECT, show: [A.POINTS] },
-  { tag: "1", text: "Add point", action: A.POINTADD, show: [A.POINTS], on: A.POINTADD },
+  { tag: "ESC", text: "Back", action: A.OBJECT, show: AG.POINTTOOLS },
+  { tag: "1", text: "Move point", action: A.POINTMOVE, show: AG.POINTTOOLS, on: A.POINTMOVE },
+  { tag: "2", text: "Add", action: A.POINTADD, show: AG.POINTTOOLS, on: A.POINTADD },
+  { tag: "3", text: "Delete", action: A.POINTDELETE, show: AG.POINTTOOLS, on: A.POINTDELETE },
+  { tag: "4", text: "Split", action: A.POINTSPLIT, show: AG.POINTTOOLS, on: A.POINTSPLIT },
+  { tag: "5", text: "Interpolate", action: A.POINTINTERPOLATE, show: AG.POINTTOOLS, on: A.POINTINTERPOLATE },
 
 ];
 
@@ -256,14 +272,14 @@ const objectDefaults: IKeyValue[] = [
     outline: tilingTextures,
     layer: layers,
     alpha: 1,
-    points: []
+    points: 0
   },
   {
     type: "rope",
     texture: tilingTextures,
     layer: layers,
     alpha: 1,
-    points: []
+    points: 0
   },
   {
     type: "light",

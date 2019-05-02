@@ -1,9 +1,10 @@
+import { Point } from "./interfaces/Point";
 import { Hex } from "./transform";
 import IRailObject from "./interfaces/IRailObject";
 import IConnection from "./interfaces/IConnection";
 import ISwitch from "./interfaces/ISwitch";
-import LZString from "lz-string";
 import { LZMA } from "lzma/src/lzma_worker-min.js";
+import catRomSpline from "cat-rom-spline";
 import IGameObject from "./interfaces/IGameObject";
 
 const magic = 0x7ffffffe;
@@ -24,17 +25,21 @@ type ConnectionMap = {
 export default class Model {
   public selectedConnection: IConnection = null;
   public selectedGameObject: IGameObject = null;
+  public selectedPointIndex: number = -1;
 
   public connections: IConnection[] = []; // TODO: remove public access
   public switches: ISwitch[] = [];
   public joins: IJoin[] = [];
   public gameobjects: IGameObject[] = [];
 
+  public gameobjectpoints: Map<number, Point[]> = new Map();
+
   private store: IRailObject[] = [];
   private storeIndex = new Map();
   private blockId = 1;
   private connectionId = 1;
   private objectId = 2; // odd id means start of segment, even - end
+  private pointId = 6001;
 
   public distance: (x1: number, y1: number, x2: number, y2: number) => number;
 
@@ -97,7 +102,8 @@ export default class Model {
       connections: this.connections,
       switches: this.switches,
       joins: this.joins,
-      gameobjects: this.gameobjects
+      gameobjects: this.gameobjects,
+      gameobjectpoints: Array.from(this.gameobjectpoints)
     });
     // );
   }
@@ -112,6 +118,7 @@ export default class Model {
     this.switches = obj.switches || [];
     this.joins = obj.joins || [];
     this.gameobjects = obj.gameobjects || [];
+    this.gameobjectpoints = new Map(obj.gameobjectpoints || []);
 
     //reindex
     this.storeIndex = new Map();
@@ -370,10 +377,14 @@ export default class Model {
   }
 
   deleteSelectedGameObject() {
-    this.selectedGameObject &&
-      (this.gameobjects = this.gameobjects.filter(
+    if (this.selectedGameObject) {
+      this.selectedGameObject.points !== 0 &&
+        this.gameobjectpoints.delete(this.selectedGameObject.points);
+
+      this.gameobjects = this.gameobjects.filter(
         o => o !== this.selectedGameObject
-      ));
+      );
+    }
   }
 
   findGameObjectByXY(x: number, y: number) {
@@ -399,5 +410,113 @@ export default class Model {
 
   bringBack() {
     return this.bring(false);
+  }
+
+  // polygons and ropes
+
+  findPointByXY(x: number, y: number) {
+    const pid = this.selectedGameObject.points;
+    const points = this.gameobjectpoints.get(pid);
+
+    return points.findIndex(p => distance(x, y, p.x, p.y) < MIN_DISTANCE);
+  }
+
+  movePoint(x: number, y: number) {
+    const index = this.selectedPointIndex;
+    if (index === -1) {
+      return;
+    }
+    const pid = this.selectedGameObject.points;
+    const points = this.gameobjectpoints.get(pid);
+    points[index].x = x;
+    points[index].y = y;
+  }
+
+  addPoint(x: number, y: number) {
+    const pid = this.selectedGameObject.points;
+    const points = this.gameobjectpoints.get(pid);
+    points.push(new Point(x, y));
+  }
+
+  deletePoint() {
+    const index = this.selectedPointIndex;
+    if (index === -1) {
+      return;
+    }
+    const pid = this.selectedGameObject.points;
+    const points = this.gameobjectpoints.get(pid);
+    points.length > 2 && points.splice(index, 1);
+  }
+
+  splitPoint() {
+    const index = this.selectedPointIndex;
+    if (index === -1) {
+      return;
+    }
+    const pid = this.selectedGameObject.points;
+    const points = this.gameobjectpoints.get(pid);
+
+    const current = points[index];
+    const pointBetween = (p1: Point, p2: Point) => {
+      return new Point(p1.x + 0.5 * (p2.x - p1.x), p1.y + 0.5 * (p2.y - p1.y));
+    };
+
+    if (index < points.length - 1) {
+      const next = points[index + 1];
+      const after = pointBetween(current, next);
+      points.splice(index + 1, 0, after);
+    }
+
+    if (index > 0) {
+      const prev = points[index - 1];
+      const before = pointBetween(prev, current);
+      points.splice(index, 0, before);
+    }
+    this.selectedPointIndex = -1;
+  }
+
+  splitInterpolate() {
+    const index = this.selectedPointIndex;
+    if (index === -1) {
+      return;
+    }
+    const pid = this.selectedGameObject.points;
+    const points = this.gameobjectpoints.get(pid);
+    if (points.length < 5) {
+      console.log("Not enough points");
+      return;
+    }
+
+    if (index < 1 || index > points.length - 2) {
+      console.log("Cant interpolate at this point");
+      return;
+    }
+    const pointArr = points.slice(index - 2, index + 2).map(p => [p.x, p.y]);
+    const options = { samples: 3, knot: 0.5 };
+
+    const spline = catRomSpline;
+    const interpolated: number[][] = spline(pointArr, options);
+    const newPoints = interpolated.map(([x, y]) => new Point(x, y));
+    points.splice(index, 0, ...newPoints.slice(1, newPoints.length - 2));
+    this.selectedPointIndex = -1;
+  }
+
+  createDefaultPoints() {
+    const d = 1.28 * 0.5 * 1.2;
+    let points: Point[] = [];
+    const { x, y, type } = this.selectedGameObject;
+    if (type === "rope") {
+      points.push(new Point(x, y + d));
+      points.push(new Point(x, y - d));
+    } else {
+      points.push(new Point(x - d, y - d));
+      points.push(new Point(x - d, y + d));
+      points.push(new Point(x + d, y + d));
+      points.push(new Point(x + d, y - d));
+    }
+
+    this.gameobjectpoints.set(this.pointId, points);
+    this.selectedGameObject.points = this.pointId;
+    this.pointId++;
   }
 }

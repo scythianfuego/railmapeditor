@@ -209,7 +209,7 @@ export default class Draw {
   }
 
   private gameObject(obj: IGameObject) {
-    const { x, y, texture, rotation } = obj; // refactor object frame out
+    const { x, y, texture, rotation, points } = obj; // refactor object frame out
 
     const atlas = this.textures;
 
@@ -254,21 +254,23 @@ export default class Draw {
     this.ctx.translate(-w * 0.5, -h * 0.5);
 
     // texture
-    if (img) {
+    if (img && !points) {
       // this.ctx.globalAlpha = 0.5;
       this.ctx.drawImage(img, 0, 0, w, h);
       this.ctx.globalAlpha = 1;
     }
 
-    // outline
-    this.ctx.beginPath();
-    this.ctx.strokeRect(0, 0, w, h);
-    this.ctx.moveTo(0, 0);
-    this.ctx.lineTo(w, h);
-    this.ctx.moveTo(0, h);
-    this.ctx.lineTo(w, 0);
-    this.ctx.arc(w, 0, 5, 0, 6.29);
-    this.ctx.stroke();
+    if (!points) {
+      // outline
+      this.ctx.beginPath();
+      this.ctx.strokeRect(0, 0, w, h);
+      this.ctx.moveTo(0, 0);
+      this.ctx.lineTo(w, h);
+      this.ctx.moveTo(0, h);
+      this.ctx.lineTo(w, 0);
+      this.ctx.arc(w, 0, 5, 0, 6.29);
+      this.ctx.stroke();
+    }
 
     this.ctx.beginPath();
     this.ctx.arc(w * 0.5, h * 0.5, scale(1.28 * 0.5), 0, 6.29);
@@ -280,15 +282,40 @@ export default class Draw {
     this.ctx.font = "12px Arial";
     this.ctx.fillStyle = "#ffffff";
     this.screen.fillText(desc, x, y - pixels(12));
+
+    // points
+    if (obj.points) {
+      const pdata = this.model.gameobjectpoints.get(obj.points);
+
+      this.ctx.beginPath();
+      this.screen.moveTo(pdata[0].x, pdata[0].y);
+      for (let i = 1; i < pdata.length; i++) {
+        this.screen.lineTo(pdata[i].x, pdata[i].y);
+      }
+
+      // polygon
+      this.ctx.strokeStyle = "magenta";
+      if (obj.type === "polygon") {
+        this.ctx.fillStyle = "rgba(0,0.5,0,0.5)";
+        this.ctx.fill();
+        this.ctx.stroke();
+      } else {
+        this.ctx.stroke();
+      }
+
+      for (let i = 0; i < pdata.length; i++) {
+        this.point(pdata[i].x, pdata[i].y);
+      }
+    }
   }
 
-  // private point(x: number, y: number, style: string, size: number) {
-  //   this.ctx.lineWidth = 1;
-  //   this.ctx.fillStyle = style ? style : "cyan";
-  //   this.ctx.beginPath();
-  //   this.ctx.arc(x, y, size ? size : 3, 0, TAU);
-  //   this.ctx.fill();
-  // }
+  private point(x: number, y: number, style?: string, size?: number) {
+    this.ctx.lineWidth = 1;
+    this.ctx.fillStyle = style ? style : "cyan";
+    this.ctx.beginPath();
+    this.ctx.arc(sx(x), sy(y), size ? size : 3, 0, TAU);
+    this.ctx.fill();
+  }
 
   // private arrow(sx: number, sy: number, ex: number, ey: number) {
   //   this.ctx.strokeStyle = "#999";

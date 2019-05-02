@@ -13,6 +13,7 @@
     "webpack-dev-server": "^3.2.1"
   },
   "dependencies": {
+    "cat-rom-spline": "^1.0.0",
     "honeycomb-grid": "^1.4.0",
     "lzma": "^2.3.2",
     "unistore": "^3.3.0"

@@ -15,3 +15,15 @@ declare module "lzma/src/lzma_worker-min.js" {
     ): string | number[];
   }
 }
+
+declare module "cat-rom-spline" {
+  function catRomSpline(
+    points: number[][],
+    options: {
+      samples: number;
+      knot: number;
+    }
+  ): number[][];
+
+  export = catRomSpline;
+}
