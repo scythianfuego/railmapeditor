@@ -209,15 +209,22 @@ export default class Draw {
   }
 
   private gameObject(obj: IGameObject) {
-    const { x, y, texture, rotation, points } = obj; // refactor object frame out
+    const { x, y, texture, rotation, points, outline } = obj; // refactor object frame out
 
     const atlas = this.textures;
 
-    if (texture && atlas[texture] === undefined) {
+    const loadTexture = (texture: string) => {
       atlas[texture] = null;
       const image = new Image();
       image.src = `assets/${texture}`;
       image.onload = () => (atlas[texture] = image);
+    };
+
+    if (texture && atlas[texture] === undefined) {
+      loadTexture(texture);
+    }
+    if (outline && atlas[outline] === undefined) {
+      loadTexture(outline);
     }
 
     let objW = 1.28; // 64/50
@@ -294,12 +301,24 @@ export default class Draw {
       }
 
       // polygon
-      this.ctx.strokeStyle = "magenta";
+
       if (obj.type === "polygon") {
+        this.ctx.strokeStyle = "rgba(255, 0, 255, 0.5)";
         this.ctx.fillStyle = "rgba(0,0.5,0,0.5)";
         this.ctx.fill();
-        this.ctx.stroke();
+        if (obj.hasOutline) {
+          const outlineImg = atlas[outline] || null;
+          if (outlineImg) {
+            // const outlineHeight = outlineImg.height;
+            this.ctx.lineWidth = scale(10 / 50);
+            this.ctx.stroke();
+          }
+        }
       } else {
+        this.ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
+        if (img) {
+          this.ctx.lineWidth = scale(height / 50); // default zoom
+        }
         this.ctx.stroke();
       }
 

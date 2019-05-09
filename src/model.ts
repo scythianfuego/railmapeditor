@@ -60,6 +60,14 @@ export default class Model {
     const trim = (n: number) => (n ? Math.floor(n * 1000) : 0);
     const joins = this.joins.concat(autojoins);
 
+    const objects = JSON.parse(JSON.stringify(this.gameobjects));
+    objects.forEach((o: IGameObject) => {
+      if (o.points) {
+        o.points = o.points === 0 ? [] : this.gameobjectpoints.get(o.points);
+        o.points = o.points.map((p: Point) => [p.x, p.y]);
+      }
+    });
+
     const result = JSON.stringify(
       {
         rails: this.store.map(i => [
@@ -78,7 +86,7 @@ export default class Model {
         ]),
         switches: this.switches,
         joins,
-        objects: this.gameobjects
+        objects: objects
       },
       null
       //, 2
@@ -98,6 +106,7 @@ export default class Model {
     return JSON.stringify({
       store: this.store,
       blockId: this.blockId,
+      pointId: this.pointId,
       objectId: this.objectId,
       connections: this.connections,
       switches: this.switches,
@@ -113,6 +122,7 @@ export default class Model {
     const obj = JSON.parse(data);
     this.store = obj.store || [];
     this.blockId = obj.blockId || [];
+    this.pointId = obj.pointId || [];
     this.objectId = obj.objectId || [];
     this.connections = obj.connections || [];
     this.switches = obj.switches || [];
@@ -519,4 +529,7 @@ export default class Model {
     this.selectedGameObject.points = this.pointId;
     this.pointId++;
   }
+
+  // finder:
+  // this.model.selectedGameObject = (this.model.gameobjects).filter(i => i.type==='rope' && i.texture == 'road.png')[0]
 }

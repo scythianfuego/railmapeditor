@@ -244,10 +244,47 @@ const textures = [
   "grasspatch.png",
   "landscape.png",
   "house1.png",
-  "house2.png"
+  "house2.png",
+  "electricpylon.png",
+  "deadend.png",
+  "concretegrunge.png",
+  "forklift.png",
+  "forkliftbig.png",
+  "fibrecement.png",
+  "gantry.png",
+  "drums.png",
+  "tires.png",
+  "steelframes.png",
+  "fuelstation.png",
+  "lawn.png",
+  //containers
+  "c11.png",
+  "c12.png",
+  "c21.png",
+  "c22.png",
+  "c31.png",
+  "c32.png",
+  "c41.png",
+  "c51.png",
+  "c91.png",
+  "c92.png"
 ];
 
-const tilingTextures = ["gravel.png", "sand.png"];
+const tilingTextures = [
+  "gravel.png",
+  "concrete.png",
+  "sand.png",
+  "sandtile.png",
+  "road.png",
+  "water.png",
+  "bank.png",
+  "wire.png",
+  "hedge.png",
+  "fence.png",
+  "dirtroad.png",
+  "dirtpath.png",
+  "gantryrail.png"
+];
 const lightTextures = [
   "pointlight.png",
   "pointup.png",
@@ -262,6 +299,7 @@ const objectDefaults: IKeyValue[] = [
     texture: textures,
     layer: layers,
     alpha: 1,
+    blend: ["normal", "add", "multiply", "screen"],
     shadow: false,
     width: 0
   },
@@ -272,6 +310,7 @@ const objectDefaults: IKeyValue[] = [
     outline: tilingTextures,
     layer: layers,
     alpha: 1,
+    blend: ["normal", "add", "multiply", "screen"],
     points: 0
   },
   {
@@ -279,6 +318,7 @@ const objectDefaults: IKeyValue[] = [
     texture: tilingTextures,
     layer: layers,
     alpha: 1,
+    blend: ["normal", "add", "multiply", "screen"],
     points: 0
   },
   {
