@@ -3,7 +3,6 @@ import { Hex } from "./transform";
 import IRailObject from "./interfaces/IRailObject";
 import IConnection from "./interfaces/IConnection";
 import ISwitch from "./interfaces/ISwitch";
-import { LZMA } from "lzma/src/lzma_worker-min.js";
 import catRomSpline from "cat-rom-spline";
 import IGameObject from "./interfaces/IGameObject";
 
@@ -55,8 +54,6 @@ export default class Model {
       .filter(c => c.items.length === 2)
       .map(c => c.items as IJoin);
 
-    // LZMA.compress(string || byte_array, mode, on_finish(result, error) {}, on_progress(percent) {});
-    // LZMA.decompress(byte_array, on_finish(result, error) {}, on_progress(percent) {});
     const trim = (n: number) => (n ? Math.floor(n * 1000) : 0);
     const joins = this.joins.concat(autojoins);
 
@@ -91,14 +88,11 @@ export default class Model {
       null
       //, 2
     );
-    const compressed = LZMA.compress(result).map((i: number) => i & 255);
-    const unsigned = Uint8Array.from(compressed);
-    const b64encoded = btoa(String.fromCharCode.apply(null, unsigned));
     window.open(
       "",
       "",
       "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes"
-    ).document.body.innerHTML = `<pre>${b64encoded}</pre>`;
+    ).document.body.innerHTML = `<pre>${result}</pre>`;
   }
 
   serialize() {
