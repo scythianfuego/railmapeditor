@@ -7,6 +7,7 @@ import catRomSpline from "cat-rom-spline";
 import IGameObject from "./interfaces/IGameObject";
 
 const magic = 0x7ffffffe;
+const PIXELS_PER_UNIT = 50;
 
 const MIN_DISTANCE = 0.1;
 const inside = (x: number, a: number, b: number) =>
@@ -54,33 +55,46 @@ export default class Model {
       .filter(c => c.items.length === 2)
       .map(c => c.items as IJoin);
 
-    const trim = (n: number) => (n ? Math.floor(n * 1000) : 0);
+    // convert to actual game scale, keep integer
+    const pixels = (i: number) => Math.round(i * PIXELS_PER_UNIT || 0);
     const joins = this.joins.concat(autojoins);
 
-    const objects = JSON.parse(JSON.stringify(this.gameobjects));
+    const objects = JSON.parse(JSON.stringify(this.gameobjects)); // clone
     objects.forEach((o: IGameObject) => {
       if (o.points) {
         o.points = o.points === 0 ? [] : this.gameobjectpoints.get(o.points);
-        o.points = o.points.map((p: Point) => [p.x, p.y]);
+        o.points = o.points.map((p: Point) => [pixels(p.x), pixels(p.y)]);
+      }
+      if (o.x) {
+        o.x = pixels(o.x);
+        o.y = pixels(o.y);
       }
     });
 
+    const encodeChunk = (i: IRailObject) => {
+      const a1 = normalize(i.a1);
+      const a = normalize(i.a2);
+      // angle delta MUST be positive to simplify drawing
+      const a2 = a < a1 ? a + 2 * Math.PI : a;
+      const radius = pixels(i.radius);
+      // radius will be integer due to pixels(), never undefined or float, nor close to zero
+      const isArc = radius > 0;
+      const { x, y, sx, sy, ex, ey } = i;
+      const { id, block } = i.meta;
+      return [
+        id,
+        block,
+        radius,
+        pixels(isArc ? x : sx),
+        pixels(isArc ? y : sy),
+        isArc ? +a1.toFixed(3) : pixels(ex),
+        isArc ? +a2.toFixed(3) : pixels(ey)
+      ];
+    };
+
     const result = JSON.stringify(
       {
-        rails: this.store.map(i => [
-          i.meta.id,
-          i.meta.block,
-          i.type,
-          trim(i.sx),
-          trim(i.sy),
-          trim(i.ex),
-          trim(i.ey),
-          trim(i.x),
-          trim(i.y),
-          trim(normalize(i.a1)),
-          trim(normalize(i.a2)),
-          trim(i.radius)
-        ]),
+        rails: this.store.map(encodeChunk),
         switches: this.switches,
         joins,
         objects: objects
