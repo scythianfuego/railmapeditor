@@ -1,6 +1,5 @@
 import ts, { Hex } from "./transform";
-import IRailLine from "./interfaces/IRailLine";
-import IRailArc from "./interfaces/IRailArc";
+import IRail from "./interfaces/IRail";
 
 export default class Objects {
   getTriangleCorners(hex: Hex) {
@@ -12,7 +11,7 @@ export default class Objects {
   //   return getCorners(hex).filter((v, i) => i % 2 === 0);
   // }
 
-  line(hex: Hex, index: number): IRailLine {
+  line(hex: Hex, index: number): IRail {
     const corners = this.getTriangleCorners(hex);
     const pairs = [[1, 0], [2, 0], [2, 1]];
     const [a, b] = pairs[index];
@@ -22,11 +21,16 @@ export default class Objects {
       sy: corners[a].y,
       ex: corners[b].x,
       ey: corners[b].y,
-      type: 0x10 + index
+      type: 0x10 + index,
+      radius: 0,
+      x: 0,
+      y: 0,
+      a1: 0,
+      a2: 0
     };
   }
 
-  infiniLine(hex: Hex, index: number): IRailLine {
+  infiniLine(hex: Hex, index: number): IRail {
     const corners = this.getTriangleCorners(hex);
     const pairs = [[1, 0], [2, 0], [2, 1], [0, 1], [0, 2], [1, 2]];
     const [a, b] = pairs[index];
@@ -39,7 +43,18 @@ export default class Objects {
     ex = (ex - sx) * 10 + ex;
     ey = (ey - sy) * 10 + ey;
 
-    return { sx, sy, ex, ey, type: 0x10 + index };
+    return {
+      sx,
+      sy,
+      ex,
+      ey,
+      type: 0x10 + index,
+      radius: 0,
+      x: 0,
+      y: 0,
+      a1: 0,
+      a2: 0
+    };
   }
 
   baseArc(
@@ -79,19 +94,19 @@ export default class Objects {
     return { x, y, radius, a1, a2, sx, sy, ex, ey, type: baseType + index };
   }
 
-  longArc(hex: Hex, index: number): IRailArc {
+  longArc(hex: Hex, index: number): IRail {
     const radius = 6 * hex.size;
     const arc = Math.PI / 3;
     return this.baseArc(hex, index, radius, arc, 0x20);
   }
 
-  shortArc(hex: Hex, index: number): IRailArc {
+  shortArc(hex: Hex, index: number): IRail {
     const radius = 3.5 * Math.sqrt(3); //3.5 * hex.size; // magic1
     const arc = 0.3802512067; // 1 / 3; magic2
     return this.baseArc(hex, index, radius, arc, 0x30);
   }
 
-  shortArc2(hex: Hex, index: number): IRailArc {
+  shortArc2(hex: Hex, index: number): IRail {
     const radius = 3.5 * Math.sqrt(3); // 3.5 * hex.size; // magic1
     const arc = 0.3802512067; // 2*Math.acos(9 / sqrt(84)) //1 / 3; // magic2
     return this.baseArc(hex, index, radius, arc, 0x40, false);

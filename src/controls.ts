@@ -6,7 +6,7 @@ import ts from "./transform";
 import Objects from "./objects";
 import Model from "./model";
 import IHints from "./interfaces/IHints";
-import IRailObject from "./interfaces/IRailObject";
+import IRail from "./interfaces/IRail";
 import config from "./includes/config";
 import PropertyEditor from "./components/properties";
 import IGameObject from "./interfaces/IGameObject";
@@ -20,7 +20,7 @@ const AG = config.actionGroups;
 
 // tools controller.
 // type it
-type Tool = (hex: Hex) => IRailObject;
+type Tool = (hex: Hex) => IRail;
 type Tools = { [index: number]: Tool[] };
 
 const tools: Tools = {

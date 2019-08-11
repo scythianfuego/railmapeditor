@@ -1,7 +1,7 @@
 import storeInstance, { copy } from "./store";
 import ts, { Grid, Hex } from "./transform";
 import Model from "./model";
-import IRailObject from "./interfaces/IRailObject";
+import IRail from "./interfaces/IRail";
 import IHintLine from "./interfaces/IHintLine";
 import IState from "./interfaces/IState";
 import { Listener, Store } from "unistore";
@@ -137,7 +137,7 @@ export default class Draw {
     !this.selectionMode && this.cell(this.cursorCell, "#fff");
 
     !this.state.thickLines && this.connections();
-    this.model.forEach((obj: IRailObject) => this.object(obj));
+    this.model.forEach((obj: IRail) => this.object(obj));
     this.model.gameobjects.forEach((obj: IGameObject) => this.gameObject(obj));
     this.cursor();
     this.labelCache.forEach(([x, y, what]) => this.text(x, y, what));
@@ -351,7 +351,7 @@ export default class Draw {
   //   this.ctx.stroke();
   // }
 
-  private arc(obj: IRailObject) {
+  private arc(obj: IRail) {
     const { x, y, radius, a1, a2, type, meta } = obj;
     const color = this.getColor(type, meta && meta.selected);
     this.ctx.strokeStyle = color;
@@ -367,7 +367,7 @@ export default class Draw {
       this.label(midx, midy, obj.meta.block.toString());
   }
 
-  private arcPath(obj: IRailObject, color?: string) {
+  private arcPath(obj: IRail, color?: string) {
     const { x, y, radius, a1, a2 } = obj;
     color = color || hex2rgba("#FFFFFF4C");
     this.ctx.strokeStyle = color;
@@ -403,7 +403,7 @@ export default class Draw {
     this.ctx.fillText(what, tx, ty);
   }
 
-  private line(obj: IRailObject) {
+  private line(obj: IRail) {
     const { sx, sy, ex, ey, type, meta } = obj;
     const color = this.getColor(type, meta && meta.selected);
     this.ctx.lineWidth = this.state.thickLines ? scale(0.5) : 2;
@@ -420,7 +420,7 @@ export default class Draw {
       this.label(midx, midy, obj.meta.block.toString());
   }
 
-  private linePath(obj: IRailObject, color?: string) {
+  private linePath(obj: IRail, color?: string) {
     const { sx, sy, ex, ey } = obj;
     color = color || hex2rgba("#FFFFFF4C");
     this.ctx.lineCap = "round";
@@ -432,19 +432,19 @@ export default class Draw {
     this.ctx.stroke();
   }
 
-  private object(obj: IRailObject) {
+  private object(obj: IRail) {
     this.ctx.save();
     obj.radius ? this.arc(obj) : this.line(obj);
     this.ctx.restore();
   }
 
-  private objectPath(obj: IRailObject, color?: string) {
+  private objectPath(obj: IRail, color?: string) {
     this.ctx.save();
     obj.radius ? this.arcPath(obj, color) : this.linePath(obj, color);
     this.ctx.restore();
   }
 
-  private pathLabel(path: IRailObject, what: string) {
+  private pathLabel(path: IRail, what: string) {
     const x = 0.5 * (path.sx + path.ex);
     const y = 0.5 * (path.sy + path.ey);
     this.label(x, y, what);

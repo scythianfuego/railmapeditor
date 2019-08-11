@@ -327,6 +327,12 @@ const objectDefaults: IKeyValue[] = [
     layer: layers,
     color: 0,
     width: 50
+  },
+  {
+    type: "signal",
+    layer: layers,
+    block: 0,
+    width: 16
   }
 ];
 

@@ -1,6 +1,6 @@
 import { Point } from "./interfaces/Point";
 import { Hex } from "./transform";
-import IRailObject from "./interfaces/IRailObject";
+import IRail from "./interfaces/IRail";
 import IConnection from "./interfaces/IConnection";
 import ISwitch from "./interfaces/ISwitch";
 import catRomSpline from "cat-rom-spline";
@@ -34,7 +34,7 @@ export default class Model {
 
   public gameobjectpoints: Map<number, Point[]> = new Map();
 
-  private store: IRailObject[] = [];
+  private store: IRail[] = [];
   private storeIndex = new Map();
   private blockId = 1;
   private connectionId = 1;
@@ -71,7 +71,7 @@ export default class Model {
       }
     });
 
-    const encodeChunk = (i: IRailObject) => {
+    const encodeChunk = (i: IRail) => {
       const a1 = normalize(i.a1);
       const a = normalize(i.a2);
       // angle delta MUST be positive to simplify drawing
@@ -157,7 +157,7 @@ export default class Model {
     return this.connections.find(v => distance(x, y, v.x, v.y) < MIN_DISTANCE);
   }
 
-  createConnections(obj: IRailObject) {
+  createConnections(obj: IRail) {
     const startId = obj.meta.id;
     const endId = startId + 1;
     const { sx, sy, ex, ey } = obj;
@@ -174,7 +174,7 @@ export default class Model {
       : this.makeConnection(endId, ex, ey);
   }
 
-  add(cell: Hex, obj: IRailObject) {
+  add(cell: Hex, obj: IRail) {
     if (!obj) {
       return;
     }
@@ -190,15 +190,15 @@ export default class Model {
     this.storeIndex.set(id, obj);
   }
 
-  get(pointId: number): IRailObject {
+  get(pointId: number): IRail {
     return this.storeIndex.get(pointId & magic);
   }
 
-  forEach(fn: (i: IRailObject) => void) {
+  forEach(fn: (i: IRail) => void) {
     this.store.forEach(i => fn(i));
   }
 
-  findByRect(sx: number, sy: number, ex: number, ey: number): IRailObject[] {
+  findByRect(sx: number, sy: number, ex: number, ey: number): IRail[] {
     // check if endpoints are within rectangle
     const lx = Math.min(sx, ex);
     const rx = Math.max(sx, ex);
@@ -210,11 +210,11 @@ export default class Model {
     return this.store.filter(o => insideXY(o.sx, o.sy) && insideXY(o.ex, o.ey));
   }
 
-  findByXY(x: number, y: number): IRailObject[] {
+  findByXY(x: number, y: number): IRail[] {
     const TAU = 2 * Math.PI;
     const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
 
-    const pointInArc = (x: number, y: number, obj: IRailObject) => {
+    const pointInArc = (x: number, y: number, obj: IRail) => {
       // check if within sector and close to radius
       const angle = normalize(Math.atan2(y - obj.y, x - obj.x));
       const radius = distance(x, y, obj.x, obj.y);
@@ -223,7 +223,7 @@ export default class Model {
       return withinAngle && closeToRadius;
     };
 
-    const pointInLine = (x: number, y: number, obj: IRailObject) => {
+    const pointInLine = (x: number, y: number, obj: IRail) => {
       // check if distance to endpoints matches segment length
       const ab = distance(obj.ex, obj.ey, x, y);
       const bc = distance(obj.sx, obj.sy, x, y);
@@ -240,7 +240,7 @@ export default class Model {
     this.forEach(v => (v.meta.selected = false));
   }
 
-  select(selection: IRailObject[]) {
+  select(selection: IRail[]) {
     selection.forEach(v => (v.meta.selected = true));
   }
 
