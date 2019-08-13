@@ -327,13 +327,14 @@ export default class Controls {
     const state = store.getState();
     const { wx, wy } = ts;
     const [x, y] = state.mouse.coords;
-    let { selectionMode, blocks, thickLines } = state;
+    let { selectionMode, blocks, ids, thickLines } = state;
     // set new mode if action is in modes list
     let mode = AG.MODES.includes(action) ? action : state.mode;
 
     // modes
     if (AG.MODES.includes(action)) {
       blocks = false;
+      ids = false;
       thickLines = false;
       this.toolset = [];
     }
@@ -347,10 +348,13 @@ export default class Controls {
     AG.SELECTABLE.includes(action) && (selectionMode = true);
     action === A.OBJECT && (thickLines = true);
     action === A.BLOCK && (blocks = true);
+    action === A.LINES && (ids = true);
 
     // actions to run
     action === A.GROUP && this.model.group();
     action === A.UNGROUP && this.model.ungroup();
+    action === A.REINDEXBLOCKS && this.model.reindexBlocks();
+    action === A.REINDEXRAILS && this.model.reindexRails();
     action === A.DELETE && this.model.deleteSelected();
     action === A.NEXT && this.nextTool(1);
     action === A.PREV && this.nextTool(-1);
@@ -440,6 +444,7 @@ export default class Controls {
       cursorType,
       thickLines,
       blocks,
+      ids,
       hints,
       mode
     });
@@ -494,8 +499,8 @@ export default class Controls {
       };
       return result;
     });
-
-    // add common header
+    UNGROUP;
+    UNGROUP;
     properties = config.objectCommon.concat(properties);
 
     // set values in properties with corresponding from object

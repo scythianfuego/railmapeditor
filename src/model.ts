@@ -37,7 +37,6 @@ export default class Model {
   private rails: IRail[] = [];
   private railsIndex = new Map();
   private blockId = 1;
-  private connectionId = 1;
   private objectId = 2; // odd id means start of segment, even - end
   private pointId = 6001;
 
@@ -144,7 +143,6 @@ export default class Model {
   }
 
   makeConnection(pointId: number, x: number, y: number) {
-    const id = this.connectionId++;
     this.connections.push({ x, y, items: [pointId] });
   }
 
@@ -295,6 +293,50 @@ export default class Model {
         v.meta.block = groupBlockId;
       });
     this.deselect();
+  }
+
+  reindexBlocks() {
+    this.blockId = 1;
+    const indices: Map<number, number> = new Map();
+
+    this.rails.forEach(v => {
+      const curr = v.meta.block;
+      if (!indices.has(curr)) {
+        indices.set(curr, this.blockId++);
+      }
+    });
+
+    this.rails.forEach(v => {
+      v.meta.block = indices.get(v.meta.block);
+    });
+  }
+
+  reindexRails() {
+    this.objectId = 2;
+    const indices: Map<number, number> = new Map();
+
+    this.rails.forEach(v => {
+      const curr = v.meta.id;
+      if (!indices.has(curr)) {
+        indices.set(curr, this.objectId);
+        indices.set(curr + 1, this.objectId + 1);
+        this.objectId += 2;
+      }
+    });
+
+    this.rails.forEach(v => {
+      v.meta.id = indices.get(v.meta.id);
+    });
+
+    this.connections.forEach(c => {
+      c.items = c.items.map(i => indices.get(i) || 0);
+    });
+
+    this.switches = this.switches.map(s => s.map(i => indices.get(i) || 0));
+
+    this.joins = this.joins.map(
+      j => [indices.get(j[0]) || 0, indices.get(j[1]) || 0] as IJoin
+    );
   }
 
   findJoin(id: number) {

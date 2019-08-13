@@ -10,6 +10,7 @@ const defaults: IState = {
   mode: 0,
   // drawing
   blocks: false,
+  ids: false,
   hints: [],
   tool: null,
   cursorCell: null,

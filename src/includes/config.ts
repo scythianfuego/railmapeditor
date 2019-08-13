@@ -22,6 +22,8 @@ enum A {
   // actions
   GROUP,
   UNGROUP,
+  REINDEXBLOCKS,
+  REINDEXRAILS,
   DELETE,
   NEXT,
   PREV,
@@ -158,6 +160,8 @@ const hints: IHints = [
   { tag: "ESC", text: "Back", action: A.SELECT, show: [A.BLOCK] },
   { tag: "Z", text: "Group", action: A.GROUP, show: [A.BLOCK] },
   { tag: "X", text: "Unroup", action: A.UNGROUP, show: [A.BLOCK] },
+  { tag: "1", text: "Reindex blocks", action: A.REINDEXBLOCKS, show: [A.BLOCK] },
+  { tag: "2", text: "Reindex rails", action: A.REINDEXRAILS, show: [A.BLOCK] },
 
   // switch
   { tag: "ESC", text: "Back", action: A.SELECT, show: [A.CONNECT] },

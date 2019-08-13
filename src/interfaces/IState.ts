@@ -3,6 +3,7 @@ interface IState {
   mode: number;
   // drawing
   blocks: boolean;
+  ids: boolean;
   hints: any[];
   tool: any; // ?
   cursorCell: any;

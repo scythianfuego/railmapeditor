@@ -365,6 +365,10 @@ export default class Draw {
     obj.meta &&
       this.state.blocks &&
       this.label(midx, midy, obj.meta.block.toString());
+
+    obj.meta &&
+      this.state.ids &&
+      this.label(midx, midy, obj.meta.id.toString());
   }
 
   private arcPath(obj: IRail, color?: string) {
@@ -418,6 +422,10 @@ export default class Draw {
     obj.meta &&
       this.state.blocks &&
       this.label(midx, midy, obj.meta.block.toString());
+
+    obj.meta &&
+      this.state.ids &&
+      this.label(midx, midy, obj.meta.id.toString());
   }
 
   private linePath(obj: IRail, color?: string) {
