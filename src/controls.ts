@@ -105,8 +105,9 @@ export default class Controls {
     store.setState({ hints });
 
     const canvas = document.querySelector("canvas");
-    window.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
-    window.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
+    const parent = canvas.parentElement; // canvas can't have focus, no keyboard events
+    parent.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
+    parent.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
     canvas.addEventListener("contextmenu", event => event.preventDefault());
     canvas.addEventListener("mousemove", event => this.onMouseMove(event));
     canvas.addEventListener("mousedown", event => this.onMouseDown(event));

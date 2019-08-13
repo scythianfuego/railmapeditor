@@ -34,8 +34,8 @@ export default class Model {
 
   public gameobjectpoints: Map<number, Point[]> = new Map();
 
-  private store: IRail[] = [];
-  private storeIndex = new Map();
+  private rails: IRail[] = [];
+  private railsIndex = new Map();
   private blockId = 1;
   private connectionId = 1;
   private objectId = 2; // odd id means start of segment, even - end
@@ -94,7 +94,7 @@ export default class Model {
 
     const result = JSON.stringify(
       {
-        rails: this.store.map(encodeChunk),
+        rails: this.rails.map(encodeChunk),
         switches: this.switches,
         joins,
         objects: objects
@@ -112,7 +112,7 @@ export default class Model {
   serialize() {
     // return LZString.compressToUTF16(
     return JSON.stringify({
-      store: this.store,
+      rails: this.rails,
       blockId: this.blockId,
       pointId: this.pointId,
       objectId: this.objectId,
@@ -128,7 +128,7 @@ export default class Model {
   unserialize(data: string) {
     // LZString.decompressFromUTF16(data)
     const obj = JSON.parse(data);
-    this.store = obj.store || [];
+    this.rails = obj.store || obj.rails || []; // compatibiity
     this.blockId = obj.blockId || [];
     this.pointId = obj.pointId || [];
     this.objectId = obj.objectId || [];
@@ -139,8 +139,8 @@ export default class Model {
     this.gameobjectpoints = new Map(obj.gameobjectpoints || []);
 
     //reindex
-    this.storeIndex = new Map();
-    this.store.forEach(v => this.storeIndex.set(v.meta.id, v));
+    this.railsIndex = new Map();
+    this.rails.forEach(v => this.railsIndex.set(v.meta.id, v));
   }
 
   makeConnection(pointId: number, x: number, y: number) {
@@ -186,16 +186,16 @@ export default class Model {
     const block = this.blockId++;
     obj.meta = { id, x, y, selected, block };
     this.createConnections(obj);
-    this.store.push(obj);
-    this.storeIndex.set(id, obj);
+    this.rails.push(obj);
+    this.railsIndex.set(id, obj);
   }
 
   get(pointId: number): IRail {
-    return this.storeIndex.get(pointId & magic);
+    return this.railsIndex.get(pointId & magic);
   }
 
   forEach(fn: (i: IRail) => void) {
-    this.store.forEach(i => fn(i));
+    this.rails.forEach(i => fn(i));
   }
 
   findByRect(sx: number, sy: number, ex: number, ey: number): IRail[] {
@@ -207,7 +207,7 @@ export default class Model {
     const insideX = (x: number) => inside(x, lx, rx);
     const insideY = (y: number) => inside(y, ly, ry);
     const insideXY = (x: number, y: number) => insideX(x) && insideY(y);
-    return this.store.filter(o => insideXY(o.sx, o.sy) && insideXY(o.ex, o.ey));
+    return this.rails.filter(o => insideXY(o.sx, o.sy) && insideXY(o.ex, o.ey));
   }
 
   findByXY(x: number, y: number): IRail[] {
@@ -231,7 +231,7 @@ export default class Model {
       return Math.abs(ab + bc - ac) < MIN_DISTANCE;
     };
 
-    return this.store.filter(obj =>
+    return this.rails.filter(obj =>
       obj.radius ? pointInArc(x, y, obj) : pointInLine(x, y, obj)
     );
   }
@@ -245,15 +245,15 @@ export default class Model {
   }
 
   deleteSelected() {
-    let ids = this.store.filter(i => i.meta.selected).map(i => i.meta.id);
+    let ids = this.rails.filter(i => i.meta.selected).map(i => i.meta.id);
     ids = ids.concat(ids.map(i => i + 1)); // add reverse links
 
-    // remove from store
-    this.store = this.store.filter(i => !i.meta.selected);
+    // remove from rail storage
+    this.rails = this.rails.filter(i => !i.meta.selected);
 
     ids.forEach(id => {
       // remove from index, should use lodash.partition instead
-      this.storeIndex.delete(id);
+      this.railsIndex.delete(id);
 
       // remove from joins and switches
       this.joins = this.joins.filter(i => !i.includes(id));
@@ -270,8 +270,8 @@ export default class Model {
 
   selectGroup(selection: any[]) {
     this.select(selection);
-    const selected = this.store.filter(i => i.meta.selected);
-    const deselected = this.store.filter(i => !i.meta.selected);
+    const selected = this.rails.filter(i => i.meta.selected);
+    const deselected = this.rails.filter(i => !i.meta.selected);
     selected.forEach(s => {
       deselected.forEach(
         d => s.meta.block === d.meta.block && (d.meta.selected = true)
@@ -281,14 +281,14 @@ export default class Model {
 
   group() {
     const groupBlockId = this.blockId++;
-    this.store
+    this.rails
       .filter(v => v.meta.selected)
       .map(v => (v.meta.block = groupBlockId));
     // this.deselect();
   }
 
   ungroup() {
-    this.store
+    this.rails
       .filter(v => v.meta.selected)
       .map(v => {
         const groupBlockId = this.blockId++;
@@ -306,7 +306,7 @@ export default class Model {
   }
 
   getSelectedIds(): number[] {
-    return this.store
+    return this.rails
       .filter(v => v.meta.selected)
       .map(v => v.meta.id)
       .sort();
