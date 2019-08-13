@@ -29,6 +29,11 @@ const tools: Tools = {
     hex => objects.line(hex, 1),
     hex => objects.line(hex, 2)
   ],
+  [A.DLINES]: [
+    hex => objects.line2(hex, 0),
+    hex => objects.line2(hex, 1),
+    hex => objects.line2(hex, 2)
+  ],
   [A.CURVE]: [
     hex => objects.longArc(hex, 0),
     hex => objects.longArc(hex, 1),
@@ -36,6 +41,22 @@ const tools: Tools = {
     hex => objects.longArc(hex, 3),
     hex => objects.longArc(hex, 4),
     hex => objects.longArc(hex, 5)
+  ],
+  [A.CURVE1]: [
+    hex => objects.longArc2(hex, 0),
+    hex => objects.longArc2(hex, 1),
+    hex => objects.longArc2(hex, 2),
+    hex => objects.longArc2(hex, 3),
+    hex => objects.longArc2(hex, 4),
+    hex => objects.longArc2(hex, 5)
+  ],
+  [A.CURVE2]: [
+    hex => objects.longArc3(hex, 0),
+    hex => objects.longArc3(hex, 1),
+    hex => objects.longArc3(hex, 2),
+    hex => objects.longArc3(hex, 3),
+    hex => objects.longArc3(hex, 4),
+    hex => objects.longArc3(hex, 5)
   ],
   [A.SIDEA]: [
     hex => objects.shortArc(hex, 0),

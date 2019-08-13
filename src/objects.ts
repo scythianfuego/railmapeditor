@@ -11,28 +11,17 @@ export default class Objects {
   //   return getCorners(hex).filter((v, i) => i % 2 === 0);
   // }
 
-  line(hex: Hex, index: number): IRail {
+  baseLine(
+    hex: Hex,
+    index: number,
+    length: number = 1,
+    baseType: number
+  ): IRail {
     const corners = this.getTriangleCorners(hex);
-    const pairs = [[1, 0], [2, 0], [2, 1]];
-    const [a, b] = pairs[index];
-
-    return {
-      sx: corners[a].x,
-      sy: corners[a].y,
-      ex: corners[b].x,
-      ey: corners[b].y,
-      type: 0x10 + index,
-      radius: 0,
-      x: 0,
-      y: 0,
-      a1: 0,
-      a2: 0
-    };
-  }
-
-  infiniLine(hex: Hex, index: number): IRail {
-    const corners = this.getTriangleCorners(hex);
-    const pairs = [[1, 0], [2, 0], [2, 1], [0, 1], [0, 2], [1, 2]];
+    const pairs =
+      length == 1 // do not duplicate
+        ? [[1, 0], [2, 0], [2, 1]]
+        : [[1, 0], [2, 0], [2, 1], [0, 1], [0, 2], [1, 2]];
     const [a, b] = pairs[index];
     let [sx, sy, ex, ey] = [
       corners[a].x,
@@ -40,15 +29,15 @@ export default class Objects {
       corners[b].x,
       corners[b].y
     ];
-    ex = (ex - sx) * 10 + ex;
-    ey = (ey - sy) * 10 + ey;
+    ex = (ex - sx) * (length - 1) + ex;
+    ey = (ey - sy) * (length - 1) + ey;
 
     return {
       sx,
       sy,
       ex,
       ey,
-      type: 0x10 + index,
+      type: baseType + index,
       radius: 0,
       x: 0,
       y: 0,
@@ -94,10 +83,35 @@ export default class Objects {
     return { x, y, radius, a1, a2, sx, sy, ex, ey, type: baseType + index };
   }
 
+  // tools here
+  line(hex: Hex, index: number): IRail {
+    return this.baseLine(hex, index, 1, 0x10);
+  }
+
+  line2(hex: Hex, index: number): IRail {
+    return this.baseLine(hex, index, 2, 0x10);
+  }
+
+  infiniLine(hex: Hex, index: number): IRail {
+    return this.baseLine(hex, index, 10, 0x10);
+  }
+
   longArc(hex: Hex, index: number): IRail {
     const radius = 6 * hex.size;
     const arc = Math.PI / 3;
     return this.baseArc(hex, index, radius, arc, 0x20);
+  }
+
+  longArc2(hex: Hex, index: number): IRail {
+    const radius = 6 * hex.size;
+    const arc = Math.PI / 6;
+    return this.baseArc(hex, index, radius, arc, 0x20);
+  }
+
+  longArc3(hex: Hex, index: number): IRail {
+    const radius = 6 * hex.size;
+    const arc = Math.PI / 6;
+    return this.baseArc(hex, index, radius, arc, 0x20, false);
   }
 
   shortArc(hex: Hex, index: number): IRail {

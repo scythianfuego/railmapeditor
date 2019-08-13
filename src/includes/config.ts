@@ -7,7 +7,10 @@ import IKeyValue from "../interfaces/IKeyValue";
 enum A {
   SELECT,
   LINES,
+  DLINES,
   CURVE,
+  CURVE1,
+  CURVE2,
   SIDEA,
   SIDEB,
   LONG,
@@ -66,7 +69,16 @@ enum A {
   EMPTY
 }
 
-const tools = [A.LINES, A.CURVE, A.SIDEA, A.SIDEB, A.LONG];
+const tools = [
+  A.LINES,
+  A.DLINES,
+  A.CURVE,
+  A.CURVE1,
+  A.CURVE2,
+  A.SIDEA,
+  A.SIDEB,
+  A.LONG
+];
 const pointtools = [
   A.POINTMOVE,
   A.POINTADD,
@@ -133,10 +145,13 @@ const hints: IHints = [
   // drawing
   { tag: "ESC", text: "Back", action: A.SELECT, show: AG.TOOLS },
   { tag: "1", text: "Lines", action: A.LINES, show: AG.TOOLS, on: A.LINES },
-  { tag: "2", text: "Curve", action: A.CURVE, show: AG.TOOLS, on: A.CURVE },
-  { tag: "3", text: "SideA", action: A.SIDEA, show: AG.TOOLS, on: A.SIDEA },
-  { tag: "4", text: "SideB", action: A.SIDEB, show: AG.TOOLS, on: A.SIDEB },
-  { tag: "5", text: "Inf L", action: A.LONG, show: AG.TOOLS, on: A.LONG },
+  { tag: "2", text: "Double", action: A.DLINES, show: AG.TOOLS, on: A.DLINES },
+  { tag: "3", text: "Curve", action: A.CURVE, show: AG.TOOLS, on: A.CURVE },
+  { tag: "4", text: "Curve1", action: A.CURVE1, show: AG.TOOLS, on: A.CURVE1 },
+  { tag: "5", text: "Curve2", action: A.CURVE2, show: AG.TOOLS, on: A.CURVE2 },
+  { tag: "6", text: "SideA", action: A.SIDEA, show: AG.TOOLS, on: A.SIDEA },
+  { tag: "7", text: "SideB", action: A.SIDEB, show: AG.TOOLS, on: A.SIDEB },
+  { tag: "8", text: "Inf L", action: A.LONG, show: AG.TOOLS, on: A.LONG },
   { tag: "Z", text: "Next tool", action: A.NEXT, show: AG.TOOLS },
   { tag: "X", text: "Prev tool", action: A.PREV, show: AG.TOOLS },
   // block
@@ -250,6 +265,7 @@ const textures = [
   "concretegrunge.png",
   "forklift.png",
   "forkliftbig.png",
+  "excavator.png",
   "fibrecement.png",
   "gantry.png",
   "drums.png",
