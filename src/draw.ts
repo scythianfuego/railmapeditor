@@ -29,6 +29,10 @@ export default class Draw {
   private atlas: HTMLImageElement;
   private textureData: any;
 
+  private transformHash: number = 0;
+  private gridCanvas: HTMLCanvasElement;
+  private modelCanvas: HTMLCanvasElement;
+
   private screen = {
     moveTo: (x: number, y: number) => this.ctx.moveTo(sx(x), sy(y)),
     lineTo: (x: number, y: number) => this.ctx.lineTo(sx(x), sy(y)),
@@ -83,7 +87,15 @@ export default class Draw {
 
   constructor(private canvas: HTMLCanvasElement, private model: Model) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext("2d");
+    this.gridCanvas = document.createElement("canvas");
+    this.gridCanvas.width = canvas.width;
+    this.gridCanvas.height = canvas.height;
+
+    this.modelCanvas = document.createElement("canvas");
+    this.modelCanvas.width = canvas.width;
+    this.modelCanvas.height = canvas.height;
+    this.ctx = this.modelCanvas.getContext("2d");
+
     this.model = model;
     this.ctx.translate(0.5, 0.5);
 
@@ -140,21 +152,36 @@ export default class Draw {
     return "#ffa834";
   }
 
-  private clear() {
-    this.ctx.fillStyle = colors.background;
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  private clear(ctx: CanvasRenderingContext2D) {
+    ctx.fillStyle = colors.background;
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
   public all() {
     this.labelCache = [];
-    this.clear();
-    this.grid();
 
-    this.model.forEach((obj: IRail) => this.object(obj));
-    this.model.gameobjects.forEach((obj: IGameObject) => this.gameObject(obj));
+    this.ctx = this.modelCanvas.getContext("2d");
+    const hash = ts.hash();
+    if (this.transformHash !== hash) {
+      this.grid();
+    }
+    if (this.transformHash !== hash || this.model.dirty) {
+      this.clear(this.ctx);
+      this.model.forEach((obj: IRail) => this.object(obj));
+      this.model.gameobjects.forEach((obj: IGameObject) =>
+        this.gameObject(obj)
+      );
+      this.labelCache.forEach(([x, y, what]) => this.text(x, y, what));
+      this.connections();
+      this.model.dirty = false;
+      this.transformHash = ts.hash();
+    }
+
+    this.ctx = this.canvas.getContext("2d");
+    this.ctx.drawImage(this.gridCanvas, 0, 0);
+    this.ctx.drawImage(this.modelCanvas, 0, 0);
+
     this.cursor();
-    this.labelCache.forEach(([x, y, what]) => this.text(x, y, what));
-    this.connections();
     this.selectionFrame();
     this.helpline();
   }
@@ -163,50 +190,41 @@ export default class Draw {
     if (this.cursorType === 0) {
       this.tool && this.object(this.tool(this.snapPoint));
     }
-  }
-
-  private grid() {
-    // todo: renew only when transform changed
-    const { gridWidth, gridHeight } = ts;
-
-    this.ctx.fillStyle = colors.gridBackground;
-    this.screen.fillRect(0, 0, gridWidth, gridHeight);
-    this.ctx.lineWidth = 1;
-    this.ctx.font = "7px Arial";
-    const n1px = pixels(-1);
-    const p1px = pixels(1);
-    this.screen.strokeRect(n1px, n1px, gridWidth + p1px, gridHeight + p1px);
-
-    const yStep = Math.sqrt(3) * 0.25;
-    const xStep = 0.5;
-
-    this.ctx.translate(-0.5, -0.5);
-    for (let i = 0; i < gridWidth * 2; i++) {
-      for (let j = 0; j < gridHeight * 2; j++) {
-        const r = j % 2 === 0 ? 0 : 0.25;
-        const x = i * xStep + r;
-        const y = j * yStep;
-
-        this.ctx.fillStyle = "#999";
-        this.ctx.fillRect(Math.floor(sx(x)) - 1, Math.floor(sy(y)) - 1, 1, 1);
-      }
-    }
-    this.ctx.translate(0.5, 0.5);
-
-    // const [mx, my] = this.mouse.coords;
-    // this.ctx.fillStyle = "red";
-    // let x = wx(mx);
-    // let y = wy(my);
-    // y = Math.round(y / yStep) * yStep;
-    // const yIsOdd = Math.round(y / yStep) % 2;
-    // x = Math.round(x / xStep) * xStep;
-    // x += yIsOdd ? xStep * 0.5 : 0;
 
     const [x, y] = this.snapPoint;
     this.ctx.fillStyle = "red";
     this.ctx.beginPath();
     this.ctx.arc(sx(x), sy(y), 3, 0, 6.28);
     this.ctx.fill();
+  }
+
+  private grid() {
+    // todo: renew only when transform changed
+    const { gridWidth, gridHeight } = ts;
+    const ctx = this.gridCanvas.getContext("2d");
+
+    // clear canvas
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, this.gridCanvas.width, this.gridCanvas.height);
+
+    // draw bg
+    ctx.fillStyle = colors.gridBackground;
+    ctx.fillRect(sx(0), sy(0), scale(gridWidth), scale(gridHeight));
+
+    // draw dot grid
+    const yStep = Math.sqrt(3) * 0.25;
+    const xStep = 0.5;
+
+    for (let i = 0; i < gridWidth * 2; i++) {
+      for (let j = 0; j < gridHeight * 2; j++) {
+        const r = j % 2 === 0 ? 0 : 0.25;
+        const x = i * xStep + r;
+        const y = j * yStep;
+
+        ctx.fillStyle = "#999";
+        ctx.fillRect(Math.floor(sx(x)) - 1, Math.floor(sy(y)) - 1, 1, 1);
+      }
+    }
   }
 
   private gameObject(obj: IGameObject) {
@@ -271,10 +289,6 @@ export default class Draw {
         ctx.beginPath();
         !selected && ctx.setLineDash([1, 3]);
         ctx.strokeRect(0, 0, w, h);
-        // ctx.moveTo(0, 0);
-        // ctx.lineTo(w, h);
-        // ctx.moveTo(0, h);
-        // ctx.lineTo(w, 0);
         ctx.stroke();
         !selected && ctx.setLineDash([]);
       } else {

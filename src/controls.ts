@@ -144,9 +144,10 @@ export default class Controls {
 
     this.layerList = <LayerList>document.querySelector("layerlist-box");
     this.layerList.data = config.layers;
-    this.layerList.addEventListener("change", () =>
-      store.setState({ layers: this.layerList.userInput })
-    );
+    this.layerList.addEventListener("change", () => {
+      store.setState({ layers: this.layerList.userInput });
+      this.model.dirty = true; // store?
+    });
 
     this.runAction(mode);
   }
@@ -292,6 +293,7 @@ export default class Controls {
     }
 
     AG.SELECTABLE.includes(state.mode) &&
+      state.mouse.down &&
       state.mouse.selection &&
       this.alterSelection(coords, state.mouse.selection);
   }

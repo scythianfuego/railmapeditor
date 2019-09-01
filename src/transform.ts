@@ -26,25 +26,12 @@ class Transform {
   public ratioY = (y: number) =>
     this.clamp((y - this.panY) / (this.gridHeight * this.zoom), 0, 1);
 
+  private hf = (x: number) => (x * 76283 + 43633) | 0;
+  public hash = () =>
+    (this.hf(this.zoom) + this.hf(this.panX) + this.hf(this.panY)) | 0;
+
   constructor() {
     store.subscribe(state => copy(state, this, ["zoom", "panX", "panY"]));
-  }
-
-  getCornersByPoint(point: number[]): number[][] {
-    const [x, y] = point;
-
-    const result = [];
-    const size = this.HEX_SIZE;
-    for (let i = 1; i <= 5; i += 2) {
-      let angle_deg = 60 * i - 30;
-      let angle_rad = (Math.PI / 180) * angle_deg;
-      result.push([
-        x + size * Math.cos(angle_rad),
-        y + size * Math.sin(angle_rad)
-      ]);
-    }
-
-    return result;
   }
 
   snap(coords: number[]) {
