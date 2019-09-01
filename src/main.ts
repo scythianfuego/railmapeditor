@@ -5,7 +5,9 @@ import Model from "./model";
 import Animate from "./animate";
 import Controls from "./controls";
 import PropertyEditor from "./components/properties";
+import LayerList from "./components/layerlist";
 window.customElements.define("property-box", PropertyEditor);
+window.customElements.define("layerlist-box", LayerList);
 
 const canvas = document.querySelector("canvas");
 canvas.width = canvas.clientWidth;

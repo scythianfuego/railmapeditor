@@ -1,12 +1,7 @@
-import { GridTools } from "./transform";
+import { GridTools, HexParams } from "./interfaces/types";
 import * as Honeycomb from "honeycomb-grid";
 import { Hex, Grid, GridFactory, Point } from "honeycomb-grid";
 import store, { copy } from "./store";
-
-type HexParams = { size: number };
-export type GridTools = GridFactory<Hex<HexParams>>;
-export type Hex = Honeycomb.Hex<HexParams>;
-export type Grid = Grid;
 
 // handles world to screen transformations and back
 class Transform {

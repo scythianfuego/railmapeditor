@@ -1,11 +1,14 @@
 import storeInstance, { copy } from "./store";
-import ts, { Grid, Hex } from "./transform";
+import ts from "./transform";
+import { Grid, Hex } from "./interfaces/types";
 import Model from "./model";
 import IRail from "./interfaces/IRail";
 import IHintLine from "./interfaces/IHintLine";
 import IState from "./interfaces/IState";
 import { Listener, Store } from "unistore";
 import IGameObject from "./interfaces/IGameObject";
+import IKeyValue from "./interfaces/IKeyValue";
+import IHints from "./interfaces/IHints";
 
 const TAU = 2 * Math.PI;
 const hex2rgba = (hex: string) => {
@@ -20,15 +23,12 @@ const colors = {
 
 const { sx, sy, scale, pixels, getCorners } = ts;
 
-type TextureAtlas = {
-  [index: string]: HTMLImageElement;
-};
-
 export default class Draw {
   private ctx: CanvasRenderingContext2D;
   private hexgrid: Grid;
 
-  private textures: TextureAtlas = {};
+  private atlas: HTMLImageElement;
+  private textureData: any;
 
   private screen = {
     moveTo: (x: number, y: number) => this.ctx.moveTo(sx(x), sy(y)),
@@ -68,14 +68,17 @@ export default class Draw {
   };
 
   // state variables, refactor
-  private state: any = null;
-  private hints: any;
+  private state: IState = null;
+  private hints: IHints;
   private tool: any;
   private selectionMode: any;
   private cursorCell: any;
-  private zoom: any;
-  private panX: any;
-  private panY: any;
+  private cursorType: any;
+  private mouse: any;
+  private zoom: number;
+  private panX: number;
+  private panY: number;
+  private layers: IKeyValue;
 
   private labelCache: [number, number, string][] = [];
 
@@ -97,18 +100,33 @@ export default class Draw {
         "selectionMode",
         "zoom",
         "panX",
-        "panY"
+        "panY",
+        "cursorType",
+        "layers",
+        "mouse"
       ]);
-      this.state = state; // todo: refactor out mouse
       this.canvas.style.cursor = state.mouse.pan ? "grabbing" : "pointer";
     };
 
     storeInstance.subscribe(subscribeListener);
+
+    const image = new Image();
+    image.src = `assets/textures.png`;
+    image.onload = () => (this.atlas = image);
+
+    fetch("assets/textures.json")
+      .then(response => response.json())
+      .then(obj => {
+        this.textureData = obj;
+      });
   }
 
   private getColor(type: number, selected: boolean) {
-    if (this.selectionMode) {
-      return selected ? "red" : "#ccc";
+    if (selected) {
+      return "red";
+    }
+    if (!this.layers.colors) {
+      return "#ccc";
     }
     if (0x20 <= type && type <= 0x29) {
       return "yellow";
@@ -136,24 +154,18 @@ export default class Draw {
     this.grid();
     !this.selectionMode && this.cell(this.cursorCell, "#fff");
 
-    !this.state.thickLines && this.connections();
     this.model.forEach((obj: IRail) => this.object(obj));
     this.model.gameobjects.forEach((obj: IGameObject) => this.gameObject(obj));
     this.cursor();
     this.labelCache.forEach(([x, y, what]) => this.text(x, y, what));
+    this.connections();
     this.selectionFrame();
     this.helpline();
   }
 
   private cursor() {
-    switch (this.state.cursorType) {
-      case 0:
-        this.tool && this.cursorCell && this.object(this.tool(this.cursorCell));
-        break;
-
-      case 1:
-        // none
-        break;
+    if (this.cursorType === 0) {
+      this.tool && this.cursorCell && this.object(this.tool(this.cursorCell));
     }
   }
 
@@ -209,122 +221,126 @@ export default class Draw {
   }
 
   private gameObject(obj: IGameObject) {
-    const { x, y, texture, rotation, points, outline } = obj; // refactor object frame out
+    type Frame = { x: number; y: number; w: number; h: number };
 
-    const atlas = this.textures;
+    const { ctx } = this;
+    let { x, y, texture, rotation, points, outline } = obj; // refactor object frame out
 
-    const loadTexture = (texture: string) => {
-      atlas[texture] = null;
-      const image = new Image();
-      image.src = `assets/${texture}`;
-      image.onload = () => (atlas[texture] = image);
+    if (obj.type === "signal") {
+      texture = "signalred.png";
+    }
+
+    const draw = (frame: Frame, width: number, height: number, alpha = 1) => {
+      if (frame) {
+        ctx.globalAlpha = alpha;
+        const { x, y, w, h } = frame;
+        ctx.drawImage(this.atlas, x, y, w, h, 0, 0, width, height);
+        ctx.globalAlpha = 1;
+      }
     };
 
-    if (texture && atlas[texture] === undefined) {
-      loadTexture(texture);
-    }
-    if (outline && atlas[outline] === undefined) {
-      loadTexture(outline);
-    }
+    const data = this.textureData.frames[texture] || null;
+    const frame: Frame = data ? data.frame : null;
 
-    let objW = 1.28; // 64/50
-    const pxUnit = 50;
-    const img = atlas[texture] || null;
-
+    const px = 50; // pixels per unit
     let width = 64;
     let height = 64;
-    if (img) {
-      width = img.width;
-      height = img.height;
-    }
-    if (img && Number(obj.width)) {
-      const aspect = img.height / img.width;
-      width = Number(obj.width);
-      if (img && obj.height) {
-        height = obj.height;
-      } else {
-        height = aspect * width;
+    if (frame) {
+      width = frame.w;
+      height = frame.h;
+
+      const ow = Number(obj.width) || 0;
+      const oh = Number(obj.height) || 0;
+      if (ow !== 0) {
+        width = ow;
+        height = frame && oh !== 0 ? oh : (width * frame.h) / frame.w;
       }
     }
 
+    const selected = obj === this.model.selectedGameObject;
+    ctx.strokeStyle = selected ? "#ff0000" : "#ccc";
     const cx = sx(x); // image center
     const cy = sy(y);
-    const w = scale(width) / pxUnit;
-    const h = scale(height) / pxUnit;
-    this.ctx.strokeStyle =
-      obj === this.model.selectedGameObject ? "#ff0000" : "#008000";
+    const w = scale(width) / px;
+    const h = scale(height) / px;
 
-    // transform
-    this.ctx.save();
-    this.ctx.translate(cx, cy);
-    rotation && this.ctx.rotate((rotation * Math.PI) / 180);
-    this.ctx.translate(-w * 0.5, -h * 0.5);
+    // scale and rotate
+    ctx.save();
+    ctx.translate(cx, cy);
+    rotation && ctx.rotate((rotation * Math.PI) / 180);
+    ctx.translate(-w * 0.5, -h * 0.5);
 
     // texture
-    if (img && !points) {
-      // this.ctx.globalAlpha = 0.5;
-      this.ctx.drawImage(img, 0, 0, w, h);
-      this.ctx.globalAlpha = 1;
+    this.layers.textures &&
+      frame &&
+      !points &&
+      draw(frame, w, h, obj.alpha || 1);
+
+    // object box
+    if (this.layers.objects) {
+      if (!points) {
+        ctx.beginPath();
+        !selected && ctx.setLineDash([1, 3]);
+        ctx.strokeRect(0, 0, w, h);
+        // ctx.moveTo(0, 0);
+        // ctx.lineTo(w, h);
+        // ctx.moveTo(0, h);
+        // ctx.lineTo(w, 0);
+        ctx.stroke();
+        !selected && ctx.setLineDash([]);
+      } else {
+        ctx.beginPath();
+        ctx.arc(w * 0.5, h * 0.5, scale(1.28 * 0.5), 0, TAU);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    if (this.layers.objects && texture) {
+      const desc = `${texture.replace(".png", "")}`;
+      ctx.font = "12px Arial";
+      ctx.fillStyle = "#ffffff";
+      this.screen.fillText(desc, x, y - pixels(12));
+      ctx.lineWidth = 1;
     }
 
-    if (!points) {
-      // outline
-      this.ctx.beginPath();
-      this.ctx.strokeRect(0, 0, w, h);
-      this.ctx.moveTo(0, 0);
-      this.ctx.lineTo(w, h);
-      this.ctx.moveTo(0, h);
-      this.ctx.lineTo(w, 0);
-      this.ctx.arc(w, 0, 5, 0, 6.29);
-      this.ctx.stroke();
-    }
-
-    this.ctx.beginPath();
-    this.ctx.arc(w * 0.5, h * 0.5, scale(1.28 * 0.5), 0, 6.29);
-    this.ctx.stroke();
-
-    this.ctx.restore();
-
-    const desc = `${obj.type}`;
-    this.ctx.font = "12px Arial";
-    this.ctx.fillStyle = "#ffffff";
-    this.screen.fillText(desc, x, y - pixels(12));
-
-    // points
     if (obj.points) {
       const pdata = this.model.gameobjectpoints.get(obj.points);
+      const isRope = obj.type === "rope";
+      const isPoly = obj.type === "polygon";
+      const doPoly = isPoly && this.layers.polygons;
+      const doRope = isRope && this.layers.ropes;
+      const doBoth = doPoly || doRope;
 
-      this.ctx.beginPath();
-      this.screen.moveTo(pdata[0].x, pdata[0].y);
-      for (let i = 1; i < pdata.length; i++) {
-        this.screen.lineTo(pdata[i].x, pdata[i].y);
-      }
-
-      // polygon
-
-      if (obj.type === "polygon") {
-        this.ctx.strokeStyle = "rgba(255, 0, 255, 0.5)";
-        this.ctx.fillStyle = "rgba(0,0.5,0,0.5)";
-        this.ctx.fill();
-        if (obj.hasOutline) {
-          const outlineImg = atlas[outline] || null;
-          if (outlineImg) {
-            // const outlineHeight = outlineImg.height;
-            this.ctx.lineWidth = scale(10 / 50);
-            this.ctx.stroke();
-          }
+      const drawPoints = () => {
+        for (let i = 0; i < pdata.length; i++) {
+          this.point(pdata[i].x, pdata[i].y, selected ? "red" : "cyan");
         }
-      } else {
-        this.ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
-        if (img) {
-          this.ctx.lineWidth = scale(height / 50); // default zoom
-        }
-        this.ctx.stroke();
-      }
+      };
 
-      for (let i = 0; i < pdata.length; i++) {
-        this.point(pdata[i].x, pdata[i].y);
-      }
+      const fillPolygon = () => {
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.beginPath();
+        this.screen.moveTo(pdata[0].x, pdata[0].y);
+        for (let i = 1; i < pdata.length; i++) {
+          this.screen.lineTo(pdata[i].x, pdata[i].y);
+        }
+        ctx.fill();
+      };
+
+      const drawRope = () => {
+        ctx.strokeStyle = selected ? "magenta" : "black";
+        ctx.beginPath();
+        this.screen.moveTo(pdata[0].x, pdata[0].y);
+        for (let i = 1; i < pdata.length; i++) {
+          this.screen.lineTo(pdata[i].x, pdata[i].y);
+        }
+        ctx.stroke();
+      };
+
+      doPoly && fillPolygon();
+      doRope && drawRope();
+      doBoth && drawPoints();
     }
   }
 
@@ -336,26 +352,11 @@ export default class Draw {
     this.ctx.fill();
   }
 
-  // private arrow(sx: number, sy: number, ex: number, ey: number) {
-  //   this.ctx.strokeStyle = "#999";
-  //   this.ctx.lineWidth = 1;
-  //   this.ctx.beginPath();
-  //   const h = 10; // length of head in pixels
-  //   const a = Math.atan2(ey - sy, ex - sx);
-  //   const a1 = Math.PI / 12;
-  //   this.screen.moveTo(sx, sy);
-  //   this.screen.lineTo(ex, ey);
-  //   this.screen.lineTo(ex - h * Math.cos(a - a1), ey - h * Math.sin(a - a1));
-  //   this.screen.moveTo(ex, ey);
-  //   this.screen.lineTo(ex - h * Math.cos(a + a1), ey - h * Math.sin(a + a1));
-  //   this.ctx.stroke();
-  // }
-
   private arc(obj: IRail) {
     const { x, y, radius, a1, a2, type, meta } = obj;
     const color = this.getColor(type, meta && meta.selected);
     this.ctx.strokeStyle = color;
-    this.ctx.lineWidth = this.state.thickLines ? scale(0.5) : 2;
+    this.ctx.lineWidth = this.layers.thick ? scale(0.5) : 2;
     this.ctx.beginPath();
     this.screen.arc(x, y, radius, a1, a2);
     this.ctx.stroke();
@@ -363,11 +364,11 @@ export default class Draw {
     const midx = x + radius * Math.cos((a1 + a2) / 2);
     const midy = y + radius * Math.sin((a1 + a2) / 2);
     obj.meta &&
-      this.state.blocks &&
+      this.layers.blocks &&
       this.label(midx, midy, obj.meta.block.toString());
 
     obj.meta &&
-      this.state.ids &&
+      this.layers.ids &&
       this.label(midx, midy, obj.meta.id.toString());
   }
 
@@ -410,7 +411,7 @@ export default class Draw {
   private line(obj: IRail) {
     const { sx, sy, ex, ey, type, meta } = obj;
     const color = this.getColor(type, meta && meta.selected);
-    this.ctx.lineWidth = this.state.thickLines ? scale(0.5) : 2;
+    this.ctx.lineWidth = this.layers.thick ? scale(0.5) : 2;
     this.ctx.beginPath();
     this.ctx.strokeStyle = color;
     this.screen.moveTo(sx, sy);
@@ -420,11 +421,11 @@ export default class Draw {
     const midx = (sx + ex) * 0.5;
     const midy = (sy + ey) * 0.5;
     obj.meta &&
-      this.state.blocks &&
+      this.layers.blocks &&
       this.label(midx, midy, obj.meta.block.toString());
 
     obj.meta &&
-      this.state.ids &&
+      this.layers.ids &&
       this.label(midx, midy, obj.meta.id.toString());
   }
 
@@ -509,13 +510,11 @@ export default class Draw {
   }
 
   private selectionFrame() {
-    const { mouse } = this.state;
-    if (!mouse.down) {
-      // this.point(sx, sy, color);
+    if (!this.mouse.down) {
       return;
     }
-    const [sx, sy] = mouse.selection;
-    const [ex, ey] = mouse.coords;
+    const [sx, sy] = this.mouse.selection;
+    const [ex, ey] = this.mouse.coords;
     this.ctx.strokeStyle = "#ccc";
     this.ctx.lineWidth = 1;
     this.ctx.setLineDash([3, 3]);

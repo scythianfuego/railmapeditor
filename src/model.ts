@@ -1,5 +1,5 @@
 import { Point } from "./interfaces/Point";
-import { Hex } from "./transform";
+import { Hex } from "./interfaces/types";
 import IRail from "./interfaces/IRail";
 import IConnection from "./interfaces/IConnection";
 import ISwitch from "./interfaces/ISwitch";
@@ -266,7 +266,7 @@ export default class Model {
     this.connections = this.connections.filter(i => i.items.length);
   }
 
-  selectGroup(selection: any[]) {
+  selectGroup(selection: IRail[]) {
     this.select(selection);
     const selected = this.rails.filter(i => i.meta.selected);
     const deselected = this.rails.filter(i => !i.meta.selected);

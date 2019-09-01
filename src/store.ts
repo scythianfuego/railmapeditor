@@ -1,6 +1,7 @@
 import createStore, { Store } from "unistore";
 import unistoreDevTools from "unistore/devtools";
 import IState from "./interfaces/IState";
+import config from "./includes/config";
 
 // let store = createStore({ count: 0 });
 // use redux dev tools instead
@@ -9,14 +10,12 @@ const defaults: IState = {
   // ui
   mode: 0,
   // drawing
-  blocks: false,
-  ids: false,
+  layers: {},
   hints: [],
   tool: null,
   cursorCell: null,
   selectionMode: false,
   cursorType: 0,
-  thickLines: false,
   // display scale
   panX: 0,
   panY: 0,

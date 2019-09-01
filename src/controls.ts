@@ -1,14 +1,14 @@
 import { IProperty } from "./interfaces/IProperty";
-import { Hex } from "./transform";
+import { Hex, Tools, Tool } from "./interfaces/types";
 
 import store from "./store";
 import ts from "./transform";
 import Objects from "./objects";
 import Model from "./model";
 import IHints from "./interfaces/IHints";
-import IRail from "./interfaces/IRail";
 import config from "./includes/config";
 import PropertyEditor from "./components/properties";
+import LayerList from "./components/layerlist";
 import IGameObject from "./interfaces/IGameObject";
 import IKeyValue from "./interfaces/IKeyValue";
 
@@ -20,8 +20,6 @@ const AG = config.actionGroups;
 
 // tools controller.
 // type it
-type Tool = (hex: Hex) => IRail;
-type Tools = { [index: number]: Tool[] };
 
 const tools: Tools = {
   [A.LINES]: [
@@ -74,6 +72,22 @@ const tools: Tools = {
     hex => objects.shortArc2(hex, 4),
     hex => objects.shortArc2(hex, 5)
   ],
+  [A.ARC2A]: [
+    hex => objects.arc2a(hex, 0),
+    hex => objects.arc2a(hex, 1),
+    hex => objects.arc2a(hex, 2),
+    hex => objects.arc2a(hex, 3),
+    hex => objects.arc2a(hex, 4),
+    hex => objects.arc2a(hex, 5)
+  ],
+  [A.ARC2B]: [
+    hex => objects.arc2b(hex, 0),
+    hex => objects.arc2b(hex, 1),
+    hex => objects.arc2b(hex, 2),
+    hex => objects.arc2b(hex, 3),
+    hex => objects.arc2b(hex, 4),
+    hex => objects.arc2b(hex, 5)
+  ],
   [A.LONG]: [
     hex => objects.infiniLine(hex, 0),
     hex => objects.infiniLine(hex, 1),
@@ -96,6 +110,7 @@ export default class Controls {
   private active: string = "";
 
   private propertyEditor: PropertyEditor = null;
+  private layerList: LayerList = null;
   private editedObject: IGameObject = null;
 
   constructor(private model: Model) {
@@ -119,6 +134,12 @@ export default class Controls {
     );
     this.propertyEditor.addEventListener("change", () =>
       this.onPropertyEditorSave()
+    );
+
+    this.layerList = <LayerList>document.querySelector("layerlist-box");
+    this.layerList.data = config.layers;
+    this.layerList.addEventListener("change", () =>
+      store.setState({ layers: this.layerList.userInput })
     );
 
     this.runAction(mode);
@@ -327,15 +348,15 @@ export default class Controls {
     const state = store.getState();
     const { wx, wy } = ts;
     const [x, y] = state.mouse.coords;
-    let { selectionMode, blocks, ids, thickLines } = state;
+    let { selectionMode, layers } = state; //
     // set new mode if action is in modes list
     let mode = AG.MODES.includes(action) ? action : state.mode;
 
     // modes
     if (AG.MODES.includes(action)) {
-      blocks = false;
-      ids = false;
-      thickLines = false;
+      // layers.blocks = false;
+      // layers.ids = false;
+      // layers.thick = false;
       this.toolset = [];
     }
 
@@ -346,9 +367,10 @@ export default class Controls {
     }
 
     AG.SELECTABLE.includes(action) && (selectionMode = true);
-    action === A.OBJECT && (thickLines = true);
-    action === A.BLOCK && (blocks = true);
-    action === A.LINES && (ids = true);
+    // action === A.OBJECT && (layers.thick = true);
+    // action === A.BLOCK && (layers.blocks = true);
+    // action === A.LINES && (layers.ids = true);
+    // this.layerList.data = layers;
 
     // actions to run
     action === A.GROUP && this.model.group();
@@ -442,9 +464,7 @@ export default class Controls {
       tool: this.getTool(),
       selectionMode,
       cursorType,
-      thickLines,
-      blocks,
-      ids,
+      // layers,
       hints,
       mode
     });
@@ -499,8 +519,6 @@ export default class Controls {
       };
       return result;
     });
-    UNGROUP;
-    UNGROUP;
     properties = config.objectCommon.concat(properties);
 
     // set values in properties with corresponding from object

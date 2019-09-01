@@ -125,4 +125,44 @@ export default class Objects {
     const arc = 0.3802512067; // 2*Math.acos(9 / sqrt(84)) //1 / 3; // magic2
     return this.baseArc(hex, index, radius, arc, 0x40, false);
   }
+
+  arc2a(hex: Hex, index: number): IRail {
+    // Each of two connected arcs has a radius
+    //   R = A / SIN 2⋅α, where A = ½⋅w
+    // and an arc length of 2⋅α
+
+    // |..
+    // | .  .                                   . .|
+    // |  .    .                            . .    |
+    // |   .  α   .                     . .        |
+    // | α  .        . R            . .            |
+    // |     .          .       . .                |
+    // |      .            .  .                    |
+    // |R      .         . .|                      | h
+    // |        .    . .    |                      |
+    // |         . .        |                      |
+    // |     . .            |                      |
+    // | . .  α       A     |                      |
+    // _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ |
+    //                      w
+
+    // To quote redblobgames, (one) hexagon has width w = √3 * size and height h = 2 * size
+    // We have a hexagon size = 1 / √3
+    // w = 5 * √3 * size = 5
+    // h = 1.5 * 2 * size = sqrt(3)
+    // A = 2.5
+    // α = atan2(h, w) = atan2(√3, 5)
+
+    const alpha = Math.atan2(Math.sqrt(3), 5);
+    const radius = 2.5 / Math.sin(2 * alpha);
+    const arc = 2 * alpha;
+    return this.baseArc(hex, index, radius, arc, 0x40);
+  }
+
+  arc2b(hex: Hex, index: number): IRail {
+    const alpha = Math.atan2(Math.sqrt(3), 5);
+    const radius = 2.5 / Math.sin(2 * alpha);
+    const arc = 2 * alpha;
+    return this.baseArc(hex, index, radius, arc, 0x40, false);
+  }
 }

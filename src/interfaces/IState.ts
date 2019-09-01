@@ -1,29 +1,31 @@
+import IKeyValue from "./IKeyValue";
+import { Hex, Tool } from "./types";
+import IHints from "./IHints";
+import Model from "../model";
+
 interface IState {
   // ui
   mode: number;
   // drawing
-  blocks: boolean;
-  ids: boolean;
-  hints: any[];
-  tool: any; // ?
-  cursorCell: any;
+  layers: IKeyValue;
+  hints: IHints;
+  tool: Tool; // ?
+  cursorCell: Hex;
   cursorType: number;
   selectionMode: boolean;
-  thickLines: boolean;
   // display scale
   panX: number;
   panY: number;
   zoom: number;
   // mouse selection
   mouse: {
-    coords: any; //[0, 0] [number, number]
+    coords: number[];
     down: boolean;
     pan: boolean;
-    selection: any;
+    selection: number[];
   };
   // model
-  model: any;
+  model: Model;
 }
 
-// type IState = any;
 export default IState;

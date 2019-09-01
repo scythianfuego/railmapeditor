@@ -13,6 +13,8 @@ enum A {
   CURVE2,
   SIDEA,
   SIDEB,
+  ARC2A,
+  ARC2B,
   LONG,
   BLOCK,
   CONNECT,
@@ -79,6 +81,8 @@ const tools = [
   A.CURVE2,
   A.SIDEA,
   A.SIDEB,
+  A.ARC2A,
+  A.ARC2B,
   A.LONG
 ];
 const pointtools = [
@@ -147,13 +151,15 @@ const hints: IHints = [
   // drawing
   { tag: "ESC", text: "Back", action: A.SELECT, show: AG.TOOLS },
   { tag: "1", text: "Lines", action: A.LINES, show: AG.TOOLS, on: A.LINES },
-  { tag: "2", text: "Double", action: A.DLINES, show: AG.TOOLS, on: A.DLINES },
+  { tag: "2", text: "DoubleLine", action: A.DLINES, show: AG.TOOLS, on: A.DLINES },
   { tag: "3", text: "Curve", action: A.CURVE, show: AG.TOOLS, on: A.CURVE },
-  { tag: "4", text: "Curve1", action: A.CURVE1, show: AG.TOOLS, on: A.CURVE1 },
-  { tag: "5", text: "Curve2", action: A.CURVE2, show: AG.TOOLS, on: A.CURVE2 },
+  { tag: "4", text: "CurveA", action: A.CURVE1, show: AG.TOOLS, on: A.CURVE1 },
+  { tag: "5", text: "CurveB", action: A.CURVE2, show: AG.TOOLS, on: A.CURVE2 },
   { tag: "6", text: "SideA", action: A.SIDEA, show: AG.TOOLS, on: A.SIDEA },
   { tag: "7", text: "SideB", action: A.SIDEB, show: AG.TOOLS, on: A.SIDEB },
-  { tag: "8", text: "Inf L", action: A.LONG, show: AG.TOOLS, on: A.LONG },
+  { tag: "8", text: "DoubleA", action: A.ARC2A, show: AG.TOOLS, on: A.ARC2A },
+  { tag: "9", text: "DoubleB", action: A.ARC2B, show: AG.TOOLS, on: A.ARC2B },
+  { tag: "0", text: "InfLine", action: A.LONG, show: AG.TOOLS, on: A.LONG },
   { tag: "Z", text: "Next tool", action: A.NEXT, show: AG.TOOLS },
   { tag: "X", text: "Prev tool", action: A.PREV, show: AG.TOOLS },
   // block
@@ -235,7 +241,7 @@ const keyMap: {
   ESC: 27
 };
 
-const layers = [
+const gameLayers = [
   "grass",
   "rails",
   "shadow",
@@ -265,6 +271,7 @@ const textures = [
   "house1.png",
   "house2.png",
   "electricpylon.png",
+  "signalrack.png",
   "deadend.png",
   "concretegrunge.png",
   "forklift.png",
@@ -317,7 +324,7 @@ const objectDefaults: IKeyValue[] = [
   {
     type: "static",
     texture: textures,
-    layer: layers,
+    layer: gameLayers,
     alpha: 1,
     blend: ["normal", "add", "multiply", "screen"],
     shadow: false,
@@ -328,7 +335,7 @@ const objectDefaults: IKeyValue[] = [
     texture: tilingTextures,
     hasOutline: false,
     outline: tilingTextures,
-    layer: layers,
+    layer: gameLayers,
     alpha: 1,
     blend: ["normal", "add", "multiply", "screen"],
     points: 0
@@ -336,7 +343,7 @@ const objectDefaults: IKeyValue[] = [
   {
     type: "rope",
     texture: tilingTextures,
-    layer: layers,
+    layer: gameLayers,
     alpha: 1,
     blend: ["normal", "add", "multiply", "screen"],
     points: 0
@@ -344,13 +351,13 @@ const objectDefaults: IKeyValue[] = [
   {
     type: "light",
     texture: lightTextures,
-    layer: layers,
+    layer: gameLayers,
     color: 0,
     width: 50
   },
   {
     type: "signal",
-    layer: layers,
+    layer: gameLayers,
     block: 0,
     width: 16
   }
@@ -370,6 +377,18 @@ const objectCommon: IProperty[] = [
   { label: "Properties", type: "label" }
 ];
 
+// layer display settings defaults
+const layers = [
+  { id: "textures", label: "Textures", value: true },
+  { id: "blocks", label: "Block IDs" },
+  { id: "ids", label: "Rail IDs" },
+  { id: "thick", label: "Thick lines" },
+  { id: "colors", label: "Line colors" },
+  { id: "polygons", label: "Polygon fill" },
+  { id: "ropes", label: "Ropes" },
+  { id: "objects", label: "Objects marks" }
+];
+
 export default {
   hints,
   keyMap,
@@ -377,5 +396,6 @@ export default {
   actionGroups,
   objectDefaults,
   objectCommon,
-  objectTypes
+  objectTypes,
+  layers
 };
