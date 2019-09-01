@@ -30,6 +30,14 @@ const tools: Tools = {
     point => objects.line(point, 4),
     point => objects.line(point, 5)
   ],
+  [A.HLINES]: [
+    point => objects.line3(point, 0),
+    point => objects.line3(point, 1),
+    point => objects.line3(point, 2),
+    point => objects.line3(point, 3),
+    point => objects.line3(point, 4),
+    point => objects.line3(point, 5)
+  ],
   [A.DLINES]: [
     point => objects.line2(point, 0),
     point => objects.line2(point, 1),
@@ -52,9 +60,7 @@ const tools: Tools = {
     point => objects.longArc2(point, 2),
     point => objects.longArc2(point, 3),
     point => objects.longArc2(point, 4),
-    point => objects.longArc2(point, 5)
-  ],
-  [A.CURVE2]: [
+    point => objects.longArc2(point, 5),
     point => objects.longArc3(point, 0),
     point => objects.longArc3(point, 1),
     point => objects.longArc3(point, 2),
@@ -68,9 +74,7 @@ const tools: Tools = {
     point => objects.shortArc(point, 2),
     point => objects.shortArc(point, 3),
     point => objects.shortArc(point, 4),
-    point => objects.shortArc(point, 5)
-  ],
-  [A.SIDEB]: [
+    point => objects.shortArc(point, 5),
     point => objects.shortArc2(point, 0),
     point => objects.shortArc2(point, 1),
     point => objects.shortArc2(point, 2),
@@ -84,9 +88,7 @@ const tools: Tools = {
     point => objects.arc2a(point, 2),
     point => objects.arc2a(point, 3),
     point => objects.arc2a(point, 4),
-    point => objects.arc2a(point, 5)
-  ],
-  [A.ARC2B]: [
+    point => objects.arc2a(point, 5),
     point => objects.arc2b(point, 0),
     point => objects.arc2b(point, 1),
     point => objects.arc2b(point, 2),

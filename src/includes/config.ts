@@ -6,14 +6,12 @@ import IKeyValue from "../interfaces/IKeyValue";
 enum A {
   SELECT,
   LINES,
+  HLINES,
   DLINES,
   CURVE,
   CURVE1,
-  CURVE2,
   SIDEA,
-  SIDEB,
   ARC2A,
-  ARC2B,
   LONG,
   BLOCK,
   CONNECT,
@@ -74,14 +72,12 @@ enum A {
 
 const tools = [
   A.LINES,
+  A.HLINES,
   A.DLINES,
   A.CURVE,
   A.CURVE1,
-  A.CURVE2,
   A.SIDEA,
-  A.SIDEB,
   A.ARC2A,
-  A.ARC2B,
   A.LONG
 ];
 const pointtools = [
@@ -150,14 +146,12 @@ const hints: IHints = [
   // drawing
   { tag: "ESC", text: "Back", action: A.SELECT, show: AG.TOOLS },
   { tag: "1", text: "Lines", action: A.LINES, show: AG.TOOLS, on: A.LINES },
-  { tag: "2", text: "DoubleLine", action: A.DLINES, show: AG.TOOLS, on: A.DLINES },
-  { tag: "3", text: "Curve", action: A.CURVE, show: AG.TOOLS, on: A.CURVE },
-  { tag: "4", text: "CurveA", action: A.CURVE1, show: AG.TOOLS, on: A.CURVE1 },
-  { tag: "5", text: "CurveB", action: A.CURVE2, show: AG.TOOLS, on: A.CURVE2 },
+  { tag: "2", text: "HalfLine", action: A.HLINES, show: AG.TOOLS, on: A.HLINES },
+  { tag: "3", text: "DoubleLine", action: A.DLINES, show: AG.TOOLS, on: A.DLINES },
+  { tag: "4", text: "Curve", action: A.CURVE, show: AG.TOOLS, on: A.CURVE },
+  { tag: "5", text: "CurveA", action: A.CURVE1, show: AG.TOOLS, on: A.CURVE1 },
   { tag: "6", text: "SideA", action: A.SIDEA, show: AG.TOOLS, on: A.SIDEA },
-  { tag: "7", text: "SideB", action: A.SIDEB, show: AG.TOOLS, on: A.SIDEB },
-  { tag: "8", text: "DoubleA", action: A.ARC2A, show: AG.TOOLS, on: A.ARC2A },
-  { tag: "9", text: "DoubleB", action: A.ARC2B, show: AG.TOOLS, on: A.ARC2B },
+  { tag: "7", text: "DoubleA", action: A.ARC2A, show: AG.TOOLS, on: A.ARC2A },
   { tag: "0", text: "InfLine", action: A.LONG, show: AG.TOOLS, on: A.LONG },
   { tag: "Z", text: "Next tool", action: A.NEXT, show: AG.TOOLS },
   { tag: "X", text: "Prev tool", action: A.PREV, show: AG.TOOLS },

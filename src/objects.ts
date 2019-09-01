@@ -69,6 +69,10 @@ export default class Objects {
     return this.baseLine(point, index, 2, 0x10);
   }
 
+  line3(point: number[], index: number): IRail {
+    return this.baseLine(point, index, 0.5, 0x10);
+  }
+
   infiniLine(point: number[], index: number): IRail {
     return this.baseLine(point, index, 10, 0x10);
   }
