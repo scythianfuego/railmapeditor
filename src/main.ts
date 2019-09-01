@@ -29,10 +29,3 @@ animate.start();
 // debug
 (window as any)["model"] = model;
 (window as any)["controls"] = controls;
-
-// let selectedCell = null;
-// let cursorCell = null;
-// let currentTool = 1;
-
-// draw.setTool(tools[currentTool]);
-// draw.all();

@@ -1,12 +1,8 @@
-import ts, { Hex } from "./transform";
+import ts from "./transform";
+import { Hex } from "./interfaces/types";
 import IRail from "./interfaces/IRail";
 
 export default class Objects {
-  getTriangleCorners(hex: Hex) {
-    // triangle corners are: 0 - right, 1 - left, 2 - top
-    return ts.getCorners(hex).filter((v, i) => i % 2 === 1);
-  }
-
   // getInverseTriangleCorners(hex) {
   //   return getCorners(hex).filter((v, i) => i % 2 === 0);
   // }
@@ -17,7 +13,7 @@ export default class Objects {
     length: number = 1,
     baseType: number
   ): IRail {
-    const corners = this.getTriangleCorners(hex);
+    const corners = ts.getTriangleCorners(hex);
     const pairs =
       length == 1 // do not duplicate
         ? [[1, 0], [2, 0], [2, 1]]
@@ -55,7 +51,7 @@ export default class Objects {
     inner: boolean = true
   ) {
     // triangle corners are: 0 - right, 1 - left, 2 - top
-    const corners = this.getTriangleCorners(hex);
+    const corners = ts.getTriangleCorners(hex);
     const points = inner ? [1, 0, 2, 1, 0, 2] : [2, 2, 0, 0, 1, 1];
     const sign = inner ? 1 : -1;
     const baseAngle = (sign * Math.PI) / 2;

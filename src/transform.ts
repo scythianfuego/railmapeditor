@@ -1,6 +1,6 @@
 import { GridTools, HexParams } from "./interfaces/types";
 import * as Honeycomb from "honeycomb-grid";
-import { Hex, Grid, GridFactory, Point } from "honeycomb-grid";
+import { Grid, Point, Hex, HexFactory } from "./interfaces/types";
 import store, { copy } from "./store";
 
 // handles world to screen transformations and back
@@ -40,17 +40,17 @@ class Transform {
 
   createGrid() {
     const hexParams: HexParams = { size: this.HEX_SIZE };
-    const Hex: Honeycomb.HexFactory<HexParams> = Honeycomb.extendHex(hexParams);
+    const hexFactory: HexFactory = Honeycomb.extendHex(hexParams);
 
-    this.gridTools = Honeycomb.defineGrid(Hex);
+    this.gridTools = Honeycomb.defineGrid(hexFactory);
     this.grid = this.gridTools.rectangle({
       width: this.CELLS_X,
       height: this.CELLS_Y
     });
 
-    const cornerArray = Hex().corners();
+    const cornerArray = hexFactory().corners();
     this.corners = new Map();
-    this.grid.forEach((hex: Honeycomb.Hex<HexParams>) => {
+    this.grid.forEach((hex: Hex) => {
       const point = hex.toPoint();
       const cornerValues = cornerArray.map(corner => corner.add(point));
       const key = `${hex.x},${hex.y}`;
@@ -60,14 +60,19 @@ class Transform {
     return [this.grid, this.gridTools];
   }
 
-  getCorners = (hex: Honeycomb.Hex<HexParams>) => {
+  getCorners = (hex: Hex) => {
     const key = `${hex.x},${hex.y}`;
     return this.corners.get(key);
   };
 
-  pointToHex(x: number, y: number): Honeycomb.Hex<HexParams> {
+  pointToHex(x: number, y: number): Hex {
     const { wx, wy } = this;
     return this.grid.get(this.gridTools.pointToHex(wx(x), wy(y)));
+  }
+
+  getTriangleCorners(hex: Hex) {
+    // triangle corners are: 0 - right, 1 - left, 2 - top
+    return this.getCorners(hex).filter((v, i) => i % 2 === 1);
   }
 }
 
