@@ -1,32 +1,19 @@
 import ts from "./transform";
-import { Hex } from "./interfaces/types";
 import IRail from "./interfaces/IRail";
 
 export default class Objects {
-  // getInverseTriangleCorners(hex) {
-  //   return getCorners(hex).filter((v, i) => i % 2 === 0);
-  // }
-
   baseLine(
-    hex: Hex,
+    point: number[],
     index: number,
     length: number = 1,
     baseType: number
   ): IRail {
-    const corners = ts.getTriangleCorners(hex);
-    const pairs =
-      length == 1 // do not duplicate
-        ? [[1, 0], [2, 0], [2, 1]]
-        : [[1, 0], [2, 0], [2, 1], [0, 1], [0, 2], [1, 2]];
-    const [a, b] = pairs[index];
-    let [sx, sy, ex, ey] = [
-      corners[a].x,
-      corners[a].y,
-      corners[b].x,
-      corners[b].y
-    ];
-    ex = (ex - sx) * (length - 1) + ex;
-    ey = (ey - sy) * (length - 1) + ey;
+    const [sx, sy] = point;
+    const rotation = (1 / 3) * Math.PI;
+    const angles = [0, 1, 2, 3, 4, 5].map(v => v * rotation);
+    const a = angles[index];
+    const ex = sx + length * Math.cos(a);
+    const ey = sy + length * Math.sin(a);
 
     return {
       sx,
@@ -43,16 +30,13 @@ export default class Objects {
   }
 
   baseArc(
-    hex: Hex,
+    point: number[],
     index: number,
     radius: number,
     arc: number,
     baseType: number,
     inner: boolean = true
   ) {
-    // triangle corners are: 0 - right, 1 - left, 2 - top
-    const corners = ts.getTriangleCorners(hex);
-    const points = inner ? [1, 0, 2, 1, 0, 2] : [2, 2, 0, 0, 1, 1];
     const sign = inner ? 1 : -1;
     const baseAngle = (sign * Math.PI) / 2;
 
@@ -64,13 +48,10 @@ export default class Objects {
       .map(v => baseAngle + rotation[v])
       .map((v, i) => (i % 2 === 0 ? [v - arc, v] : [v, v + arc]));
 
-    const p = points[index];
+    const [px, py] = point;
     const [a1, a2] = angles[index];
-    const center = corners[p].add({
-      x: sign * radius * Math.sin(rotation[index]),
-      y: -sign * radius * Math.cos(rotation[index])
-    });
-    const { x, y } = center;
+    const x = px + sign * radius * Math.sin(rotation[index]);
+    const y = py - sign * radius * Math.cos(rotation[index]);
 
     const sx = x + radius * Math.cos(a1);
     const sy = y + radius * Math.sin(a1);
@@ -80,49 +61,49 @@ export default class Objects {
   }
 
   // tools here
-  line(hex: Hex, index: number): IRail {
-    return this.baseLine(hex, index, 1, 0x10);
+  line(point: number[], index: number): IRail {
+    return this.baseLine(point, index, 1, 0x10);
   }
 
-  line2(hex: Hex, index: number): IRail {
-    return this.baseLine(hex, index, 2, 0x10);
+  line2(point: number[], index: number): IRail {
+    return this.baseLine(point, index, 2, 0x10);
   }
 
-  infiniLine(hex: Hex, index: number): IRail {
-    return this.baseLine(hex, index, 10, 0x10);
+  infiniLine(point: number[], index: number): IRail {
+    return this.baseLine(point, index, 10, 0x10);
   }
 
-  longArc(hex: Hex, index: number): IRail {
-    const radius = 6 * hex.size;
+  longArc(point: number[], index: number): IRail {
+    const radius = 6 * ts.HEX_SIZE;
     const arc = Math.PI / 3;
-    return this.baseArc(hex, index, radius, arc, 0x20);
+    return this.baseArc(point, index, radius, arc, 0x20);
   }
 
-  longArc2(hex: Hex, index: number): IRail {
-    const radius = 6 * hex.size;
+  longArc2(point: number[], index: number): IRail {
+    const radius = 6 * ts.HEX_SIZE;
     const arc = Math.PI / 6;
-    return this.baseArc(hex, index, radius, arc, 0x20);
+    return this.baseArc(point, index, radius, arc, 0x20);
   }
 
-  longArc3(hex: Hex, index: number): IRail {
-    const radius = 6 * hex.size;
+  longArc3(point: number[], index: number): IRail {
+    const radius = 6 * ts.HEX_SIZE;
     const arc = Math.PI / 6;
-    return this.baseArc(hex, index, radius, arc, 0x20, false);
+    return this.baseArc(point, index, radius, arc, 0x20, false);
   }
 
-  shortArc(hex: Hex, index: number): IRail {
+  shortArc(point: number[], index: number): IRail {
     const radius = 3.5 * Math.sqrt(3); //3.5 * hex.size; // magic1
     const arc = 0.3802512067; // 1 / 3; magic2
-    return this.baseArc(hex, index, radius, arc, 0x30);
+    return this.baseArc(point, index, radius, arc, 0x30);
   }
 
-  shortArc2(hex: Hex, index: number): IRail {
+  shortArc2(point: number[], index: number): IRail {
     const radius = 3.5 * Math.sqrt(3); // 3.5 * hex.size; // magic1
     const arc = 0.3802512067; // 2*Math.acos(9 / sqrt(84)) //1 / 3; // magic2
-    return this.baseArc(hex, index, radius, arc, 0x40, false);
+    return this.baseArc(point, index, radius, arc, 0x40, false);
   }
 
-  arc2a(hex: Hex, index: number): IRail {
+  arc2a(point: number[], index: number): IRail {
     // Each of two connected arcs has a radius
     //   R = A / SIN 2⋅α, where A = ½⋅w
     // and an arc length of 2⋅α
@@ -152,13 +133,13 @@ export default class Objects {
     const alpha = Math.atan2(Math.sqrt(3), 5);
     const radius = 2.5 / Math.sin(2 * alpha);
     const arc = 2 * alpha;
-    return this.baseArc(hex, index, radius, arc, 0x40);
+    return this.baseArc(point, index, radius, arc, 0x40);
   }
 
-  arc2b(hex: Hex, index: number): IRail {
+  arc2b(point: number[], index: number): IRail {
     const alpha = Math.atan2(Math.sqrt(3), 5);
     const radius = 2.5 / Math.sin(2 * alpha);
     const arc = 2 * alpha;
-    return this.baseArc(hex, index, radius, arc, 0x40, false);
+    return this.baseArc(point, index, radius, arc, 0x40, false);
   }
 }

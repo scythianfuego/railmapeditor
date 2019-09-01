@@ -1,5 +1,5 @@
 import { IProperty } from "./interfaces/IProperty";
-import { Hex, Tools, Tool } from "./interfaces/types";
+import { Tools, Tool } from "./interfaces/types";
 
 import store from "./store";
 import ts from "./transform";
@@ -23,78 +23,84 @@ const AG = config.actionGroups;
 
 const tools: Tools = {
   [A.LINES]: [
-    hex => objects.line(hex, 0),
-    hex => objects.line(hex, 1),
-    hex => objects.line(hex, 2)
+    point => objects.line(point, 0),
+    point => objects.line(point, 1),
+    point => objects.line(point, 2),
+    point => objects.line(point, 3),
+    point => objects.line(point, 4),
+    point => objects.line(point, 5)
   ],
   [A.DLINES]: [
-    hex => objects.line2(hex, 0),
-    hex => objects.line2(hex, 1),
-    hex => objects.line2(hex, 2)
+    point => objects.line2(point, 0),
+    point => objects.line2(point, 1),
+    point => objects.line2(point, 2),
+    point => objects.line2(point, 3),
+    point => objects.line2(point, 4),
+    point => objects.line2(point, 5)
   ],
   [A.CURVE]: [
-    hex => objects.longArc(hex, 0),
-    hex => objects.longArc(hex, 1),
-    hex => objects.longArc(hex, 2),
-    hex => objects.longArc(hex, 3),
-    hex => objects.longArc(hex, 4),
-    hex => objects.longArc(hex, 5)
+    point => objects.longArc(point, 0),
+    point => objects.longArc(point, 1),
+    point => objects.longArc(point, 2),
+    point => objects.longArc(point, 3),
+    point => objects.longArc(point, 4),
+    point => objects.longArc(point, 5)
   ],
   [A.CURVE1]: [
-    hex => objects.longArc2(hex, 0),
-    hex => objects.longArc2(hex, 1),
-    hex => objects.longArc2(hex, 2),
-    hex => objects.longArc2(hex, 3),
-    hex => objects.longArc2(hex, 4),
-    hex => objects.longArc2(hex, 5)
+    point => objects.longArc2(point, 0),
+    point => objects.longArc2(point, 1),
+    point => objects.longArc2(point, 2),
+    point => objects.longArc2(point, 3),
+    point => objects.longArc2(point, 4),
+    point => objects.longArc2(point, 5)
   ],
   [A.CURVE2]: [
-    hex => objects.longArc3(hex, 0),
-    hex => objects.longArc3(hex, 1),
-    hex => objects.longArc3(hex, 2),
-    hex => objects.longArc3(hex, 3),
-    hex => objects.longArc3(hex, 4),
-    hex => objects.longArc3(hex, 5)
+    point => objects.longArc3(point, 0),
+    point => objects.longArc3(point, 1),
+    point => objects.longArc3(point, 2),
+    point => objects.longArc3(point, 3),
+    point => objects.longArc3(point, 4),
+    point => objects.longArc3(point, 5)
   ],
   [A.SIDEA]: [
-    hex => objects.shortArc(hex, 0),
-    hex => objects.shortArc(hex, 1),
-    hex => objects.shortArc(hex, 2),
-    hex => objects.shortArc(hex, 3),
-    hex => objects.shortArc(hex, 4),
-    hex => objects.shortArc(hex, 5)
+    point => objects.shortArc(point, 0),
+    point => objects.shortArc(point, 1),
+    point => objects.shortArc(point, 2),
+    point => objects.shortArc(point, 3),
+    point => objects.shortArc(point, 4),
+    point => objects.shortArc(point, 5)
   ],
   [A.SIDEB]: [
-    hex => objects.shortArc2(hex, 0),
-    hex => objects.shortArc2(hex, 1),
-    hex => objects.shortArc2(hex, 2),
-    hex => objects.shortArc2(hex, 3),
-    hex => objects.shortArc2(hex, 4),
-    hex => objects.shortArc2(hex, 5)
+    point => objects.shortArc2(point, 0),
+    point => objects.shortArc2(point, 1),
+    point => objects.shortArc2(point, 2),
+    point => objects.shortArc2(point, 3),
+    point => objects.shortArc2(point, 4),
+    point => objects.shortArc2(point, 5)
   ],
   [A.ARC2A]: [
-    hex => objects.arc2a(hex, 0),
-    hex => objects.arc2a(hex, 1),
-    hex => objects.arc2a(hex, 2),
-    hex => objects.arc2a(hex, 3),
-    hex => objects.arc2a(hex, 4),
-    hex => objects.arc2a(hex, 5)
+    point => objects.arc2a(point, 0),
+    point => objects.arc2a(point, 1),
+    point => objects.arc2a(point, 2),
+    point => objects.arc2a(point, 3),
+    point => objects.arc2a(point, 4),
+    point => objects.arc2a(point, 5)
   ],
   [A.ARC2B]: [
-    hex => objects.arc2b(hex, 0),
-    hex => objects.arc2b(hex, 1),
-    hex => objects.arc2b(hex, 2),
-    hex => objects.arc2b(hex, 3),
-    hex => objects.arc2b(hex, 4),
-    hex => objects.arc2b(hex, 5)
+    point => objects.arc2b(point, 0),
+    point => objects.arc2b(point, 1),
+    point => objects.arc2b(point, 2),
+    point => objects.arc2b(point, 3),
+    point => objects.arc2b(point, 4),
+    point => objects.arc2b(point, 5)
   ],
   [A.LONG]: [
-    hex => objects.infiniLine(hex, 0),
-    hex => objects.infiniLine(hex, 1),
-    hex => objects.infiniLine(hex, 2),
-    hex => objects.infiniLine(hex, 3),
-    hex => objects.infiniLine(hex, 4),
-    hex => objects.infiniLine(hex, 5)
+    point => objects.infiniLine(point, 0),
+    point => objects.infiniLine(point, 1),
+    point => objects.infiniLine(point, 2),
+    point => objects.infiniLine(point, 3),
+    point => objects.infiniLine(point, 4),
+    point => objects.infiniLine(point, 5)
   ]
 };
 
@@ -187,13 +193,6 @@ export default class Controls {
     return [x, y];
   }
 
-  mouseToHex(event: MouseEvent): Hex {
-    const bounds = (<HTMLCanvasElement>event.target).getBoundingClientRect();
-    const x = event.clientX - bounds.left;
-    const y = event.clientY - bounds.top;
-    return ts.pointToHex(x, y);
-  }
-
   onMouseDown(event: MouseEvent) {
     const state = store.getState();
     const coords = this.mouseEventToXY(event);
@@ -243,9 +242,8 @@ export default class Controls {
     const coords = this.mouseEventToXY(event);
 
     if (this.toolset.length && !pan) {
-      const selectedCell = this.mouseToHex(event);
       const tool = this.getTool();
-      selectedCell && this.model.add(selectedCell, tool(selectedCell));
+      this.model.add(state.snapPoint, tool(state.snapPoint));
     }
 
     if (AG.POINTTOOLS.includes(state.mode)) {
@@ -269,13 +267,14 @@ export default class Controls {
     const state = store.getState();
     const mouse = state.mouse;
     const coords = this.mouseEventToXY(event);
-    const cursorCell = this.mouseToHex(event);
+
+    const snapPoint = ts.snap(coords);
 
     mouse.coords = coords;
     const panX = mouse.pan ? state.panX + event.movementX : state.panX;
     const panY = mouse.pan ? state.panY + event.movementY : state.panY;
 
-    store.setState({ mouse, cursorCell, panX, panY });
+    store.setState({ mouse, panX, panY, snapPoint });
 
     if (this.createObjectMode && this.editedObject) {
       const [x, y] = coords;

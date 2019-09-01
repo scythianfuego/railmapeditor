@@ -13,9 +13,9 @@ const defaults: IState = {
   layers: {},
   hints: [],
   tool: null,
-  cursorCell: null,
   selectionMode: false,
   cursorType: 0,
+  snapPoint: [0, 0],
   // display scale
   panX: 0,
   panY: 0,

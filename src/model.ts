@@ -1,5 +1,4 @@
 import { Point } from "./interfaces/Point";
-import { Hex } from "./interfaces/types";
 import IRail from "./interfaces/IRail";
 import IConnection from "./interfaces/IConnection";
 import ISwitch from "./interfaces/ISwitch";
@@ -172,12 +171,12 @@ export default class Model {
       : this.makeConnection(endId, ex, ey);
   }
 
-  add(cell: Hex, obj: IRail) {
+  add(point: number[], obj: IRail) {
     if (!obj) {
       return;
     }
 
-    const { x, y } = cell;
+    const [x, y] = point;
     const selected = false;
     const id = this.objectId;
     this.objectId += 2;

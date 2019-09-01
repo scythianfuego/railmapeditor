@@ -1,4 +1,3 @@
-import { Point } from "honeycomb-grid";
 import { IProperty } from "./../interfaces/IProperty";
 import IHints from "../interfaces/IHints";
 import IKeyValue from "../interfaces/IKeyValue";

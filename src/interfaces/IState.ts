@@ -1,5 +1,5 @@
 import IKeyValue from "./IKeyValue";
-import { Hex, Tool } from "./types";
+import { Tool } from "./types";
 import IHints from "./IHints";
 import Model from "../model";
 
@@ -10,7 +10,7 @@ interface IState {
   layers: IKeyValue;
   hints: IHints;
   tool: Tool; // ?
-  cursorCell: Hex;
+  snapPoint: number[];
   cursorType: number;
   selectionMode: boolean;
   // display scale

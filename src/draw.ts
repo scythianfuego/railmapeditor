@@ -1,6 +1,6 @@
 import storeInstance, { copy } from "./store";
 import ts from "./transform";
-import { Grid, Hex } from "./interfaces/types";
+import { Tool } from "./interfaces/types";
 import Model from "./model";
 import IRail from "./interfaces/IRail";
 import IHintLine from "./interfaces/IHintLine";
@@ -21,11 +21,10 @@ const colors = {
   gridBackground: "#553835"
 };
 
-const { sx, sy, scale, pixels, getCorners } = ts;
+const { sx, sy, wx, wy, scale, pixels } = ts;
 
 export default class Draw {
   private ctx: CanvasRenderingContext2D;
-  private hexgrid: Grid;
 
   private atlas: HTMLImageElement;
   private textureData: any;
@@ -70,14 +69,14 @@ export default class Draw {
   // state variables, refactor
   private state: IState = null;
   private hints: IHints;
-  private tool: any;
+  private tool: Tool;
   private selectionMode: any;
-  private cursorCell: any;
   private cursorType: any;
   private mouse: any;
   private zoom: number;
   private panX: number;
   private panY: number;
+  private snapPoint: number[];
   private layers: IKeyValue;
 
   private labelCache: [number, number, string][] = [];
@@ -85,9 +84,7 @@ export default class Draw {
   constructor(private canvas: HTMLCanvasElement, private model: Model) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
-    this.hexgrid = ts.grid;
     this.model = model;
-    this.cursorCell = null;
     this.ctx.translate(0.5, 0.5);
 
     // moveable and zoomable parts of canvas
@@ -96,14 +93,14 @@ export default class Draw {
       copy(state, this, [
         "hints",
         "tool",
-        "cursorCell",
         "selectionMode",
         "zoom",
         "panX",
         "panY",
         "cursorType",
         "layers",
-        "mouse"
+        "mouse",
+        "snapPoint"
       ]);
       this.canvas.style.cursor = state.mouse.pan ? "grabbing" : "pointer";
     };
@@ -152,7 +149,6 @@ export default class Draw {
     this.labelCache = [];
     this.clear();
     this.grid();
-    !this.selectionMode && this.cell(this.cursorCell, "#fff");
 
     this.model.forEach((obj: IRail) => this.object(obj));
     this.model.gameobjects.forEach((obj: IGameObject) => this.gameObject(obj));
@@ -165,23 +161,8 @@ export default class Draw {
 
   private cursor() {
     if (this.cursorType === 0) {
-      this.tool && this.cursorCell && this.object(this.tool(this.cursorCell));
+      this.tool && this.object(this.tool(this.snapPoint));
     }
-  }
-
-  private cell(hex: Hex, style: string) {
-    if (!hex) {
-      return;
-    }
-    this.ctx.strokeStyle = style || "#000";
-    const corners = getCorners(hex);
-    const [firstCorner, ...otherCorners] = corners;
-
-    this.ctx.beginPath();
-    this.screen.moveTo(firstCorner.x, firstCorner.y); // move the "pen" to the first corner
-    otherCorners.forEach(corner => this.screen.lineTo(corner.x, corner.y)); // draw lines to the other corners
-    this.screen.lineTo(firstCorner.x, firstCorner.y); // finish at the first corner
-    this.ctx.stroke();
   }
 
   private grid() {
@@ -196,28 +177,36 @@ export default class Draw {
     const p1px = pixels(1);
     this.screen.strokeRect(n1px, n1px, gridWidth + p1px, gridHeight + p1px);
 
-    // hexes
-    this.ctx.beginPath();
-    ts.corners.forEach(corners => {
-      this.ctx.strokeStyle = "#825651";
-      // const corners = getCorners(hex);
-      const [firstCorner, ...otherCorners] = corners;
+    const yStep = Math.sqrt(3) * 0.25;
+    const xStep = 0.5;
 
-      this.screen.moveTo(firstCorner.x, firstCorner.y); // move the "pen" to the first corner
-      otherCorners.forEach(corner => this.screen.lineTo(corner.x, corner.y)); // draw lines to the other corners
-      this.screen.lineTo(firstCorner.x, firstCorner.y); // finish at the first corner
-    });
-    this.ctx.stroke();
+    this.ctx.translate(-0.5, -0.5);
+    for (let i = 0; i < gridWidth * 2; i++) {
+      for (let j = 0; j < gridHeight * 2; j++) {
+        const r = j % 2 === 0 ? 0 : 0.25;
+        const x = i * xStep + r;
+        const y = j * yStep;
 
-    // triangles
-    this.ctx.strokeStyle = "#603f3c";
+        this.ctx.fillStyle = "#999";
+        this.ctx.fillRect(Math.floor(sx(x)) - 1, Math.floor(sy(y)) - 1, 1, 1);
+      }
+    }
+    this.ctx.translate(0.5, 0.5);
+
+    // const [mx, my] = this.mouse.coords;
+    // this.ctx.fillStyle = "red";
+    // let x = wx(mx);
+    // let y = wy(my);
+    // y = Math.round(y / yStep) * yStep;
+    // const yIsOdd = Math.round(y / yStep) % 2;
+    // x = Math.round(x / xStep) * xStep;
+    // x += yIsOdd ? xStep * 0.5 : 0;
+
+    const [x, y] = this.snapPoint;
+    this.ctx.fillStyle = "red";
     this.ctx.beginPath();
-    ts.corners.forEach(corners => {
-      // const corners = getCorners(hex);
-      this.screen.moveTo(corners[1].x, corners[1].y); // move the "pen" to the first corner
-      [3, 5, 1].forEach(i => this.screen.lineTo(corners[i].x, corners[i].y));
-    });
-    this.ctx.stroke();
+    this.ctx.arc(sx(x), sy(y), 3, 0, 6.28);
+    this.ctx.fill();
   }
 
   private gameObject(obj: IGameObject) {

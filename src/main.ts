@@ -1,5 +1,3 @@
-import ts from "./transform";
-
 import Draw from "./draw";
 import Model from "./model";
 import Animate from "./animate";
@@ -14,7 +12,7 @@ canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 
 let model = new Model();
-ts.createGrid();
+// ts.createGrid();
 
 const draw = new Draw(canvas, model);
 const controls = new Controls(model);

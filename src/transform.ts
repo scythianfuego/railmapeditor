@@ -1,6 +1,3 @@
-import { GridTools, HexParams } from "./interfaces/types";
-import * as Honeycomb from "honeycomb-grid";
-import { Grid, Point, Hex, HexFactory } from "./interfaces/types";
 import store, { copy } from "./store";
 
 // handles world to screen transformations and back
@@ -29,56 +26,40 @@ class Transform {
   public ratioY = (y: number) =>
     this.clamp((y - this.panY) / (this.gridHeight * this.zoom), 0, 1);
 
-  private gridTools: GridTools = null;
-  public grid: Grid = null;
-
-  public corners: Map<string, Point[]> = null;
-
   constructor() {
     store.subscribe(state => copy(state, this, ["zoom", "panX", "panY"]));
   }
 
-  createGrid() {
-    const hexParams: HexParams = { size: this.HEX_SIZE };
-    const hexFactory: HexFactory = Honeycomb.extendHex(hexParams);
+  getCornersByPoint(point: number[]): number[][] {
+    const [x, y] = point;
 
-    this.gridTools = Honeycomb.defineGrid(hexFactory);
-    this.grid = this.gridTools.rectangle({
-      width: this.CELLS_X,
-      height: this.CELLS_Y
-    });
+    const result = [];
+    const size = this.HEX_SIZE;
+    for (let i = 1; i <= 5; i += 2) {
+      let angle_deg = 60 * i - 30;
+      let angle_rad = (Math.PI / 180) * angle_deg;
+      result.push([
+        x + size * Math.cos(angle_rad),
+        y + size * Math.sin(angle_rad)
+      ]);
+    }
 
-    const cornerArray = hexFactory().corners();
-    this.corners = new Map();
-    this.grid.forEach((hex: Hex) => {
-      const point = hex.toPoint();
-      const cornerValues = cornerArray.map(corner => corner.add(point));
-      const key = `${hex.x},${hex.y}`;
-      this.corners.set(key, cornerValues);
-    });
-
-    return [this.grid, this.gridTools];
+    return result;
   }
 
-  getCorners = (hex: Hex) => {
-    const key = `${hex.x},${hex.y}`;
-    return this.corners.get(key);
-  };
+  snap(coords: number[]) {
+    const yStep = Math.sqrt(3) * 0.25;
+    const xStep = 0.5;
 
-  pointToHex(x: number, y: number): Hex {
-    const { wx, wy } = this;
-    return this.grid.get(this.gridTools.pointToHex(wx(x), wy(y)));
-  }
-
-  getTriangleCorners(hex: Hex) {
-    // triangle corners are: 0 - right, 1 - left, 2 - top
-    return this.getCorners(hex).filter((v, i) => i % 2 === 1);
+    const [mx, my] = coords;
+    let x = this.wx(mx);
+    let y = this.wy(my);
+    y = Math.round(y / yStep) * yStep;
+    const yIsOdd = Math.round(y / yStep) % 2;
+    x = Math.round(x / xStep) * xStep;
+    x += yIsOdd ? xStep * 0.5 : 0;
+    return [x, y];
   }
 }
 
 export default new Transform();
-
-// const bounds = event.target.getBoundingClientRect();
-// const x = event.clientX - bounds.left;
-// const y = event.clientY - bounds.top;
-// return this.grid.get(this.gridTools.pointToHex(wx(x), wy(y)));
