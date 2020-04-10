@@ -475,7 +475,7 @@ export default class Draw {
         color = "rgba(0, 0, 0, 0.8)";
 
         // draw items - temp
-        v.items.forEach(i => {
+        v.items.forEach((i: any) => {
           const obj = this.model.get(i);
           this.objectPath(obj);
         });
