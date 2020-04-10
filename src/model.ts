@@ -8,6 +8,10 @@ import IGameObject from "./interfaces/IGameObject";
 const magic = 0x7ffffffe;
 const PIXELS_PER_UNIT = 50;
 
+let uuidIndex = 0;
+const UUID = (): string =>
+  `#${(uuidIndex++).toString().padStart(5, "0")}:${Date.now() % 1000}z`;
+
 const MIN_DISTANCE = 0.1;
 const inside = (x: number, a: number, b: number) =>
   a < b ? a <= x && x <= b : a <= x || x <= b;
@@ -21,19 +25,50 @@ type ConnectionMap = {
   [index: string]: IConnection;
 };
 
+const filter = <T>(collection: Map<string, T>, fn: (i: T) => boolean): void => {
+  collection.forEach((i: T, k: string) => {
+    if (!fn(i)) {
+      collection.delete(k);
+    }
+  });
+};
+
+const findAll = <T>(
+  collection: Map<string, T>,
+  fn: (i: T) => boolean
+): string[] => {
+  let result: string[] = [];
+  for (const [k, v] of collection) {
+    fn(v) && result.push(k);
+  }
+  return result;
+};
+
+const findOne = <T>(
+  collection: Map<string, T>,
+  fn: (i: T) => boolean
+): string => {
+  let result: string[] = [];
+  for (const [k, v] of collection) {
+    if (fn(v)) {
+      return k;
+    }
+  }
+  return null;
+};
+
 export default class Model {
-  public selectedConnection: IConnection = null;
-  public selectedGameObject: IGameObject = null;
+  public selectedConnection: string = null;
+  public selectedGameObject: string = null;
   public selectedPointIndex: number = -1;
 
-  public connections: IConnection[] = []; // TODO: remove public access
-  public switches: ISwitch[] = [];
-  public joins: IJoin[] = [];
-  public gameobjects: IGameObject[] = [];
+  public connections: Map<string, IConnection> = new Map(); // TODO: remove public access
+  public switches: Map<string, ISwitch> = new Map();
+  public joins: Map<string, IJoin> = new Map();
+  public gameobjects: Map<string, IGameObject> = new Map();
+  private rails: Map<string, IRail> = new Map();
 
   public gameobjectpoints: Map<number, Point[]> = new Map();
-
-  private rails: IRail[] = [];
   private railsIndex = new Map();
   private blockId = 1;
   private objectId = 2; // odd id means start of segment, even - end
@@ -50,13 +85,13 @@ export default class Model {
     const TAU = 2 * Math.PI;
     const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
 
-    const autojoins: IJoin[] = this.connections
+    const autojoins: IJoin[] = Array.from(this.connections.values())
       .filter(c => c.items.length === 2)
       .map(c => c.items as IJoin);
 
     // convert to actual game scale, keep integer
     const pixels = (i: number) => Math.round(i * PIXELS_PER_UNIT || 0);
-    const joins = this.joins.concat(autojoins);
+    const joins = Array.from(this.joins.values()).concat(autojoins);
 
     const objects = JSON.parse(JSON.stringify(this.gameobjects)); // clone
     objects.forEach((o: IGameObject) => {
@@ -93,7 +128,7 @@ export default class Model {
 
     const result = JSON.stringify(
       {
-        rails: this.rails.map(encodeChunk),
+        rails: Array.from(this.rails.values()).map(encodeChunk),
         switches: this.switches,
         joins,
         objects: objects
@@ -127,15 +162,20 @@ export default class Model {
   unserialize(data: string) {
     // LZString.decompressFromUTF16(data)
     const obj = JSON.parse(data);
-    this.rails = obj.store || obj.rails || []; // compatibiity
     this.blockId = obj.blockId || [];
     this.pointId = obj.pointId || [];
     this.objectId = obj.objectId || [];
-    this.connections = obj.connections || [];
-    this.switches = obj.switches || [];
-    this.joins = obj.joins || [];
-    this.gameobjects = obj.gameobjects || [];
-    this.gameobjectpoints = new Map(obj.gameobjectpoints || []);
+
+    const makeMap = <T>(items: T[], target: Map<String, T>) => {
+      (items || []).forEach((i: T) => target.set(UUID(), i));
+    };
+    makeMap(obj.store || obj.rails, this.rails); // compatibiity
+    makeMap(obj.connections, this.connections);
+    makeMap(obj.switches, this.switches);
+    makeMap(obj.joins, this.joins);
+    makeMap(obj.gameobjects, this.gameobjects);
+
+    this.gameobjectpoints = new Map(obj.gameobjectpoints || []); // UGLY. make keys explicit
 
     //reindex
     this.railsIndex = new Map();
@@ -144,7 +184,7 @@ export default class Model {
   }
 
   makeConnection(pointId: number, x: number, y: number) {
-    this.connections.push({ x, y, items: [pointId] });
+    this.connections.set(UUID(), { x, y, items: [pointId] });
     this.dirty = true;
   }
 
@@ -154,24 +194,27 @@ export default class Model {
     this.dirty = true;
   }
 
-  findConnection(x: number, y: number) {
-    return this.connections.find(v => distance(x, y, v.x, v.y) < MIN_DISTANCE);
+  findConnection(x: number, y: number): string {
+    return findOne(
+      this.connections,
+      v => distance(x, y, v.x, v.y) < MIN_DISTANCE
+    );
   }
 
   createConnections(obj: IRail) {
     const startId = obj.meta.id;
     const endId = startId + 1;
     const { sx, sy, ex, ey } = obj;
-    let connection: IConnection = null;
+    let connectionUUID: string = null;
 
-    connection = this.findConnection(sx, sy);
-    connection
-      ? this.addToConnection(startId, connection)
+    connectionUUID = this.findConnection(sx, sy);
+    connectionUUID
+      ? this.addToConnection(startId, this.connections.get(connectionUUID))
       : this.makeConnection(startId, sx, sy);
 
-    connection = this.findConnection(ex, ey);
-    connection
-      ? this.addToConnection(endId, connection)
+    connectionUUID = this.findConnection(ex, ey);
+    connectionUUID
+      ? this.addToConnection(endId, this.connections.get(connectionUUID))
       : this.makeConnection(endId, ex, ey);
   }
 
@@ -187,7 +230,7 @@ export default class Model {
     const block = this.blockId++;
     obj.meta = { id, x, y, selected, block };
     this.createConnections(obj);
-    this.rails.push(obj);
+    this.rails.set(UUID(), obj);
     this.railsIndex.set(id, obj);
     this.dirty = true;
   }
@@ -201,7 +244,7 @@ export default class Model {
     // this.dirty = true; // ???
   }
 
-  findByRect(sx: number, sy: number, ex: number, ey: number): IRail[] {
+  findByRect(sx: number, sy: number, ex: number, ey: number): string[] {
     // check if endpoints are within rectangle
     const lx = Math.min(sx, ex);
     const rx = Math.max(sx, ex);
@@ -210,10 +253,14 @@ export default class Model {
     const insideX = (x: number) => inside(x, lx, rx);
     const insideY = (y: number) => inside(y, ly, ry);
     const insideXY = (x: number, y: number) => insideX(x) && insideY(y);
-    return this.rails.filter(o => insideXY(o.sx, o.sy) && insideXY(o.ex, o.ey));
+
+    return findAll(
+      this.rails,
+      v => insideXY(v.sx, v.sy) && insideXY(v.ex, v.ey)
+    );
   }
 
-  findByXY(x: number, y: number): IRail[] {
+  findByXY(x: number, y: number): string[] {
     const TAU = 2 * Math.PI;
     const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
 
@@ -234,8 +281,8 @@ export default class Model {
       return Math.abs(ab + bc - ac) < MIN_DISTANCE;
     };
 
-    return this.rails.filter(obj =>
-      obj.radius ? pointInArc(x, y, obj) : pointInLine(x, y, obj)
+    return findAll(this.rails, v =>
+      v.radius ? pointInArc(x, y, v) : pointInLine(x, y, v)
     );
   }
 
@@ -244,25 +291,27 @@ export default class Model {
     this.dirty = true;
   }
 
-  select(selection: IRail[]) {
-    selection.forEach(v => (v.meta.selected = true));
+  select(selection: string[]) {
+    selection.forEach(v => (this.rails.get(v).meta.selected = true));
     this.dirty = true;
   }
 
   deleteSelected() {
-    let ids = this.rails.filter(i => i.meta.selected).map(i => i.meta.id);
+    let ids = Array.from(this.rails.values())
+      .filter(i => i.meta.selected)
+      .map(i => i.meta.id);
     ids = ids.concat(ids.map(i => i + 1)); // add reverse links
 
     // remove from rail storage
-    this.rails = this.rails.filter(i => !i.meta.selected);
+    filter(this.rails, i => !i.meta.selected);
 
     ids.forEach(id => {
       // remove from index, should use lodash.partition instead
       this.railsIndex.delete(id);
 
       // remove from joins and switches
-      this.joins = this.joins.filter(i => !i.includes(id));
-      this.switches = this.switches.filter(i => !i.includes(id));
+      filter(this.joins, i => !i.includes(id));
+      filter(this.switches, i => !i.includes(id));
 
       // remove from connections
       this.connections.forEach(i => {
@@ -270,17 +319,19 @@ export default class Model {
       });
     });
     // delete empty connections
-    this.connections = this.connections.filter(i => i.items.length);
+    filter(this.connections, i => !i.items.length);
     this.dirty = true;
   }
 
-  selectGroup(selection: IRail[]) {
+  selectGroup(selection: string[]) {
     this.select(selection);
-    const selected = this.rails.filter(i => i.meta.selected);
-    const deselected = this.rails.filter(i => !i.meta.selected);
+    const selected = findAll(this.rails, i => i.meta.selected);
+    const deselected = findAll(this.rails, i => !i.meta.selected);
     selected.forEach(s => {
       deselected.forEach(
-        d => s.meta.block === d.meta.block && (d.meta.selected = true)
+        d =>
+          this.rails.get(s).meta.block === this.rails.get(d).meta.block &&
+          (this.rails.get(d).meta.selected = true)
       );
     });
     this.dirty = true;
@@ -288,20 +339,17 @@ export default class Model {
 
   group() {
     const groupBlockId = this.blockId++;
-    this.rails
-      .filter(v => v.meta.selected)
-      .map(v => (v.meta.block = groupBlockId));
-    // this.deselect();
+    this.rails.forEach(v => v.meta.selected && (v.meta.block = groupBlockId));
     this.dirty = true;
   }
 
   ungroup() {
-    this.rails
-      .filter(v => v.meta.selected)
-      .map(v => {
+    this.rails.forEach(v => {
+      if (v.meta.selected) {
         const groupBlockId = this.blockId++;
         v.meta.block = groupBlockId;
-      });
+      }
+    });
     this.deselect();
     this.dirty = true;
   }
@@ -326,44 +374,47 @@ export default class Model {
   reindexRails() {
     throw "Not implemented";
 
-    this.objectId = 2;
-    const indices: Map<number, number> = new Map();
+    // this.objectId = 2;
+    // const indices: Map<number, number> = new Map();
 
-    this.rails.forEach(v => {
-      const curr = v.meta.id;
-      if (!indices.has(curr)) {
-        indices.set(curr, this.objectId);
-        indices.set(curr + 1, this.objectId + 1);
-        this.objectId += 2;
-      }
-    });
+    // this.rails.forEach(v => {
+    //   const curr = v.meta.id;
+    //   if (!indices.has(curr)) {
+    //     indices.set(curr, this.objectId);
+    //     indices.set(curr + 1, this.objectId + 1);
+    //     this.objectId += 2;
+    //   }
+    // });
 
-    this.rails.forEach(v => {
-      v.meta.id = indices.get(v.meta.id);
-    });
+    // this.rails.forEach(v => {
+    //   v.meta.id = indices.get(v.meta.id);
+    // });
 
-    this.connections.forEach(c => {
-      c.items = c.items.map(i => indices.get(i) || 0);
-    });
+    // this.connections.forEach(c => {
+    //   c.items = c.items.map(i => indices.get(i) || 0);
+    // });
 
-    this.switches = this.switches.map(s => s.map(i => indices.get(i) || 0));
+    // this.switches = this.switches.map(s => s.map(i => indices.get(i) || 0));
 
-    this.joins = this.joins.map(
-      j => [indices.get(j[0]) || 0, indices.get(j[1]) || 0] as IJoin
+    // this.joins = this.joins.map(
+    //   j => [indices.get(j[0]) || 0, indices.get(j[1]) || 0] as IJoin
+    // );
+    // this.dirty = true;
+  }
+
+  findJoin(id: number): string {
+    return findOne(
+      this.joins,
+      j => (j[0] & magic) === id || (j[1] & magic) === id
     );
-    this.dirty = true;
   }
 
-  findJoin(id: number) {
-    return this.joins.find(j => (j[0] & magic) === id || (j[1] & magic) === id);
-  }
-
-  findSwitch(id: number) {
-    return this.switches.find(v => v.map(i => i & magic).includes(id));
+  findSwitch(id: number): string {
+    return findOne(this.switches, v => v.map(i => i & magic).includes(id));
   }
 
   getSelectedIds(): number[] {
-    return this.rails
+    return Array.from(this.rails.values())
       .filter(v => v.meta.selected)
       .map(v => v.meta.id)
       .sort();
@@ -372,8 +423,11 @@ export default class Model {
   getAdjacentEndpoints(ids: number[]): number[] {
     // converting object id to points id here
     // objects have odd ids, points: start = id, end = id + 1
-    const connection = Object.values(this.connections).find(v =>
-      includesAll(ids, v.items.map(i => i & magic))
+    const connection = Array.from(this.connections.values()).find(v =>
+      includesAll(
+        ids,
+        v.items.map(i => i & magic)
+      )
     );
 
     return connection
@@ -393,7 +447,7 @@ export default class Model {
     }
 
     const [a, b] = items;
-    this.joins.push([a, b]);
+    this.joins.set(UUID(), [a, b]);
     this.deselect();
     this.dirty = true;
     return true;
@@ -411,7 +465,7 @@ export default class Model {
     }
 
     let sw: ISwitch = <ISwitch>[0, 0, 0, 0].map((v, i) => items[i] || 0);
-    this.switches.push(sw);
+    this.switches.set(UUID(), sw);
     this.deselect();
     this.dirty = true;
     return true;
@@ -424,17 +478,20 @@ export default class Model {
 
     const selection = this.getSelectedIds();
     if (selection.length === 1) {
-      const sw = this.findSwitch(selection[0]);
-      const oldType = sw.findIndex(i => (i & magic) === selection[0]);
-      const tmp = sw[newType];
-      sw[newType] = sw[oldType];
-      sw[oldType] = tmp;
+      const swid = this.findSwitch(selection[0]);
+      const sw = swid ? this.switches.get(swid) : null;
+      if (sw) {
+        const oldType = sw.findIndex(i => (i & magic) === selection[0]);
+        const tmp = sw[newType];
+        sw[newType] = sw[oldType];
+        sw[oldType] = tmp;
+      }
     }
     this.dirty = true;
   }
 
   // objects
-  addGameObject(x: number, y: number): IGameObject {
+  addGameObject(x: number, y: number): string {
     const o: IGameObject = {
       x,
       y,
@@ -442,46 +499,64 @@ export default class Model {
       zindex: 0
     };
 
-    this.gameobjects.push(o);
+    const uuid = UUID();
+    this.gameobjects.set(uuid, o);
     this.dirty = true;
-    return o;
+    return uuid;
   }
 
-  cloneGameObject(): IGameObject {
+  moveGameObject(objuuid: string, x: number, y: number) {
+    const obj = this.gameobjects.get(objuuid);
+    obj.x = x;
+    obj.y = y;
+  }
+
+  updateGameObjectProperties(objuuid: string, values: IGameObject) {
+    const old = this.gameobjects.get(objuuid);
+    const replacement = { ...old, ...values };
+    this.gameobjects.set(objuuid, replacement);
+  }
+
+  cloneGameObject(): string {
     if (this.selectedGameObject) {
-      const clone = { ...this.selectedGameObject };
-      this.gameobjects.push(clone);
+      const clone = { ...this.gameobjects.get(this.selectedGameObject) };
+      const uuid = UUID();
+      this.gameobjects.set(uuid, clone);
       this.dirty = true;
-      return clone;
+      return uuid;
     }
   }
 
   deleteSelectedGameObject() {
     if (this.selectedGameObject) {
-      this.selectedGameObject.points !== 0 &&
-        this.gameobjectpoints.delete(this.selectedGameObject.points);
+      const gameobject = this.gameobjects.get(this.selectedGameObject);
+      gameobject.points !== 0 &&
+        this.gameobjectpoints.delete(gameobject.points);
 
-      this.gameobjects = this.gameobjects.filter(
-        o => o !== this.selectedGameObject
-      );
+      this.gameobjects.delete(this.selectedGameObject);
       this.dirty = true;
     }
   }
 
   findGameObjectByXY(x: number, y: number) {
     const d = 1.28 * 0.5;
-    return this.gameobjects.find(
+    return findOne(
+      this.gameobjects,
       o => inside(x, o.x - d, o.x + d) && inside(y, o.y - d, o.y + d)
     );
   }
 
   private bring(forward: boolean) {
     if (this.selectedGameObject) {
-      const index = this.gameobjects.indexOf(this.selectedGameObject);
-      const removed = this.gameobjects.splice(index, 1);
-      forward
-        ? this.gameobjects.push(removed[0])
-        : this.gameobjects.unshift(removed[0]);
+      const gameobjects: [string, IGameObject][] = [...this.gameobjects];
+
+      const index = gameobjects.findIndex(
+        ([k, v]) => k === this.selectedGameObject
+      );
+      const removed = gameobjects.splice(index, 1);
+      forward ? gameobjects.push(removed[0]) : gameobjects.unshift(removed[0]);
+
+      this.gameobjects = new Map(gameobjects);
       this.dirty = true;
     }
   }
@@ -497,7 +572,7 @@ export default class Model {
   // polygons and ropes
 
   findPointByXY(x: number, y: number) {
-    const pid = this.selectedGameObject.points;
+    const pid = this.gameobjects.get(this.selectedGameObject).points;
     const points = this.gameobjectpoints.get(pid);
 
     return points.findIndex(p => distance(x, y, p.x, p.y) < MIN_DISTANCE);
@@ -508,7 +583,7 @@ export default class Model {
     if (index === -1) {
       return;
     }
-    const pid = this.selectedGameObject.points;
+    const pid = this.gameobjects.get(this.selectedGameObject).points;
     const points = this.gameobjectpoints.get(pid);
     points[index].x = x;
     points[index].y = y;
@@ -516,7 +591,7 @@ export default class Model {
   }
 
   addPoint(x: number, y: number) {
-    const pid = this.selectedGameObject.points;
+    const pid = this.gameobjects.get(this.selectedGameObject).points;
     const points = this.gameobjectpoints.get(pid);
     points.push(new Point(x, y));
     this.dirty = true;
@@ -527,7 +602,7 @@ export default class Model {
     if (index === -1) {
       return;
     }
-    const pid = this.selectedGameObject.points;
+    const pid = this.gameobjects.get(this.selectedGameObject).points;
     const points = this.gameobjectpoints.get(pid);
     points.length > 2 && points.splice(index, 1);
     this.dirty = true;
@@ -538,7 +613,7 @@ export default class Model {
     if (index === -1) {
       return;
     }
-    const pid = this.selectedGameObject.points;
+    const pid = this.gameobjects.get(this.selectedGameObject).points;
     const points = this.gameobjectpoints.get(pid);
 
     const current = points[index];
@@ -566,7 +641,7 @@ export default class Model {
     if (index === -1) {
       return;
     }
-    const pid = this.selectedGameObject.points;
+    const pid = this.gameobjects.get(this.selectedGameObject).points;
     const points = this.gameobjectpoints.get(pid);
     if (points.length < 5) {
       console.log("Not enough points");
@@ -589,21 +664,28 @@ export default class Model {
   }
 
   createDefaultPoints() {
-    const d = 1.28 * 0.5 * 1.2;
-    let points: Point[] = [];
-    const { x, y, type } = this.selectedGameObject;
-    if (type === "rope") {
-      points.push(new Point(x, y + d));
-      points.push(new Point(x, y - d));
-    } else {
-      points.push(new Point(x - d, y - d));
-      points.push(new Point(x - d, y + d));
-      points.push(new Point(x + d, y + d));
-      points.push(new Point(x + d, y - d));
+    const { x, y, type, points } = this.gameobjects.get(
+      this.selectedGameObject
+    );
+
+    if (points !== 0 || !["polygon", "rope"].includes(type)) {
+      return;
     }
 
-    this.gameobjectpoints.set(this.pointId, points);
-    this.selectedGameObject.points = this.pointId;
+    const d = 1.28 * 0.5 * 1.2;
+    let newPoints: Point[] = [];
+    if (type === "rope") {
+      newPoints.push(new Point(x, y + d));
+      newPoints.push(new Point(x, y - d));
+    } else {
+      newPoints.push(new Point(x - d, y - d));
+      newPoints.push(new Point(x - d, y + d));
+      newPoints.push(new Point(x + d, y + d));
+      newPoints.push(new Point(x + d, y - d));
+    }
+
+    this.gameobjectpoints.set(this.pointId, newPoints);
+    this.gameobjects.get(this.selectedGameObject).points = this.pointId;
     this.pointId++;
     this.dirty = true;
   }

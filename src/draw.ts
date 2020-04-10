@@ -191,6 +191,7 @@ export default class Draw {
 
   public all() {
     this.labelCache = [];
+    this.model.dirty = true;
 
     this.ctx = this.modelCanvas.getContext("2d");
     const hash = ts.hash();
@@ -200,8 +201,8 @@ export default class Draw {
     if (this.transformHash !== hash || this.model.dirty) {
       this.clear(this.ctx);
       this.model.forEach((obj: IRail) => this.object(obj));
-      this.model.gameobjects.forEach((obj: IGameObject) =>
-        this.gameObject(obj)
+      this.model.gameobjects.forEach((obj: IGameObject, key: string) =>
+        this.gameObject(obj, key)
       );
       this.labelCache.forEach(([x, y, what]) => this.text(x, y, what));
       this.connections();
@@ -285,7 +286,7 @@ export default class Draw {
     this.pixiAppStage.scale.set(ts.zoom / 50);
   }
 
-  private gameObject(obj: IGameObject) {
+  private gameObject(obj: IGameObject, key: string) {
     type Frame = { x: number; y: number; w: number; h: number };
 
     const { ctx } = this;
@@ -376,7 +377,7 @@ export default class Draw {
       }
     }
 
-    const selected = obj === this.model.selectedGameObject;
+    const selected = key === this.model.selectedGameObject;
     ctx.strokeStyle = selected ? "#ff0000" : "#ccc";
     const cx = sx(x); // image center
     const cy = sy(y);
@@ -640,7 +641,7 @@ export default class Draw {
         color = "rgba(0, 0, 0, 0.8)";
 
         // draw items - temp
-        v.items.forEach(i => {
+        v.items.forEach((i: any) => {
           const obj = this.model.get(i);
           this.objectPath(obj);
         });

@@ -119,7 +119,7 @@ export default class Controls {
 
   private propertyEditor: PropertyEditor = null;
   private layerList: LayerList = null;
-  private editedObject: IGameObject = null;
+  private editedObject: string = null;
 
   constructor(private model: Model) {
     // const mode = A.LINES;
@@ -282,8 +282,7 @@ export default class Controls {
     if (this.createObjectMode && this.editedObject) {
       const [x, y] = coords;
       const { wx, wy } = ts;
-      this.editedObject.x = wx(x);
-      this.editedObject.y = wy(y);
+      this.model.moveGameObject(this.editedObject, wx(x), wy(y));
     }
 
     if (AG.POINTTOOLS.includes(state.mode)) {
@@ -443,12 +442,8 @@ export default class Controls {
     }
 
     if (action === A.POINTS) {
-      if (
-        this.model.selectedGameObject &&
-        ["polygon", "rope"].includes(this.model.selectedGameObject.type)
-      ) {
-        this.model.selectedGameObject.points === 0 &&
-          this.model.createDefaultPoints();
+      if (this.model.selectedGameObject) {
+        this.model.createDefaultPoints();
         mode = A.POINTMOVE;
       } else {
         console.log("Point editor bad object", this.model.selectedGameObject);
@@ -547,23 +542,27 @@ export default class Controls {
     console.log("Save A -> B");
     console.log(this.editedObject);
     console.log(this.propertyEditor.userInput);
-    const index = this.model.gameobjects.indexOf(this.editedObject);
-    this.model.gameobjects[index] = <IGameObject>this.propertyEditor.userInput;
+
+    this.model.updateGameObjectProperties(
+      this.editedObject,
+      <IGameObject>this.propertyEditor.userInput
+    );
     this.editedObject = null;
     this.propertyEditor.hidden = true;
   }
 
-  showPropertyBox(obj: IGameObject) {
-    if (!obj) {
+  showPropertyBox(objuuid: string, fakeobj: IGameObject = null) {
+    if (!objuuid) {
       return;
     }
 
     if (!this.editedObject) {
-      this.editedObject = obj;
+      this.editedObject = objuuid;
       this.propertyEditor.hidden = false;
     }
 
     // const data = config.objectCommon;
+    const obj = fakeobj || this.model.gameobjects.get(objuuid);
     const data = this.makeObjectProperties(obj);
 
     // recreate type selector dropdown
@@ -573,13 +572,12 @@ export default class Controls {
     selector.type = "select";
     selector.onChange = () => {
       const input: IKeyValue = this.propertyEditor.userInput;
-      if (input.type === this.editedObject.type) {
-        // reset values
+      if (input.type === obj.type) {
         setTimeout(() => this.showPropertyBox(this.editedObject), 0);
       } else {
         const { type, x, y, zindex } = input;
         const emptyObject: IGameObject = { type, x, y, zindex };
-        this.showPropertyBox(emptyObject);
+        this.showPropertyBox(objuuid, fakeobj);
       }
       console.log("changed");
     };

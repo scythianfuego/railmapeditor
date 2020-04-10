@@ -15,6 +15,7 @@
   "dependencies": {
     "cat-rom-spline": "^1.0.0",
     "pixi.js": "^5.2.1",
+    "prettier": "^2.0.4",
     "unistore": "^3.3.0"
   },
   "scripts": {
