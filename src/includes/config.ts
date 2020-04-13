@@ -373,13 +373,13 @@ const objectCommon: IProperty[] = [
 // layer display settings defaults
 const layers = [
   { id: "textures", label: "Textures", value: true },
-  { id: "blocks", label: "Block IDs" },
-  { id: "ids", label: "Rail IDs" },
-  { id: "thick", label: "Thick lines" },
-  { id: "colors", label: "Line colors" },
-  { id: "polygons", label: "Polygon fill" },
-  { id: "ropes", label: "Ropes" },
-  { id: "objects", label: "Objects marks" }
+  { id: "blocks", label: "Block IDs", value: true },
+  { id: "ids", label: "Rail IDs", value: true },
+  { id: "thick", label: "Thick lines", value: true },
+  { id: "colors", label: "Line colors", value: true },
+  { id: "polygons", label: "Polygon fill", value: true },
+  { id: "ropes", label: "Ropes", value: true },
+  { id: "objects", label: "Objects marks", value: true }
 ];
 
 export default {

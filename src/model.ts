@@ -5,6 +5,8 @@ import ISwitch from "./interfaces/ISwitch";
 import catRomSpline from "cat-rom-spline";
 import IGameObject from "./interfaces/IGameObject";
 
+import { observable } from "mobx";
+
 const magic = 0x7ffffffe;
 const PIXELS_PER_UNIT = 50;
 
@@ -65,11 +67,11 @@ export default class Model {
   public connections: Map<string, IConnection> = new Map(); // TODO: remove public access
   public switches: Map<string, ISwitch> = new Map();
   public joins: Map<string, IJoin> = new Map();
-  public gameobjects: Map<string, IGameObject> = new Map();
-  private rails: Map<string, IRail> = new Map();
+  @observable public gameobjects: Map<string, IGameObject> = new Map();
+  @observable public rails: Map<string, IRail> = new Map();
 
   public gameobjectpoints: Map<number, Point[]> = new Map();
-  private railsIndex = new Map();
+  private railsIndex: Map<number, string> = new Map();
   private blockId = 1;
   private objectId = 2; // odd id means start of segment, even - end
   private pointId = 6001;
@@ -179,7 +181,7 @@ export default class Model {
 
     //reindex
     this.railsIndex = new Map();
-    this.rails.forEach(v => this.railsIndex.set(v.meta.id, v));
+    this.rails.forEach((v, k) => this.railsIndex.set(v.meta.id, k));
     this.dirty = true;
   }
 
@@ -230,18 +232,14 @@ export default class Model {
     const block = this.blockId++;
     obj.meta = { id, x, y, selected, block };
     this.createConnections(obj);
-    this.rails.set(UUID(), obj);
-    this.railsIndex.set(id, obj);
+    const uuid = UUID();
+    this.rails.set(uuid, obj);
+    this.railsIndex.set(id, uuid);
     this.dirty = true;
   }
 
-  get(pointId: number): IRail {
+  get(pointId: number): string {
     return this.railsIndex.get(pointId & magic);
-  }
-
-  forEach(fn: (i: IRail) => void) {
-    this.rails.forEach(i => fn(i));
-    // this.dirty = true; // ???
   }
 
   findByRect(sx: number, sy: number, ex: number, ey: number): string[] {
@@ -287,7 +285,7 @@ export default class Model {
   }
 
   deselect() {
-    this.forEach(v => (v.meta.selected = false));
+    this.rails.forEach(v => (v.meta.selected = false));
     this.dirty = true;
   }
 

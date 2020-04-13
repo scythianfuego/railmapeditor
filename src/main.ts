@@ -1,5 +1,11 @@
 import * as PIXI from "pixi.js";
 
+// @ts-ignore
+PIXI.useDeprecated();
+// @ts-ignore
+const hook = window.__PIXI_INSPECTOR_GLOBAL_HOOK__;
+hook && hook.register({ PIXI: PIXI });
+
 import Draw from "./draw";
 import Model from "./model";
 import Animate from "./animate";
@@ -28,8 +34,6 @@ PIXI.Loader.shared
       loader: PIXI.Loader,
       resources: Partial<Record<string, PIXI.LoaderResource>>
     ) => {
-      this.resources = resources;
-
       const canvas2d = document.createElement("canvas");
       canvas2d.width = canvas.width;
       canvas2d.height = canvas.height;
