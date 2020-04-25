@@ -577,7 +577,7 @@ export default class Controls {
       } else {
         const { type, x, y, zindex } = input;
         const emptyObject: IGameObject = { type, x, y, zindex };
-        this.showPropertyBox(objuuid, fakeobj);
+        this.showPropertyBox(objuuid, emptyObject);
       }
       console.log("changed");
     };

@@ -6,7 +6,7 @@ PIXI.useDeprecated();
 const hook = window.__PIXI_INSPECTOR_GLOBAL_HOOK__;
 hook && hook.register({ PIXI: PIXI });
 
-import Draw from "./draw";
+import Draw from "./PIXI/draw";
 import Model from "./model";
 import Animate from "./animate";
 import Controls from "./controls";
@@ -24,7 +24,7 @@ let model = new Model();
 
 const app = new PIXI.Application({
   view: canvas,
-  resizeTo: canvas
+  resizeTo: canvas,
 });
 
 PIXI.Loader.shared
@@ -42,7 +42,7 @@ PIXI.Loader.shared
 
       const draw = new Draw(canvas2d, model, app, resources);
       const controls = new Controls(model);
-      window.addEventListener("resize", e => {
+      window.addEventListener("resize", (e) => {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
       });

@@ -1,32 +1,42 @@
-import storeInstance, { copy } from "./store";
-import ts from "./transform";
-import { Tool } from "./interfaces/types";
-import Model from "./model";
-import IRail from "./interfaces/IRail";
-import IHintLine from "./interfaces/IHintLine";
-import IState from "./interfaces/IState";
+import storeInstance, { copy } from "../store";
+import ts from "../transform";
+import { Tool } from "../interfaces/types";
+import Model from "../model";
+import IRail from "../interfaces/IRail";
+import IHintLine from "../interfaces/IHintLine";
+import IState from "../interfaces/IState";
 import { Listener, Store } from "unistore";
-import IGameObject from "./interfaces/IGameObject";
-import IKeyValue from "./interfaces/IKeyValue";
-import IHints from "./interfaces/IHints";
+import IGameObject from "../interfaces/IGameObject";
+import IKeyValue from "../interfaces/IKeyValue";
+import IHints from "../interfaces/IHints";
+import GameObjectView from "./gameobjectview";
 
-import { autorun } from "mobx";
+import { autorun, reaction, observe } from "mobx";
 
 import * as PIXI from "pixi.js";
-import TileMesh from "./PIXI/tilemesh";
+import TileMesh from "./tilemesh";
 type PIXIAtlas = {
   [key: string]: PIXI.Texture;
 };
 
 const TAU = 2 * Math.PI;
 const hex2rgba = (hex: string) => {
-  const [r, g, b, a] = hex.match(/\w\w/g).map(x => parseInt(x, 16));
+  const [r, g, b, a] = hex.match(/\w\w/g).map((x) => parseInt(x, 16));
   return `rgba(${r},${g},${b},${a ? a * 0.00392156862745098 : 1})`;
 };
 
 const colors = {
   background: "#000",
-  gridBackground: "#553835"
+  gridBackground: "#553835",
+};
+
+const blends: {
+  [key: string]: PIXI.BLEND_MODES;
+} = {
+  normal: PIXI.BLEND_MODES.NORMAL,
+  add: PIXI.BLEND_MODES.ADD,
+  multiply: PIXI.BLEND_MODES.MULTIPLY,
+  screen: PIXI.BLEND_MODES.SCREEN,
 };
 
 const { sx, sy, scale, pixels } = ts;
@@ -85,7 +95,7 @@ export default class Draw {
       this.ctx.arcTo(x, y + h, x, y, r);
       this.ctx.arcTo(x, y, x + w, y, r);
       this.ctx.closePath();
-    }
+    },
   };
 
   // state variables, refactor
@@ -106,6 +116,8 @@ export default class Draw {
     { x: number; y: number; text: string; sprite: PIXI.Text }
   > = new Map();
 
+  private gameobjectview: GameObjectView;
+
   constructor(
     private canvas: HTMLCanvasElement,
     private model: Model,
@@ -122,7 +134,6 @@ export default class Draw {
     this.modelCanvas.height = canvas.height;
     this.ctx = this.modelCanvas.getContext("2d");
 
-    this.model = model;
     this.ctx.translate(0.5, 0.5);
 
     // moveable and zoomable parts of canvas
@@ -138,7 +149,7 @@ export default class Draw {
         "cursorType",
         "layers",
         "mouse",
-        "snapPoint"
+        "snapPoint",
       ]);
       this.canvas.style.cursor = state.mouse.pan ? "grabbing" : "pointer";
     };
@@ -150,8 +161,8 @@ export default class Draw {
     image.onload = () => (this.imgAtlas = image);
 
     fetch("assets/textures.json")
-      .then(response => response.json())
-      .then(obj => {
+      .then((response) => response.json())
+      .then((obj) => {
         this.textureData = obj;
       });
 
@@ -169,11 +180,11 @@ export default class Draw {
       );
     });
 
-    autorun(() => {
-      this.model.gameobjects.forEach((obj: IGameObject, key: string) =>
-        this.gameObject(obj, key)
-      );
-    });
+    this.gameobjectview = new GameObjectView(
+      model,
+      this.pixiAppStage,
+      resources
+    );
   }
 
   private getTexture(name: string): PIXI.Texture {
@@ -190,7 +201,7 @@ export default class Draw {
     const colors = [
       { min: 0x20, max: 0x29, color: 0xffff00 },
       { min: 0x30, max: 0x39, color: 0x00ff2a },
-      { min: 0x40, max: 0x49, color: 0x00baff }
+      { min: 0x40, max: 0x49, color: 0x00baff },
     ];
 
     return colors.reduce(
@@ -206,7 +217,7 @@ export default class Draw {
     this.ctx = this.modelCanvas.getContext("2d");
     this.grid();
 
-    this.labelCache.forEach(v => this.label(v.x, v.y, v.text));
+    this.labelCache.forEach((v) => this.label(v.x, v.y, v.text));
     this.connections();
 
     // TODO: remove variables
@@ -291,27 +302,45 @@ export default class Draw {
     this.pixiAppStage.scale.set(ts.zoom / 50);
   }
 
+  private updateGameObject(obj: IGameObject, key: string) {
+    let { x, y, texture, rotation, points, outline, type } = obj; // refactor object frame out
+    const selected = key === this.model.selectedGameObject;
+    const sprite = sprites.get(key);
+    sprite.position.set(x * 50, y * 50);
+    sprite.alpha = obj.alpha ? obj.alpha : 1;
+    sprite.blendMode = blends[obj.blend] || 0;
+    sprite.angle = rotation || 0;
+    if (selected) {
+      // sprite.tint
+      // strokeStyle = selected ? "#ff0000" : "#ccc";
+    }
+
+    const desc = `${texture.replace(".png", "")}`;
+    // text at x, y - pixels(12))
+  }
+
   private gameObject(obj: IGameObject, key: string) {
     type Frame = { x: number; y: number; w: number; h: number };
 
-    const { ctx } = this;
-    let { x, y, texture, rotation, points, outline, type } = obj; // refactor object frame out
-
+    let { x, y, rotation, alpha, blend } = obj; // small change
+    let { texture, points, outline, type } = obj; // rebuild
     if (type === "signal") {
       texture = "signalred.png";
     }
 
     // pixi
-    if (!sprites.has(key)) {
-      let sprite: any = null;
 
-      if (obj.points) {
-        sprite = new PIXI.Container();
-        const pdata = this.model.gameobjectpoints.get(obj.points);
-        const isRope = obj.type === "rope";
-        const isPoly = obj.type === "polygon";
+    // if type changed destroy
+    if (!sprites.has(key)) {
+      let container: any = new PIXI.Container();
+
+      if (points) {
+        container = new PIXI.Container();
+        const pdata = this.model.gameobjectpoints.get(points);
+        const isRope = type === "rope";
+        const isPoly = type === "polygon";
         const doPoly = isPoly; // && this.layers.polygons;
-        const doRope = isRope || (isPoly && obj.outline); // && this.layers.ropes;
+        const doRope = isRope || (isPoly && outline); // && this.layers.ropes;
         const doBoth = doPoly || doRope;
 
         const drawPoints = () => {
@@ -321,161 +350,73 @@ export default class Draw {
         };
 
         const fillPolygon = () => {
-          const points = pdata.map(p => new PIXI.Point(p.x * 50, p.y * 50));
-          const texture = this.getTexture(obj.texture);
-          const mesh = new TileMesh(texture, points);
-          sprite.addChild(mesh);
+          const points = pdata.map((p) => new PIXI.Point(p.x * 50, p.y * 50));
+          const fillTexture = this.getTexture(texture);
+          const mesh = new TileMesh(fillTexture, points);
+          container.addChild(mesh);
         };
 
         const drawRope = () => {
-          const points = pdata.map(p => new PIXI.Point(p.x * 50, p.y * 50));
-          const texture = this.getTexture(isPoly ? obj.outline : obj.texture);
-          const rope = new PIXI.SimpleRope(texture, points, 1);
-          sprite.addChild(rope);
+          const points = pdata.map((p) => new PIXI.Point(p.x * 50, p.y * 50));
+          const ropeTexture = this.getTexture(isPoly ? outline : texture);
+          const rope = new PIXI.SimpleRope(ropeTexture, points, 1);
+          container.addChild(rope);
         };
 
         doPoly && fillPolygon();
         doRope && drawRope();
         doBoth && drawPoints();
       } else {
-        sprite = new PIXI.Sprite(this.getTexture(texture));
-        sprite.position.set(x * 50, y * 50);
+        const sprite = new PIXI.Sprite(this.getTexture(texture));
         sprite.anchor.set(0.5);
         sprite.angle = rotation;
-        sprites.set(key, sprite);
+        container.position.set(x * 50, y * 50);
+        container.addChild(sprite);
+        sprites.set(key, container);
       }
-      sprite.alpha = obj.alpha;
-      const blends: any = {
-        normal: PIXI.BLEND_MODES.NORMAL,
-        add: PIXI.BLEND_MODES.ADD,
-        multiply: PIXI.BLEND_MODES.MULTIPLY,
-        screen: PIXI.BLEND_MODES.SCREEN
-      };
-      sprite.blendMode = blends[obj.blend] || 0;
-      this.pixiAppStage.addChild(sprite);
+      container.alpha = alpha ? alpha : 1;
+      container.blendMode = blends[blend] || 0;
+      this.pixiAppStage.addChild(container);
 
-      if (this.layers.objects) {
+      if (true || this.layers.objects) {
+        // fix = observe
+
+        const px = 50; // pixels per unit
+        let width = 64;
+        let height = 64;
+        if (obj.frame) {
+          width = obj.frame.w;
+          height = obj.frame.h;
+
+          const ow = Number(obj.width) || 0;
+          const oh = Number(obj.height) || 0;
+          if (ow !== 0) {
+            width = ow;
+            height =
+              obj.frame && oh !== 0 ? oh : (width * obj.frame.h) / obj.frame.w;
+          }
+        }
+        const w = scale(width) / px;
+        const h = scale(height) / px;
+
+        const border = new PIXI.Graphics();
+        border.beginFill(0xff0000, 1);
         if (!points) {
-          // ctx.beginPath();
-          // !selected && ctx.setLineDash([1, 3]);
-          // ctx.strokeRect(0, 0, w, h);
-          // ctx.stroke();
-          // !selected && ctx.setLineDash([]);
+          border.drawRect(0, 0, w, h);
         } else {
-          // ctx.beginPath();
-          // ctx.arc(w * 0.5, h * 0.5, scale(1.28 * 0.5), 0, TAU);
-          // ctx.stroke();
+          border.drawCircle(w / 2, h / 2, 1.28 * 50);
         }
+        border.endFill();
+        container.addChild(border);
       }
-    }
 
-    const draw = (frame: Frame, width: number, height: number, alpha = 1) => {
-      if (frame) {
-        ctx.globalAlpha = alpha;
-        const { x, y, w, h } = frame;
-        ctx.drawImage(this.imgAtlas, x, y, w, h, 0, 0, width, height);
-        ctx.globalAlpha = 1;
-      }
-    };
-
-    const data = this.textureData.frames[texture] || null;
-    const frame: Frame = data ? data.frame : null;
-
-    const px = 50; // pixels per unit
-    let width = 64;
-    let height = 64;
-    if (frame) {
-      width = frame.w;
-      height = frame.h;
-
-      const ow = Number(obj.width) || 0;
-      const oh = Number(obj.height) || 0;
-      if (ow !== 0) {
-        width = ow;
-        height = frame && oh !== 0 ? oh : (width * frame.h) / frame.w;
-      }
-    }
-
-    const selected = key === this.model.selectedGameObject;
-    ctx.strokeStyle = selected ? "#ff0000" : "#ccc";
-    const cx = sx(x); // image center
-    const cy = sy(y);
-    const w = scale(width) / px;
-    const h = scale(height) / px;
-
-    // scale and rotate
-    ctx.save();
-    ctx.translate(cx, cy);
-    rotation && ctx.rotate((rotation * Math.PI) / 180);
-    ctx.translate(-w * 0.5, -h * 0.5);
-
-    // texture
-    this.layers.textures &&
-      frame &&
-      !points &&
-      draw(frame, w, h, obj.alpha || 1);
-
-    // object box
-    if (this.layers.objects) {
-      if (!points) {
-        ctx.beginPath();
-        !selected && ctx.setLineDash([1, 3]);
-        ctx.strokeRect(0, 0, w, h);
-        ctx.stroke();
-        !selected && ctx.setLineDash([]);
-      } else {
-        ctx.beginPath();
-        ctx.arc(w * 0.5, h * 0.5, scale(1.28 * 0.5), 0, TAU);
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
-
-    if (this.layers.objects && texture) {
-      const desc = `${texture.replace(".png", "")}`;
-      ctx.font = "12px Arial";
-      ctx.fillStyle = "#ffffff";
-      this.screen.fillText(desc, x, y - pixels(12));
-      ctx.lineWidth = 1;
-    }
-
-    if (obj.points) {
-      const pdata = this.model.gameobjectpoints.get(obj.points);
-      const isRope = obj.type === "rope";
-      const isPoly = obj.type === "polygon";
-      const doPoly = isPoly && this.layers.polygons;
-      const doRope = isRope && this.layers.ropes;
-      const doBoth = doPoly || doRope;
-
-      const drawPoints = () => {
-        for (let i = 0; i < pdata.length; i++) {
-          this.point(pdata[i].x, pdata[i].y, selected ? "red" : "cyan");
-        }
-      };
-
-      const fillPolygon = () => {
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
-        ctx.beginPath();
-        this.screen.moveTo(pdata[0].x, pdata[0].y);
-        for (let i = 1; i < pdata.length; i++) {
-          this.screen.lineTo(pdata[i].x, pdata[i].y);
-        }
-        ctx.fill();
-      };
-
-      const drawRope = () => {
-        ctx.strokeStyle = selected ? "magenta" : "black";
-        ctx.beginPath();
-        this.screen.moveTo(pdata[0].x, pdata[0].y);
-        for (let i = 1; i < pdata.length; i++) {
-          this.screen.lineTo(pdata[i].x, pdata[i].y);
-        }
-        ctx.stroke();
-      };
-
-      doPoly && fillPolygon();
-      doRope && drawRope();
-      doBoth && drawPoints();
+      this.pixiAppStage.addChild(container);
+    } else {
+      // const sprite = sprites.get(key);
+      // sprite.position.set(x * 50, y * 50);
+      // sprite.alpha = obj.alpha;
+      // sprite.blendMode = blends[obj.blend] || 0;
+      // sprite.angle = rotation;
     }
   }
 
@@ -501,7 +442,7 @@ export default class Draw {
 
       const steps = 10;
       const delta = 1 / (steps - 1);
-      const points = [...Array(steps).keys()].map(i => {
+      const points = [...Array(steps).keys()].map((i) => {
         const angle = an1 + (an2 - an1) * delta * i;
         return new PIXI.Point(
           x * 50 + radius * 50 * Math.cos(angle),
@@ -548,7 +489,7 @@ export default class Draw {
         fontFamily: "Arial",
         fontSize: 10,
         fill: 0xffffff,
-        align: "center"
+        align: "center",
       });
       sprite.x = x * 50;
       sprite.y = y * 50;
@@ -565,7 +506,7 @@ export default class Draw {
     const calcPoints = () => {
       return [
         new PIXI.Point(sx * 50, sy * 50),
-        new PIXI.Point(ex * 50, ey * 50)
+        new PIXI.Point(ex * 50, ey * 50),
       ];
     };
     // pixi
@@ -607,7 +548,7 @@ export default class Draw {
 
   private connections() {
     const c = this.model.connections;
-    Object.values(c).forEach(v => {
+    Object.values(c).forEach((v) => {
       const { x, y, items } = v;
       const isSimple = items.length <= 2;
 
@@ -632,7 +573,7 @@ export default class Draw {
       this.ctx.fill();
     });
 
-    this.model.switches.forEach(v => {
+    this.model.switches.forEach((v) => {
       let path, sprite;
       path = this.model.get(v[0]);
       sprite = sprites.get(path);
@@ -656,7 +597,7 @@ export default class Draw {
       path && this.pathLabel(this.model.rails.get(path), "B2");
     });
 
-    this.model.joins.forEach(v => {
+    this.model.joins.forEach((v) => {
       let path, sprite;
       path = this.model.get(v[0]);
       // path && this.objectPath(path, hex2rgba("#9999994C"));
@@ -699,18 +640,17 @@ export default class Draw {
 
   // TODO: move to component
   private helpline() {
-    const text = this.hints.reduce(
-      (text, h: IHintLine) => text + h.tag + "&nbsp;" + h.text + "&ensp;",
-      ""
-    );
+    const text = this.hints
+      .reduce((text, h: IHintLine) => text + h.tag + " " + h.text + " ", "")
+      .trim();
     const hintLine = document.getElementById("hintline");
-    if (hintLine.innerHTML != text) hintLine.innerHTML = text;
+    if (hintLine.innerText != text) hintLine.innerText = text;
   }
 
   // copypaste from rail. make pixi plugin?
   private makePOT() {
-    const pot = Object.keys(this.atlas).filter(i => i.endsWith("_t.png"));
-    pot.forEach(name => {
+    const pot = Object.keys(this.atlas).filter((i) => i.endsWith("_t.png"));
+    pot.forEach((name) => {
       const tex = this.atlas[name];
       const res = tex.baseTexture.resource as PIXI.resources.ImageResource;
       const image: HTMLImageElement = res.source as HTMLImageElement;
@@ -733,7 +673,7 @@ export default class Draw {
   }
 
   private makeHPOT() {
-    const pot = Object.keys(this.atlas).filter(i => i.endsWith("_h.png"));
+    const pot = Object.keys(this.atlas).filter((i) => i.endsWith("_h.png"));
     const nextPowerOfTwo = (v: number) => {
       let p = 32;
       while (v > p) p *= 2;
@@ -743,7 +683,7 @@ export default class Draw {
     // find dimensions
     let canvasWidth = 0;
     let canvasHeight = 0;
-    pot.forEach(name => {
+    pot.forEach((name) => {
       const tex = this.atlas[name];
       tex.width > canvasWidth && (canvasWidth = tex.width);
       canvasHeight += tex.height;
@@ -761,7 +701,7 @@ export default class Draw {
 
     // draw textures and put them to atlas
     let offsetY = 0;
-    pot.forEach(name => {
+    pot.forEach((name) => {
       const tex = this.atlas[name];
       const res = tex.baseTexture.resource as PIXI.resources.ImageResource;
       const image: HTMLImageElement = res.source as HTMLImageElement;

@@ -5,7 +5,8 @@ import ISwitch from "./interfaces/ISwitch";
 import catRomSpline from "cat-rom-spline";
 import IGameObject from "./interfaces/IGameObject";
 
-import { observable } from "mobx";
+import { observable, action } from "mobx";
+import IKeyValue from "./interfaces/IKeyValue";
 
 const magic = 0x7ffffffe;
 const PIXELS_PER_UNIT = 50;
@@ -21,7 +22,7 @@ const distance = (x1: number, y1: number, x2: number, y2: number) =>
   Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 
 const includesAll = (needle: number[], haystack: number[]) =>
-  needle.every(v => haystack.includes(v));
+  needle.every((v) => haystack.includes(v));
 
 type ConnectionMap = {
   [index: string]: IConnection;
@@ -61,7 +62,7 @@ const findOne = <T>(
 
 export default class Model {
   public selectedConnection: string = null;
-  public selectedGameObject: string = null;
+  @observable public selectedGameObject: string = null;
   public selectedPointIndex: number = -1;
 
   public connections: Map<string, IConnection> = new Map(); // TODO: remove public access
@@ -88,15 +89,15 @@ export default class Model {
     const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
 
     const autojoins: IJoin[] = Array.from(this.connections.values())
-      .filter(c => c.items.length === 2)
-      .map(c => c.items as IJoin);
+      .filter((c) => c.items.length === 2)
+      .map((c) => c.items as IJoin);
 
     // convert to actual game scale, keep integer
     const pixels = (i: number) => Math.round(i * PIXELS_PER_UNIT || 0);
     const joins = Array.from(this.joins.values()).concat(autojoins);
 
-    const objects = JSON.parse(JSON.stringify(this.gameobjects)); // clone
-    objects.forEach((o: IGameObject) => {
+    const objects: IKeyValue[] = JSON.parse(JSON.stringify(this.gameobjects)); // clone
+    objects.forEach((o) => {
       if (o.points) {
         o.points = o.points === 0 ? [] : this.gameobjectpoints.get(o.points);
         o.points = o.points.map((p: Point) => [pixels(p.x), pixels(p.y)]);
@@ -124,7 +125,7 @@ export default class Model {
         pixels(isArc ? x : sx),
         pixels(isArc ? y : sy),
         isArc ? +a1.toFixed(3) : pixels(ex),
-        isArc ? +a2.toFixed(3) : pixels(ey)
+        isArc ? +a2.toFixed(3) : pixels(ey),
       ];
     };
 
@@ -133,7 +134,7 @@ export default class Model {
         rails: Array.from(this.rails.values()).map(encodeChunk),
         switches: this.switches,
         joins,
-        objects: objects
+        objects: objects,
       },
       null
       //, 2
@@ -156,7 +157,7 @@ export default class Model {
       switches: this.switches,
       joins: this.joins,
       gameobjects: this.gameobjects,
-      gameobjectpoints: Array.from(this.gameobjectpoints)
+      gameobjectpoints: Array.from(this.gameobjectpoints),
     });
     // );
   }
@@ -199,7 +200,7 @@ export default class Model {
   findConnection(x: number, y: number): string {
     return findOne(
       this.connections,
-      v => distance(x, y, v.x, v.y) < MIN_DISTANCE
+      (v) => distance(x, y, v.x, v.y) < MIN_DISTANCE
     );
   }
 
@@ -254,7 +255,7 @@ export default class Model {
 
     return findAll(
       this.rails,
-      v => insideXY(v.sx, v.sy) && insideXY(v.ex, v.ey)
+      (v) => insideXY(v.sx, v.sy) && insideXY(v.ex, v.ey)
     );
   }
 
@@ -279,55 +280,55 @@ export default class Model {
       return Math.abs(ab + bc - ac) < MIN_DISTANCE;
     };
 
-    return findAll(this.rails, v =>
+    return findAll(this.rails, (v) =>
       v.radius ? pointInArc(x, y, v) : pointInLine(x, y, v)
     );
   }
 
   deselect() {
-    this.rails.forEach(v => (v.meta.selected = false));
+    this.rails.forEach((v) => (v.meta.selected = false));
     this.dirty = true;
   }
 
   select(selection: string[]) {
-    selection.forEach(v => (this.rails.get(v).meta.selected = true));
+    selection.forEach((v) => (this.rails.get(v).meta.selected = true));
     this.dirty = true;
   }
 
   deleteSelected() {
     let ids = Array.from(this.rails.values())
-      .filter(i => i.meta.selected)
-      .map(i => i.meta.id);
-    ids = ids.concat(ids.map(i => i + 1)); // add reverse links
+      .filter((i) => i.meta.selected)
+      .map((i) => i.meta.id);
+    ids = ids.concat(ids.map((i) => i + 1)); // add reverse links
 
     // remove from rail storage
-    filter(this.rails, i => !i.meta.selected);
+    filter(this.rails, (i) => !i.meta.selected);
 
-    ids.forEach(id => {
+    ids.forEach((id) => {
       // remove from index, should use lodash.partition instead
       this.railsIndex.delete(id);
 
       // remove from joins and switches
-      filter(this.joins, i => !i.includes(id));
-      filter(this.switches, i => !i.includes(id));
+      filter(this.joins, (i) => !i.includes(id));
+      filter(this.switches, (i) => !i.includes(id));
 
       // remove from connections
-      this.connections.forEach(i => {
-        i.items = i.items.filter(v => v !== id);
+      this.connections.forEach((i) => {
+        i.items = i.items.filter((v) => v !== id);
       });
     });
     // delete empty connections
-    filter(this.connections, i => !i.items.length);
+    filter(this.connections, (i) => !i.items.length);
     this.dirty = true;
   }
 
   selectGroup(selection: string[]) {
     this.select(selection);
-    const selected = findAll(this.rails, i => i.meta.selected);
-    const deselected = findAll(this.rails, i => !i.meta.selected);
-    selected.forEach(s => {
+    const selected = findAll(this.rails, (i) => i.meta.selected);
+    const deselected = findAll(this.rails, (i) => !i.meta.selected);
+    selected.forEach((s) => {
       deselected.forEach(
-        d =>
+        (d) =>
           this.rails.get(s).meta.block === this.rails.get(d).meta.block &&
           (this.rails.get(d).meta.selected = true)
       );
@@ -337,12 +338,12 @@ export default class Model {
 
   group() {
     const groupBlockId = this.blockId++;
-    this.rails.forEach(v => v.meta.selected && (v.meta.block = groupBlockId));
+    this.rails.forEach((v) => v.meta.selected && (v.meta.block = groupBlockId));
     this.dirty = true;
   }
 
   ungroup() {
-    this.rails.forEach(v => {
+    this.rails.forEach((v) => {
       if (v.meta.selected) {
         const groupBlockId = this.blockId++;
         v.meta.block = groupBlockId;
@@ -356,14 +357,14 @@ export default class Model {
     this.blockId = 1;
     const indices: Map<number, number> = new Map();
 
-    this.rails.forEach(v => {
+    this.rails.forEach((v) => {
       const curr = v.meta.block;
       if (!indices.has(curr)) {
         indices.set(curr, this.blockId++);
       }
     });
 
-    this.rails.forEach(v => {
+    this.rails.forEach((v) => {
       v.meta.block = indices.get(v.meta.block);
     });
     this.dirty = true;
@@ -403,33 +404,33 @@ export default class Model {
   findJoin(id: number): string {
     return findOne(
       this.joins,
-      j => (j[0] & magic) === id || (j[1] & magic) === id
+      (j) => (j[0] & magic) === id || (j[1] & magic) === id
     );
   }
 
   findSwitch(id: number): string {
-    return findOne(this.switches, v => v.map(i => i & magic).includes(id));
+    return findOne(this.switches, (v) => v.map((i) => i & magic).includes(id));
   }
 
   getSelectedIds(): number[] {
     return Array.from(this.rails.values())
-      .filter(v => v.meta.selected)
-      .map(v => v.meta.id)
+      .filter((v) => v.meta.selected)
+      .map((v) => v.meta.id)
       .sort();
   }
 
   getAdjacentEndpoints(ids: number[]): number[] {
     // converting object id to points id here
     // objects have odd ids, points: start = id, end = id + 1
-    const connection = Array.from(this.connections.values()).find(v =>
+    const connection = Array.from(this.connections.values()).find((v) =>
       includesAll(
         ids,
-        v.items.map(i => i & magic)
+        v.items.map((i) => i & magic)
       )
     );
 
     return connection
-      ? connection.items.filter(i => ids.includes(i & magic))
+      ? connection.items.filter((i) => ids.includes(i & magic))
       : null;
   }
 
@@ -479,7 +480,7 @@ export default class Model {
       const swid = this.findSwitch(selection[0]);
       const sw = swid ? this.switches.get(swid) : null;
       if (sw) {
-        const oldType = sw.findIndex(i => (i & magic) === selection[0]);
+        const oldType = sw.findIndex((i) => (i & magic) === selection[0]);
         const tmp = sw[newType];
         sw[newType] = sw[oldType];
         sw[oldType] = tmp;
@@ -494,7 +495,7 @@ export default class Model {
       x,
       y,
       type: "none",
-      zindex: 0
+      zindex: 0,
     };
 
     const uuid = UUID();
@@ -503,16 +504,19 @@ export default class Model {
     return uuid;
   }
 
-  moveGameObject(objuuid: string, x: number, y: number) {
+  @action moveGameObject(objuuid: string, x: number, y: number) {
     const obj = this.gameobjects.get(objuuid);
     obj.x = x;
     obj.y = y;
   }
 
-  updateGameObjectProperties(objuuid: string, values: IGameObject) {
-    const old = this.gameobjects.get(objuuid);
-    const replacement = { ...old, ...values };
-    this.gameobjects.set(objuuid, replacement);
+  @action updateGameObjectProperties(objuuid: string, values: IGameObject) {
+    const old: IGameObject = this.gameobjects.get(objuuid);
+    Object.assign(old, values);
+    Object.keys(old).forEach(
+      // delete old values
+      (key) => !values.hasOwnProperty(key) && delete (old as IKeyValue)[key]
+    );
   }
 
   cloneGameObject(): string {
@@ -540,7 +544,7 @@ export default class Model {
     const d = 1.28 * 0.5;
     return findOne(
       this.gameobjects,
-      o => inside(x, o.x - d, o.x + d) && inside(y, o.y - d, o.y + d)
+      (o) => inside(x, o.x - d, o.x + d) && inside(y, o.y - d, o.y + d)
     );
   }
 
@@ -573,7 +577,7 @@ export default class Model {
     const pid = this.gameobjects.get(this.selectedGameObject).points;
     const points = this.gameobjectpoints.get(pid);
 
-    return points.findIndex(p => distance(x, y, p.x, p.y) < MIN_DISTANCE);
+    return points.findIndex((p) => distance(x, y, p.x, p.y) < MIN_DISTANCE);
   }
 
   movePoint(x: number, y: number) {
@@ -650,7 +654,7 @@ export default class Model {
       console.log("Cant interpolate at this point");
       return;
     }
-    const pointArr = points.slice(index - 2, index + 2).map(p => [p.x, p.y]);
+    const pointArr = points.slice(index - 2, index + 2).map((p) => [p.x, p.y]);
     const options = { samples: 3, knot: 0.5 };
 
     const spline = catRomSpline;

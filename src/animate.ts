@@ -1,4 +1,4 @@
-import Draw from "./draw";
+import Draw from "./PIXI/draw";
 import Model from "./model";
 
 export default class Animate {
