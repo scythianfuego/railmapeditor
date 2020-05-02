@@ -15,20 +15,12 @@ import { autorun, reaction, observe } from "mobx";
 
 import * as PIXI from "pixi.js";
 import TileMesh from "./tilemesh";
+import POT from "./pot";
 type PIXIAtlas = {
   [key: string]: PIXI.Texture;
 };
 
 const TAU = 2 * Math.PI;
-const hex2rgba = (hex: string) => {
-  const [r, g, b, a] = hex.match(/\w\w/g).map((x) => parseInt(x, 16));
-  return `rgba(${r},${g},${b},${a ? a * 0.00392156862745098 : 1})`;
-};
-
-const colors = {
-  background: "#000",
-  gridBackground: "#553835",
-};
 
 const blends: {
   [key: string]: PIXI.BLEND_MODES;
@@ -47,10 +39,6 @@ const RAIL = "rails.png";
 export default class Draw {
   private ctx: CanvasRenderingContext2D;
 
-  private imgAtlas: HTMLImageElement;
-  private textureData: any;
-
-  private transformHash: number = 0;
   private gridCanvas: HTMLCanvasElement;
   private modelCanvas: HTMLCanvasElement;
 
@@ -60,43 +48,6 @@ export default class Draw {
   private pixiGrid: PIXI.Container;
   private pixiCursor: PIXI.Graphics;
   private pixiSelectionFrame: PIXI.Graphics;
-
-  private screen = {
-    moveTo: (x: number, y: number) => this.ctx.moveTo(sx(x), sy(y)),
-    lineTo: (x: number, y: number) => this.ctx.lineTo(sx(x), sy(y)),
-    arc: (
-      x: number,
-      y: number,
-      radius: number,
-      a1: number,
-      a2: number,
-      ccw: boolean = false
-    ) => this.ctx.arc(sx(x), sy(y), scale(radius), a1, a2, ccw),
-    circle: (x: number, y: number, radius: number) =>
-      this.ctx.arc(sx(x), sy(y), radius, 0, TAU),
-    fillText: (text: string, x: number, y: number, maxWidth?: number) =>
-      this.ctx.fillText(text, sx(x), sy(y), maxWidth),
-    fillRect: (x: number, y: number, w: number, h: number) =>
-      this.ctx.fillRect(sx(x), sy(y), scale(w), scale(h)),
-    strokeRect: (x: number, y: number, w: number, h: number) =>
-      this.ctx.strokeRect(sx(x), sy(y), scale(w), scale(h)),
-    roundRect: (x: number, y: number, w: number, h: number, r: number) => {
-      r = w < r * 2 ? w * 0.5 : r;
-      r = h < r * 2 ? h * 0.5 : r;
-      // r = scale(r);
-      // x = sx(x);
-      // y = sy(y);
-      // w = scale(w);
-      // h = scale(h);
-      this.ctx.beginPath();
-      this.ctx.moveTo(x + r, y);
-      this.ctx.arcTo(x + w, y, x + w, y + h, r);
-      this.ctx.arcTo(x + w, y + h, x, y + h, r);
-      this.ctx.arcTo(x, y + h, x, y, r);
-      this.ctx.arcTo(x, y, x + w, y, r);
-      this.ctx.closePath();
-    },
-  };
 
   // state variables, refactor
   private state: IState = null;
@@ -108,7 +59,7 @@ export default class Draw {
   private zoom: number;
   private panX: number;
   private panY: number;
-  private snapPoint: number[];
+  private snapPoint: number[] = [0, 0];
   private layers: IKeyValue;
 
   private labelCache: Map<
@@ -119,23 +70,10 @@ export default class Draw {
   private gameobjectview: GameObjectView;
 
   constructor(
-    private canvas: HTMLCanvasElement,
     private model: Model,
     private app: PIXI.Application,
     resources: Partial<Record<string, PIXI.LoaderResource>>
   ) {
-    this.canvas = canvas;
-    this.gridCanvas = document.createElement("canvas");
-    this.gridCanvas.width = canvas.width;
-    this.gridCanvas.height = canvas.height;
-
-    this.modelCanvas = document.createElement("canvas");
-    this.modelCanvas.width = canvas.width;
-    this.modelCanvas.height = canvas.height;
-    this.ctx = this.modelCanvas.getContext("2d");
-
-    this.ctx.translate(0.5, 0.5);
-
     // moveable and zoomable parts of canvas
     //(state: K, action?: Action<K>) => void;
     const subscribeListener: Listener<IState> = (state: IState) => {
@@ -151,28 +89,18 @@ export default class Draw {
         "mouse",
         "snapPoint",
       ]);
-      this.canvas.style.cursor = state.mouse.pan ? "grabbing" : "pointer";
+      // this.canvas.style.cursor = state.mouse.pan ? "grabbing" : "pointer";
+      this.all();
     };
 
     storeInstance.subscribe(subscribeListener);
-
-    const image = new Image();
-    image.src = `assets/textures.png`;
-    image.onload = () => (this.imgAtlas = image);
-
-    fetch("assets/textures.json")
-      .then((response) => response.json())
-      .then((obj) => {
-        this.textureData = obj;
-      });
 
     // PIXI
     this.app = app;
     this.pixiAppStage = new PIXI.Container();
     this.app.stage.addChild(this.pixiAppStage);
     this.atlas = resources.atlas.textures;
-    this.makePOT();
-    this.makeHPOT();
+    new POT(this.atlas); // make power-of-two textures
 
     autorun(() => {
       this.model.rails.forEach((obj: IRail, key: string) =>
@@ -212,18 +140,10 @@ export default class Draw {
   }
 
   public all() {
-    this.model.dirty = true;
-
-    this.ctx = this.modelCanvas.getContext("2d");
     this.grid();
 
     this.labelCache.forEach((v) => this.label(v.x, v.y, v.text));
     this.connections();
-
-    // TODO: remove variables
-    // this.model.dirty = false;
-    // this.transformHash = ts.hash();
-
     this.cursor();
     this.selectionFrame();
     this.helpline();
@@ -240,10 +160,6 @@ export default class Draw {
     }
 
     const [x, y] = this.snapPoint;
-    this.ctx.fillStyle = "red";
-    this.ctx.beginPath();
-    this.ctx.arc(sx(x), sy(y), 3, 0, 6.28);
-    this.ctx.fill();
 
     // pixi
     if (!this.pixiCursor) {
@@ -300,132 +216,6 @@ export default class Draw {
 
     this.pixiAppStage.position.set(ts.panX, ts.panY);
     this.pixiAppStage.scale.set(ts.zoom / 50);
-  }
-
-  private updateGameObject(obj: IGameObject, key: string) {
-    let { x, y, texture, rotation, points, outline, type } = obj; // refactor object frame out
-    const selected = key === this.model.selectedGameObject;
-    const sprite = sprites.get(key);
-    sprite.position.set(x * 50, y * 50);
-    sprite.alpha = obj.alpha ? obj.alpha : 1;
-    sprite.blendMode = blends[obj.blend] || 0;
-    sprite.angle = rotation || 0;
-    if (selected) {
-      // sprite.tint
-      // strokeStyle = selected ? "#ff0000" : "#ccc";
-    }
-
-    const desc = `${texture.replace(".png", "")}`;
-    // text at x, y - pixels(12))
-  }
-
-  private gameObject(obj: IGameObject, key: string) {
-    type Frame = { x: number; y: number; w: number; h: number };
-
-    let { x, y, rotation, alpha, blend } = obj; // small change
-    let { texture, points, outline, type } = obj; // rebuild
-    if (type === "signal") {
-      texture = "signalred.png";
-    }
-
-    // pixi
-
-    // if type changed destroy
-    if (!sprites.has(key)) {
-      let container: any = new PIXI.Container();
-
-      if (points) {
-        container = new PIXI.Container();
-        const pdata = this.model.gameobjectpoints.get(points);
-        const isRope = type === "rope";
-        const isPoly = type === "polygon";
-        const doPoly = isPoly; // && this.layers.polygons;
-        const doRope = isRope || (isPoly && outline); // && this.layers.ropes;
-        const doBoth = doPoly || doRope;
-
-        const drawPoints = () => {
-          // for (let i = 0; i < pdata.length; i++) {
-          //   this.point(pdata[i].x, pdata[i].y, selected ? "red" : "cyan");
-          // }
-        };
-
-        const fillPolygon = () => {
-          const points = pdata.map((p) => new PIXI.Point(p.x * 50, p.y * 50));
-          const fillTexture = this.getTexture(texture);
-          const mesh = new TileMesh(fillTexture, points);
-          container.addChild(mesh);
-        };
-
-        const drawRope = () => {
-          const points = pdata.map((p) => new PIXI.Point(p.x * 50, p.y * 50));
-          const ropeTexture = this.getTexture(isPoly ? outline : texture);
-          const rope = new PIXI.SimpleRope(ropeTexture, points, 1);
-          container.addChild(rope);
-        };
-
-        doPoly && fillPolygon();
-        doRope && drawRope();
-        doBoth && drawPoints();
-      } else {
-        const sprite = new PIXI.Sprite(this.getTexture(texture));
-        sprite.anchor.set(0.5);
-        sprite.angle = rotation;
-        container.position.set(x * 50, y * 50);
-        container.addChild(sprite);
-        sprites.set(key, container);
-      }
-      container.alpha = alpha ? alpha : 1;
-      container.blendMode = blends[blend] || 0;
-      this.pixiAppStage.addChild(container);
-
-      if (true || this.layers.objects) {
-        // fix = observe
-
-        const px = 50; // pixels per unit
-        let width = 64;
-        let height = 64;
-        if (obj.frame) {
-          width = obj.frame.w;
-          height = obj.frame.h;
-
-          const ow = Number(obj.width) || 0;
-          const oh = Number(obj.height) || 0;
-          if (ow !== 0) {
-            width = ow;
-            height =
-              obj.frame && oh !== 0 ? oh : (width * obj.frame.h) / obj.frame.w;
-          }
-        }
-        const w = scale(width) / px;
-        const h = scale(height) / px;
-
-        const border = new PIXI.Graphics();
-        border.beginFill(0xff0000, 1);
-        if (!points) {
-          border.drawRect(0, 0, w, h);
-        } else {
-          border.drawCircle(w / 2, h / 2, 1.28 * 50);
-        }
-        border.endFill();
-        container.addChild(border);
-      }
-
-      this.pixiAppStage.addChild(container);
-    } else {
-      // const sprite = sprites.get(key);
-      // sprite.position.set(x * 50, y * 50);
-      // sprite.alpha = obj.alpha;
-      // sprite.blendMode = blends[obj.blend] || 0;
-      // sprite.angle = rotation;
-    }
-  }
-
-  private point(x: number, y: number, style?: string, size?: number) {
-    this.ctx.lineWidth = 1;
-    this.ctx.fillStyle = style ? style : "cyan";
-    this.ctx.beginPath();
-    this.ctx.arc(sx(x), sy(y), size ? size : 3, 0, TAU);
-    this.ctx.fill();
   }
 
   private arc(obj: IRail, key: string) {
@@ -535,9 +325,7 @@ export default class Draw {
   }
 
   private object(obj: IRail, key: string) {
-    this.ctx.save();
     obj.radius ? this.arc(obj, key) : this.line(obj, key);
-    this.ctx.restore();
   }
 
   private pathLabel(path: IRail, what: string) {
@@ -567,10 +355,10 @@ export default class Draw {
         });
       }
 
-      this.ctx.fillStyle = color;
-      this.ctx.beginPath();
-      this.screen.circle(x, y, radius);
-      this.ctx.fill();
+      // this.ctx.fillStyle = color;
+      // this.ctx.beginPath();
+      // this.screen.circle(x, y, radius);
+      // this.ctx.fill();
     });
 
     this.model.switches.forEach((v) => {
@@ -645,92 +433,5 @@ export default class Draw {
       .trim();
     const hintLine = document.getElementById("hintline");
     if (hintLine.innerText != text) hintLine.innerText = text;
-  }
-
-  // copypaste from rail. make pixi plugin?
-  private makePOT() {
-    const pot = Object.keys(this.atlas).filter((i) => i.endsWith("_t.png"));
-    pot.forEach((name) => {
-      const tex = this.atlas[name];
-      const res = tex.baseTexture.resource as PIXI.resources.ImageResource;
-      const image: HTMLImageElement = res.source as HTMLImageElement;
-      const { x, y, width, height } = tex.frame;
-
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      canvas
-        .getContext("2d")
-        .drawImage(image, x, y, width, height, 0, 0, width, height);
-
-      name = name.replace("_t.png", "").replace("_h.png", "") + ".png";
-      const baseTexture = new PIXI.BaseTexture(
-        new PIXI.resources.CanvasResource(canvas)
-      );
-      this.atlas[name] = new PIXI.Texture(baseTexture);
-    });
-    console.log(`POT tiled texture count: ${pot.length}`);
-  }
-
-  private makeHPOT() {
-    const pot = Object.keys(this.atlas).filter((i) => i.endsWith("_h.png"));
-    const nextPowerOfTwo = (v: number) => {
-      let p = 32;
-      while (v > p) p *= 2;
-      return p;
-    };
-
-    // find dimensions
-    let canvasWidth = 0;
-    let canvasHeight = 0;
-    pot.forEach((name) => {
-      const tex = this.atlas[name];
-      tex.width > canvasWidth && (canvasWidth = tex.width);
-      canvasHeight += tex.height;
-    });
-    canvasHeight = nextPowerOfTwo(canvasHeight);
-
-    // make canvas and a base texture
-    const canvas = document.createElement("canvas");
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    const context = canvas.getContext("2d");
-    const baseTexture = new PIXI.BaseTexture(
-      new PIXI.resources.CanvasResource(canvas)
-    );
-
-    // draw textures and put them to atlas
-    let offsetY = 0;
-    pot.forEach((name) => {
-      const tex = this.atlas[name];
-      const res = tex.baseTexture.resource as PIXI.resources.ImageResource;
-      const image: HTMLImageElement = res.source as HTMLImageElement;
-
-      let offsetX = 0;
-      const { x, y, width, height } = tex.frame;
-      while (offsetX + width <= canvasWidth) {
-        context.drawImage(
-          image,
-          x,
-          y,
-          width,
-          height,
-          offsetX,
-          offsetY,
-          width,
-          height
-        );
-        offsetX += width;
-      }
-
-      // create texture frames
-      name = name.replace("_h.png", "") + ".png";
-      const frame = new PIXI.Rectangle(0, offsetY, canvasWidth, height);
-      this.atlas[name] = new PIXI.Texture(baseTexture, frame);
-
-      offsetY += height;
-    });
-
-    console.log(`POT horizontal texture size: ${canvasWidth}x${canvasHeight}`);
   }
 }

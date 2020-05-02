@@ -3,7 +3,7 @@ import Model from "../model";
 import IGameObject from "../interfaces/IGameObject";
 import IKeyValue from "../interfaces/IKeyValue";
 
-import { reaction, IReactionDisposer } from "mobx";
+import { observe, reaction, IReactionDisposer } from "mobx";
 import * as PIXI from "pixi.js";
 import TileMesh from "./tilemesh";
 
@@ -18,6 +18,7 @@ type GoSprites = {
 
 const views: Map<string, GoSprites> = new Map();
 const disposers: Map<string, IReactionDisposer[]> = new Map();
+const pointsIndex: Map<number, string> = new Map();
 
 type GoRecord = {
   key: string;
@@ -41,53 +42,106 @@ export default class GameObjectView {
     private pixiAppStage: PIXI.Container,
     private resources: Partial<Record<string, PIXI.LoaderResource>>
   ) {
-    reaction(
-      () => this.model.gameobjects.size,
-      () => {
-        const unused = new Set(Object.keys(views));
+    observe(this.model.gameobjects, (change) => {
+      if (change.type === "add") {
+        const obj = change.newValue;
+        const key = change.name;
 
-        this.model.gameobjects.forEach((obj: IGameObject, key: string) => {
-          unused.delete(key);
-          if (views.has(key)) {
-            return; // reactions are already set
-          }
-          const record: GoRecord = { obj, key };
+        const record: GoRecord = { obj, key };
+        this.gameObject(record); // create
 
-          this.gameObject(record); // create
+        const reactions = [
+          [() => obj.type, () => this.changeType(record)],
+          [() => obj.x, () => this.changeX(record)],
+          [() => obj.y, () => this.changeY(record)],
+          [() => obj.texture, () => this.changeTexture(record)],
+          [() => obj.rotation, () => this.changeRotation(record)],
+          [() => obj.alpha, () => this.changeAlpha(record)],
+          [() => obj.blend, () => this.changeBlend(record)],
+          [() => obj.points, () => this.changePoints(record)],
+          [
+            () => this.model.selectedGameObject,
+            () => this.changeSelection(record, this.model.selectedGameObject),
+          ],
+        ].map(([expression, effect]) => reaction(expression, effect));
 
-          const reactions = [
-            [() => obj.type, () => this.changeType(record)],
-            [() => obj.x, () => this.changeX(record)],
-            [() => obj.y, () => this.changeY(record)],
-            [() => obj.texture, () => this.changeTexture(record)],
-            [() => obj.rotation, () => this.changeRotation(record)],
-            [() => obj.alpha, () => this.changeAlpha(record)],
-            [() => obj.blend, () => this.changeBlend(record)],
-          ].map(([expression, effect]) => reaction(expression, effect));
-
-          disposers.set(key, reactions);
-        });
-
-        // garbage collector
-        unused.forEach((key: string) => {
-          console.log("Deleted" + key); // create go here
-          disposers.get(key).forEach((dispose) => dispose());
-          disposers.delete(key);
-
-          // delete sprites
-          const view = views.get(key);
-          this.destroyView(key);
-        });
+        disposers.set(key, reactions);
+        console.log("Added" + key);
       }
-    );
 
-    reaction(
-      () => this.model.selectedGameObject,
-      () => this.changeSelection(this.model.selectedGameObject)
-    );
+      if (change.type === "delete") {
+        const key = change.name;
+        console.log("Deleted" + key); // create go here
+        disposers.get(key).forEach((dispose) => dispose());
+        disposers.delete(key);
+        this.destroyView(key); // delete sprites
+      }
+    });
+
+    // reaction(
+    //   () => this.model.selectedGameObject,
+    //   () => this.changeSelection(this.model.selectedGameObject)
+    // );
+
+    observe(this.model.gameobjectpoints, (change) => {
+      // if points are added? so what?
+      // check if points are used?
+      // when points are added, make reaction (link object?)
+      if (change.type === "add") {
+        const index = change.name; // id
+        const points = change.newValue;
+        const key = pointsIndex.get(index);
+        const obj = this.model.gameobjects.get(key);
+        reaction(
+          () => points.length,
+          () => this.updatePoints({ key, obj })
+        );
+      }
+
+      if (change.type === "delete") {
+        const index = change.name;
+        const key = pointsIndex.get(index);
+        if (key) {
+          const view = views.get(key);
+          const points = view.points;
+          points && points.destroy();
+          view.points = null;
+        }
+      }
+    });
   }
 
   // reactions
+  private updatePoints(r: GoRecord) {
+    // redraw points
+    const view = this.view(r);
+    const pdata = this.model.gameobjectpoints.get(r.obj.points);
+    const points = new PIXI.Graphics();
+    points.lineStyle(1, 0x00ffff);
+    // this.point( selected ? "red" : "cyan");
+    points.moveTo(pdata[0].x * 50, pdata[0].x * 50);
+    for (let i = 1; i < pdata.length; i++) {
+      points.lineTo(pdata[i].x * 50, pdata[i].y * 50);
+    }
+    points.beginFill(0xffff00);
+    for (let i = 0; i < pdata.length; i++) {
+      points.drawRect(pdata[i].x * 50 - 5, pdata[i].y * 50 - 5, 10, 10);
+    }
+    points.endFill();
+    view.points && view.points.destroy();
+    view.points = points;
+    view.points && view.box.addChild(view.points);
+    // redraw ropes
+  }
+
+  private changePoints(r: GoRecord) {
+    // reindex
+
+    const index = r.obj.points;
+    const key = r.key;
+    index === 0 ? pointsIndex.delete(index) : pointsIndex.set(index, key);
+  }
+
   private changeType(r: GoRecord) {
     console.log("GO type change"); // recreate sprites here
     this.destroyView(r.key);
@@ -133,8 +187,6 @@ export default class GameObjectView {
     sprite && (sprite.blendMode = blends[r.obj.blend] || 0);
   }
 
-  private changePoints(r: GoRecord) {}
-
   private changeOutline(r: GoRecord) {
     const view = this.view(r);
     if (view.rope && r.obj.hasOutline) {
@@ -143,17 +195,11 @@ export default class GameObjectView {
     }
   }
 
-  private changeSelection(key: string) {
-    views.forEach((v) => {
-      v.border && (v.border.tint = 0xffffff);
-      v.sprite && (v.sprite.tint = 0xffffff);
-    });
-
-    const selected = views.get(key);
-    if (selected) {
-      selected.border && (selected.border.tint = 0x00ff00);
-      selected.sprite && (selected.sprite.tint = 0x00ff00);
-    }
+  private changeSelection(r: GoRecord, selectedKey: string) {
+    const selected = views.get(r.key);
+    const tint = r.key === selectedKey ? 0x00ff00 : 0xffffff;
+    selected.border && (selected.border.tint = tint);
+    selected.sprite && (selected.sprite.tint = tint);
   }
 
   // helpers
@@ -239,7 +285,15 @@ export default class GameObjectView {
         // for (let i = 0; i < pdata.length; i++) {
         //   this.point(pdata[i].x, pdata[i].y, selected ? "red" : "cyan");
         // }
-        // view.points = PIXI.Graphics
+        const points = new PIXI.Graphics();
+        points.beginFill(0x00ffff);
+        // this.point( selected ? "red" : "cyan");
+
+        for (let i = 0; i < pdata.length; i++) {
+          points.drawCircle(pdata[i].x * 50, pdata[i].y * 50, 10);
+        }
+        points.endFill();
+        view.points = points;
       };
 
       const fillPolygon = () => {

@@ -26,12 +26,8 @@ class Transform {
   public ratioY = (y: number) =>
     this.clamp((y - this.panY) / (this.gridHeight * this.zoom), 0, 1);
 
-  private hf = (x: number) => (x * 76283 + 43633) | 0;
-  public hash = () =>
-    (this.hf(this.zoom) + this.hf(this.panX) + this.hf(this.panY)) | 0;
-
   constructor() {
-    store.subscribe(state => copy(state, this, ["zoom", "panX", "panY"]));
+    store.subscribe((state) => copy(state, this, ["zoom", "panX", "panY"]));
   }
 
   snap(coords: number[]) {

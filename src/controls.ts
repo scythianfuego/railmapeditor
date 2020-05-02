@@ -23,87 +23,87 @@ const AG = config.actionGroups;
 
 const tools: Tools = {
   [A.LINES]: [
-    point => objects.line(point, 0),
-    point => objects.line(point, 1),
-    point => objects.line(point, 2),
-    point => objects.line(point, 3),
-    point => objects.line(point, 4),
-    point => objects.line(point, 5)
+    (point) => objects.line(point, 0),
+    (point) => objects.line(point, 1),
+    (point) => objects.line(point, 2),
+    (point) => objects.line(point, 3),
+    (point) => objects.line(point, 4),
+    (point) => objects.line(point, 5),
   ],
   [A.HLINES]: [
-    point => objects.line3(point, 0),
-    point => objects.line3(point, 1),
-    point => objects.line3(point, 2),
-    point => objects.line3(point, 3),
-    point => objects.line3(point, 4),
-    point => objects.line3(point, 5)
+    (point) => objects.line3(point, 0),
+    (point) => objects.line3(point, 1),
+    (point) => objects.line3(point, 2),
+    (point) => objects.line3(point, 3),
+    (point) => objects.line3(point, 4),
+    (point) => objects.line3(point, 5),
   ],
   [A.DLINES]: [
-    point => objects.line2(point, 0),
-    point => objects.line2(point, 1),
-    point => objects.line2(point, 2),
-    point => objects.line2(point, 3),
-    point => objects.line2(point, 4),
-    point => objects.line2(point, 5)
+    (point) => objects.line2(point, 0),
+    (point) => objects.line2(point, 1),
+    (point) => objects.line2(point, 2),
+    (point) => objects.line2(point, 3),
+    (point) => objects.line2(point, 4),
+    (point) => objects.line2(point, 5),
   ],
   [A.CURVE]: [
-    point => objects.longArc(point, 0),
-    point => objects.longArc(point, 1),
-    point => objects.longArc(point, 2),
-    point => objects.longArc(point, 3),
-    point => objects.longArc(point, 4),
-    point => objects.longArc(point, 5)
+    (point) => objects.longArc(point, 0),
+    (point) => objects.longArc(point, 1),
+    (point) => objects.longArc(point, 2),
+    (point) => objects.longArc(point, 3),
+    (point) => objects.longArc(point, 4),
+    (point) => objects.longArc(point, 5),
   ],
   [A.CURVE1]: [
-    point => objects.longArc2(point, 0),
-    point => objects.longArc2(point, 1),
-    point => objects.longArc2(point, 2),
-    point => objects.longArc2(point, 3),
-    point => objects.longArc2(point, 4),
-    point => objects.longArc2(point, 5),
-    point => objects.longArc3(point, 0),
-    point => objects.longArc3(point, 1),
-    point => objects.longArc3(point, 2),
-    point => objects.longArc3(point, 3),
-    point => objects.longArc3(point, 4),
-    point => objects.longArc3(point, 5)
+    (point) => objects.longArc2(point, 0),
+    (point) => objects.longArc2(point, 1),
+    (point) => objects.longArc2(point, 2),
+    (point) => objects.longArc2(point, 3),
+    (point) => objects.longArc2(point, 4),
+    (point) => objects.longArc2(point, 5),
+    (point) => objects.longArc3(point, 0),
+    (point) => objects.longArc3(point, 1),
+    (point) => objects.longArc3(point, 2),
+    (point) => objects.longArc3(point, 3),
+    (point) => objects.longArc3(point, 4),
+    (point) => objects.longArc3(point, 5),
   ],
   [A.SIDEA]: [
-    point => objects.shortArc(point, 0),
-    point => objects.shortArc(point, 1),
-    point => objects.shortArc(point, 2),
-    point => objects.shortArc(point, 3),
-    point => objects.shortArc(point, 4),
-    point => objects.shortArc(point, 5),
-    point => objects.shortArc2(point, 0),
-    point => objects.shortArc2(point, 1),
-    point => objects.shortArc2(point, 2),
-    point => objects.shortArc2(point, 3),
-    point => objects.shortArc2(point, 4),
-    point => objects.shortArc2(point, 5)
+    (point) => objects.shortArc(point, 0),
+    (point) => objects.shortArc(point, 1),
+    (point) => objects.shortArc(point, 2),
+    (point) => objects.shortArc(point, 3),
+    (point) => objects.shortArc(point, 4),
+    (point) => objects.shortArc(point, 5),
+    (point) => objects.shortArc2(point, 0),
+    (point) => objects.shortArc2(point, 1),
+    (point) => objects.shortArc2(point, 2),
+    (point) => objects.shortArc2(point, 3),
+    (point) => objects.shortArc2(point, 4),
+    (point) => objects.shortArc2(point, 5),
   ],
   [A.ARC2A]: [
-    point => objects.arc2a(point, 0),
-    point => objects.arc2a(point, 1),
-    point => objects.arc2a(point, 2),
-    point => objects.arc2a(point, 3),
-    point => objects.arc2a(point, 4),
-    point => objects.arc2a(point, 5),
-    point => objects.arc2b(point, 0),
-    point => objects.arc2b(point, 1),
-    point => objects.arc2b(point, 2),
-    point => objects.arc2b(point, 3),
-    point => objects.arc2b(point, 4),
-    point => objects.arc2b(point, 5)
+    (point) => objects.arc2a(point, 0),
+    (point) => objects.arc2a(point, 1),
+    (point) => objects.arc2a(point, 2),
+    (point) => objects.arc2a(point, 3),
+    (point) => objects.arc2a(point, 4),
+    (point) => objects.arc2a(point, 5),
+    (point) => objects.arc2b(point, 0),
+    (point) => objects.arc2b(point, 1),
+    (point) => objects.arc2b(point, 2),
+    (point) => objects.arc2b(point, 3),
+    (point) => objects.arc2b(point, 4),
+    (point) => objects.arc2b(point, 5),
   ],
   [A.LONG]: [
-    point => objects.infiniLine(point, 0),
-    point => objects.infiniLine(point, 1),
-    point => objects.infiniLine(point, 2),
-    point => objects.infiniLine(point, 3),
-    point => objects.infiniLine(point, 4),
-    point => objects.infiniLine(point, 5)
-  ]
+    (point) => objects.infiniLine(point, 0),
+    (point) => objects.infiniLine(point, 1),
+    (point) => objects.infiniLine(point, 2),
+    (point) => objects.infiniLine(point, 3),
+    (point) => objects.infiniLine(point, 4),
+    (point) => objects.infiniLine(point, 5),
+  ],
 };
 
 export default class Controls {
@@ -129,13 +129,15 @@ export default class Controls {
 
     const canvas = document.querySelector("canvas");
     const parent = canvas.parentElement; // canvas can't have focus, no keyboard events
-    parent.addEventListener("keyup", event => this.onKeyUp(event.keyCode));
-    parent.addEventListener("keydown", event => this.onKeyDown(event.keyCode));
-    canvas.addEventListener("contextmenu", event => event.preventDefault());
-    canvas.addEventListener("mousemove", event => this.onMouseMove(event));
-    canvas.addEventListener("mousedown", event => this.onMouseDown(event));
-    canvas.addEventListener("mouseup", event => this.onMouseUp(event));
-    canvas.addEventListener("wheel", event => this.onWheel(event));
+    parent.addEventListener("keyup", (event) => this.onKeyUp(event.keyCode));
+    parent.addEventListener("keydown", (event) =>
+      this.onKeyDown(event.keyCode)
+    );
+    canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+    canvas.addEventListener("mousemove", (event) => this.onMouseMove(event));
+    canvas.addEventListener("mousedown", (event) => this.onMouseDown(event));
+    canvas.addEventListener("mouseup", (event) => this.onMouseUp(event));
+    canvas.addEventListener("wheel", (event) => this.onWheel(event));
 
     this.propertyEditor = <PropertyEditor>(
       document.querySelector("property-box")
@@ -148,7 +150,6 @@ export default class Controls {
     this.layerList.data = config.layers;
     this.layerList.addEventListener("change", () => {
       store.setState({ layers: this.layerList.userInput });
-      this.model.dirty = true; // store?
     });
 
     this.runAction(mode);
@@ -156,12 +157,12 @@ export default class Controls {
 
   applyHintsFilter(mode: number) {
     const result = defaultHints
-      .map(a => ({ ...a })) // copy
-      .filter(i => i.show.includes(mode));
+      .map((a) => ({ ...a })) // copy
+      .filter((i) => i.show.includes(mode));
 
-    const selectedItem = result.find(i => i.on === mode);
+    const selectedItem = result.find((i) => i.on === mode);
     selectedItem && (selectedItem.selected = true);
-    const activeItem = result.find(i => i.tag === this.active);
+    const activeItem = result.find((i) => i.tag === this.active);
     activeItem && (activeItem.active = true);
     return result;
   }
@@ -172,7 +173,7 @@ export default class Controls {
 
     const state = store.getState();
     const { hints } = state;
-    hints.forEach(v => (v.active = false));
+    hints.forEach((v) => (v.active = false));
   }
 
   onKeyDown(keyCode: number) {
@@ -183,7 +184,7 @@ export default class Controls {
     const { mode, hints } = state;
     const key = Object.entries(config.keyMap).find(([k, v]) => v === keyCode);
     this.active = (key && key[0]) || "";
-    const index = hints.findIndex(i => config.keyMap[i.tag] === keyCode);
+    const index = hints.findIndex((i) => config.keyMap[i.tag] === keyCode);
     index !== -1 && (hints[index].active = true); // new hints!
     index !== -1 && this.runAction(hints[index].action);
   }
@@ -464,13 +465,13 @@ export default class Controls {
       cursorType,
       // layers,
       hints,
-      mode
+      mode,
     });
   }
 
   objectToPropertyList(obj: IGameObject) {
     const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-    const values = Object.entries(obj).filter(v => v[0] !== "type");
+    const values = Object.entries(obj).filter((v) => v[0] !== "type");
 
     return values.map(([key, value]) => {
       // const type = getType(value);
@@ -481,7 +482,7 @@ export default class Controls {
         id: key,
         type: "text",
         options,
-        value
+        value,
       };
       return result;
     });
@@ -502,8 +503,8 @@ export default class Controls {
       return "text";
     };
 
-    const found = config.objectDefaults.find(v => v.type === obj.type);
-    const valueArr = Object.entries(found).filter(v => v[0] !== "type");
+    const found = config.objectDefaults.find((v) => v.type === obj.type);
+    const valueArr = Object.entries(found).filter((v) => v[0] !== "type");
     let properties: IProperty[] = valueArr.map(([key, value]) => {
       const type = getType(value);
       const options = Array.isArray(value) ? value : null;
@@ -513,7 +514,7 @@ export default class Controls {
         id: key,
         type,
         options,
-        value
+        value,
       };
       return result;
     });
@@ -521,7 +522,7 @@ export default class Controls {
 
     // set values in properties with corresponding from object
     Object.entries(obj).forEach(([key, value]) => {
-      const item = properties.find(v => v.id === key);
+      const item = properties.find((v) => v.id === key);
       if (item) {
         item.value = value;
       }
@@ -566,7 +567,7 @@ export default class Controls {
     const data = this.makeObjectProperties(obj);
 
     // recreate type selector dropdown
-    const selector = data.find(v => v.id === "type");
+    const selector = data.find((v) => v.id === "type");
     selector.options = config.objectTypes;
     selector.value = obj.type;
     selector.type = "select";
