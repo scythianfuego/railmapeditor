@@ -62,16 +62,15 @@ const findOne = <T>(
 
 type GameObjectMap = ObservableMap<string, IGameObject>;
 type RailMap = ObservableMap<string, IRail>;
-type GameObjectPointMap = ObservableMap<number, Point[]>;
 
 export default class Model {
   public selectedConnection: string = null;
   @observable public selectedGameObject: string = null;
-  public selectedPointIndex: number = -1;
+  @observable public selectedPointIndex: number = -1;
 
   @observable public gameobjects: GameObjectMap = observable.map();
   @observable public rails: RailMap = observable.map();
-  @observable public gameobjectpoints: GameObjectPointMap = observable.map();
+
   public connections: Map<string, IConnection> = new Map(); // TODO: remove public access?
   public switches: Map<string, ISwitch> = new Map();
   public joins: Map<string, IJoin> = new Map();
@@ -101,8 +100,7 @@ export default class Model {
 
     const objects: IKeyValue[] = JSON.parse(JSON.stringify(this.gameobjects)); // clone
     objects.forEach((o) => {
-      if (o.points) {
-        o.points = o.points === 0 ? [] : this.gameobjectpoints.get(o.points);
+      if (["polygon", "rope"].includes(o.type)) {
         o.points = o.points.map((p: Point) => [pixels(p.x), pixels(p.y)]);
       }
       if (o.x) {
@@ -160,7 +158,6 @@ export default class Model {
       switches: this.switches,
       joins: this.joins,
       gameobjects: this.gameobjects,
-      gameobjectpoints: Array.from(this.gameobjectpoints),
     });
     // );
   }
@@ -181,7 +178,15 @@ export default class Model {
     makeMap(obj.joins, this.joins);
     makeMap(obj.gameobjects, this.gameobjects);
 
-    this.gameobjectpoints = observable.map(obj.gameobjectpoints || []); // UGLY. make keys explicit
+    // load old and new format
+    if (obj.gameobjectpoints) {
+      obj.gameobjects.forEach((o: any) => {
+        const pointid = o.points;
+        if (pointid !== 0) {
+          o.points = obj.gameobjectpoints[pointid];
+        }
+      });
+    }
 
     //reindex
     this.railsIndex = new Map();
@@ -478,15 +483,17 @@ export default class Model {
   }
 
   // objects
-  addGameObject(x: number, y: number): string {
+  @action addGameObject(x: number, y: number): string {
     const o: IGameObject = {
       x,
       y,
       type: "none",
       zindex: 0,
+      points: [],
     };
 
     const uuid = UUID();
+    this.createDefaultPoints(o);
     this.gameobjects.set(uuid, o);
     return uuid;
   }
@@ -500,10 +507,10 @@ export default class Model {
   @action updateGameObjectProperties(objuuid: string, values: IGameObject) {
     const old: IGameObject = this.gameobjects.get(objuuid);
     Object.assign(old, values);
-    Object.keys(old).forEach(
-      // delete old values
-      (key) => !values.hasOwnProperty(key) && delete (old as IKeyValue)[key]
-    );
+    // Object.keys(old).forEach(
+    //   // delete old values
+    //   (key) => !values.hasOwnProperty(key) && delete (old as IKeyValue)[key]
+    // );
   }
 
   cloneGameObject(): string {
@@ -518,9 +525,6 @@ export default class Model {
   deleteSelectedGameObject() {
     if (this.selectedGameObject) {
       const gameobject = this.gameobjects.get(this.selectedGameObject);
-      gameobject.points !== 0 &&
-        this.gameobjectpoints.delete(gameobject.points);
-
       this.gameobjects.delete(this.selectedGameObject);
     }
   }
@@ -558,10 +562,11 @@ export default class Model {
   // polygons and ropes
 
   findPointByXY(x: number, y: number) {
-    const pid = this.gameobjects.get(this.selectedGameObject).points;
-    const points = this.gameobjectpoints.get(pid);
-
-    return points.findIndex((p) => distance(x, y, p.x, p.y) < MIN_DISTANCE);
+    const points = this.gameobjects.get(this.selectedGameObject).points;
+    const ind = points.findIndex(
+      (p) => distance(x, y, p.x, p.y) < MIN_DISTANCE
+    );
+    return ind;
   }
 
   movePoint(x: number, y: number) {
@@ -569,15 +574,13 @@ export default class Model {
     if (index === -1) {
       return;
     }
-    const pid = this.gameobjects.get(this.selectedGameObject).points;
-    const points = this.gameobjectpoints.get(pid);
+    const points = this.gameobjects.get(this.selectedGameObject).points;
     points[index].x = x;
     points[index].y = y;
   }
 
   addPoint(x: number, y: number) {
-    const pid = this.gameobjects.get(this.selectedGameObject).points;
-    const points = this.gameobjectpoints.get(pid);
+    const points = this.gameobjects.get(this.selectedGameObject).points;
     points.push(new Point(x, y));
   }
 
@@ -586,8 +589,7 @@ export default class Model {
     if (index === -1) {
       return;
     }
-    const pid = this.gameobjects.get(this.selectedGameObject).points;
-    const points = this.gameobjectpoints.get(pid);
+    const points = this.gameobjects.get(this.selectedGameObject).points;
     points.length > 2 && points.splice(index, 1);
   }
 
@@ -596,8 +598,7 @@ export default class Model {
     if (index === -1) {
       return;
     }
-    const pid = this.gameobjects.get(this.selectedGameObject).points;
-    const points = this.gameobjectpoints.get(pid);
+    const points = this.gameobjects.get(this.selectedGameObject).points;
 
     const current = points[index];
     const pointBetween = (p1: Point, p2: Point) => {
@@ -623,8 +624,7 @@ export default class Model {
     if (index === -1) {
       return;
     }
-    const pid = this.gameobjects.get(this.selectedGameObject).points;
-    const points = this.gameobjectpoints.get(pid);
+    const points = this.gameobjects.get(this.selectedGameObject).points;
     if (points.length < 5) {
       console.log("Not enough points");
       return;
@@ -644,15 +644,8 @@ export default class Model {
     this.selectedPointIndex = -1;
   }
 
-  createDefaultPoints() {
-    const { x, y, type, points } = this.gameobjects.get(
-      this.selectedGameObject
-    );
-
-    if (points !== 0 || !["polygon", "rope"].includes(type)) {
-      return;
-    }
-
+  createDefaultPoints(obj: IGameObject) {
+    const { x, y, type, points } = obj;
     const d = 1.28 * 0.5 * 1.2;
     let newPoints: Point[] = [];
     if (type === "rope") {
@@ -665,10 +658,7 @@ export default class Model {
       newPoints.push(new Point(x + d, y - d));
     }
 
-    // important! object pointId observable should run first as this updates 1-1 relation
-    this.gameobjects.get(this.selectedGameObject).points = this.pointId;
-    this.gameobjectpoints.set(this.pointId, newPoints);
-    this.pointId++;
+    obj.points = newPoints;
   }
 
   // finder:

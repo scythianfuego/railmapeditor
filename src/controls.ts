@@ -8,6 +8,7 @@ import Model from "./model";
 import IHints from "./interfaces/IHints";
 import config from "./includes/config";
 import PropertyEditor from "./components/properties";
+import Menu from "./components/menu";
 import LayerList from "./components/layerlist";
 import IGameObject from "./interfaces/IGameObject";
 import IKeyValue from "./interfaces/IKeyValue";
@@ -119,6 +120,7 @@ export default class Controls {
 
   private propertyEditor: PropertyEditor = null;
   private layerList: LayerList = null;
+  private menu: Menu = null;
   private editedObject: string = null;
 
   constructor(private model: Model) {
@@ -153,6 +155,8 @@ export default class Controls {
     });
 
     this.runAction(mode);
+    this.menu = <Menu>document.querySelector("menu-box");
+    this.menu.data = hints;
   }
 
   applyHintsFilter(mode: number) {
@@ -174,6 +178,8 @@ export default class Controls {
     const state = store.getState();
     const { hints } = state;
     hints.forEach((v) => (v.active = false));
+
+    this.menu.data = hints;
   }
 
   onKeyDown(keyCode: number) {
@@ -187,6 +193,8 @@ export default class Controls {
     const index = hints.findIndex((i) => config.keyMap[i.tag] === keyCode);
     index !== -1 && (hints[index].active = true); // new hints!
     index !== -1 && this.runAction(hints[index].action);
+
+    this.menu.data = hints;
   }
 
   mouseEventToXY(event: MouseEvent) {
@@ -444,7 +452,6 @@ export default class Controls {
 
     if (action === A.POINTS) {
       if (this.model.selectedGameObject) {
-        this.model.createDefaultPoints();
         mode = A.POINTMOVE;
       } else {
         console.log("Point editor bad object", this.model.selectedGameObject);

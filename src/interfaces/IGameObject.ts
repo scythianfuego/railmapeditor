@@ -18,7 +18,7 @@ export default interface IGameObject {
   height?: number;
   hasOutline?: boolean;
   outline?: string;
-  points?: number;
+  points?: Point[];
   color?: number;
   block?: number;
   frame?: Frame;

@@ -11,8 +11,10 @@ import Model from "./model";
 import Controls from "./controls";
 import PropertyEditor from "./components/properties";
 import LayerList from "./components/layerlist";
+import Menu from "./components/menu";
 window.customElements.define("property-box", PropertyEditor);
 window.customElements.define("layerlist-box", LayerList);
+window.customElements.define("menu-box", Menu);
 
 const canvas = document.querySelector("canvas");
 canvas.width = canvas.clientWidth;

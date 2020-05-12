@@ -67,7 +67,7 @@ enum A {
   POINTSPLIT,
   POINTINTERPOLATE,
 
-  EMPTY
+  EMPTY,
 }
 
 const tools = [
@@ -78,14 +78,14 @@ const tools = [
   A.CURVE1,
   A.SIDEA,
   A.ARC2A,
-  A.LONG
+  A.LONG,
 ];
 const pointtools = [
   A.POINTMOVE,
   A.POINTADD,
   A.POINTDELETE,
   A.POINTSPLIT,
-  A.POINTINTERPOLATE
+  A.POINTINTERPOLATE,
 ];
 const extramodes = [
   A.SAVE,
@@ -94,7 +94,7 @@ const extramodes = [
   A.BLOCK,
   A.OBJECT,
   A.CONNECT,
-  A.POINTS
+  A.POINTS,
 ];
 const modes = tools.concat(pointtools).concat(extramodes);
 
@@ -112,7 +112,7 @@ const AG: { [index: string]: A[] } = {
     A.LOADSLOT4,
     A.LOADSLOT5,
     A.LOADSLOT6,
-    A.LOADSLOT7
+    A.LOADSLOT7,
   ],
   SAVESLOT: [
     A.SAVESLOT1,
@@ -121,8 +121,8 @@ const AG: { [index: string]: A[] } = {
     A.SAVESLOT4,
     A.SAVESLOT5,
     A.SAVESLOT6,
-    A.SAVESLOT7
-  ]
+    A.SAVESLOT7,
+  ],
 };
 
 const actions = A;
@@ -231,7 +231,7 @@ const keyMap: {
   S: 83,
   L: 76,
   DEL: 46,
-  ESC: 27
+  ESC: 27,
 };
 
 const gameLayers = [
@@ -246,7 +246,7 @@ const gameLayers = [
   "highrail",
   "bridge",
   "switch",
-  "topmost"
+  "topmost",
 ];
 
 const textures = [
@@ -287,7 +287,7 @@ const textures = [
   "c41.png",
   "c51.png",
   "c91.png",
-  "c92.png"
+  "c92.png",
 ];
 
 const tilingTextures = [
@@ -303,13 +303,13 @@ const tilingTextures = [
   "fence.png",
   "dirtroad.png",
   "dirtpath.png",
-  "gantryrail.png"
+  "gantryrail.png",
 ];
 const lightTextures = [
   "pointlight.png",
   "pointup.png",
   "pointdown.png",
-  "spotlight.png"
+  "spotlight.png",
 ];
 
 const objectDefaults: IKeyValue[] = [
@@ -321,7 +321,7 @@ const objectDefaults: IKeyValue[] = [
     alpha: 1,
     blend: ["normal", "add", "multiply", "screen"],
     shadow: false,
-    width: 0
+    width: 0,
   },
   {
     type: "polygon",
@@ -331,7 +331,7 @@ const objectDefaults: IKeyValue[] = [
     layer: gameLayers,
     alpha: 1,
     blend: ["normal", "add", "multiply", "screen"],
-    points: 0
+    // points: 0
   },
   {
     type: "rope",
@@ -339,24 +339,24 @@ const objectDefaults: IKeyValue[] = [
     layer: gameLayers,
     alpha: 1,
     blend: ["normal", "add", "multiply", "screen"],
-    points: 0
+    // points: 0
   },
   {
     type: "light",
     texture: lightTextures,
     layer: gameLayers,
     color: 0,
-    width: 50
+    width: 50,
   },
   {
     type: "signal",
     layer: gameLayers,
     block: 0,
-    width: 16
-  }
+    width: 16,
+  },
 ];
 
-const objectTypes = objectDefaults.map(v => v.type);
+const objectTypes = objectDefaults.map((v) => v.type);
 
 // prettier-ignore
 const objectCommon: IProperty[] = [
@@ -379,7 +379,7 @@ const layers = [
   { id: "colors", label: "Line colors", value: true },
   { id: "polygons", label: "Polygon fill", value: true },
   { id: "ropes", label: "Ropes", value: true },
-  { id: "objects", label: "Objects marks", value: true }
+  { id: "objects", label: "Objects marks", value: true },
 ];
 
 export default {
@@ -390,5 +390,5 @@ export default {
   objectDefaults,
   objectCommon,
   objectTypes,
-  layers
+  layers,
 };

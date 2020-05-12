@@ -146,7 +146,6 @@ export default class Draw {
     this.connections();
     this.cursor();
     this.selectionFrame();
-    this.helpline();
   }
 
   private cursor() {
@@ -256,7 +255,7 @@ export default class Draw {
     } else {
       const sprite = sprites.get(key);
       const color = this.getColor(type, meta && meta.selected);
-      sprite.points = calcPoints();
+      sprite.geometry.points = calcPoints();
       sprite.tint = color;
     }
 
@@ -308,7 +307,7 @@ export default class Draw {
       this.pixiAppStage.addChild(sprite);
     } else {
       const sprite = sprites.get(key);
-      sprite.points = calcPoints();
+      sprite.geometry.points = calcPoints();
       const color = this.getColor(type, meta && meta.selected);
       sprite.tint = color;
 
@@ -424,14 +423,5 @@ export default class Draw {
       ey - sy
     );
     this.pixiSelectionFrame.endFill();
-  }
-
-  // TODO: move to component
-  private helpline() {
-    const text = this.hints
-      .reduce((text, h: IHintLine) => text + h.tag + " " + h.text + " ", "")
-      .trim();
-    const hintLine = document.getElementById("hintline");
-    if (hintLine.innerText != text) hintLine.innerText = text;
   }
 }
