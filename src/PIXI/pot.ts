@@ -26,6 +26,7 @@ export default class POT {
       const baseTexture = new PIXI.BaseTexture(
         new PIXI.resources.CanvasResource(canvas)
       );
+      baseTexture.wrapMode = PIXI.WRAP_MODES.REPEAT;
       atlas[name] = new PIXI.Texture(baseTexture);
     });
     console.log(`POT tiled texture count: ${pot.length}`);
@@ -57,6 +58,7 @@ export default class POT {
     const baseTexture = new PIXI.BaseTexture(
       new PIXI.resources.CanvasResource(canvas)
     );
+    baseTexture.wrapMode = PIXI.WRAP_MODES.REPEAT;
 
     // draw textures and put them to atlas
     let offsetY = 0;

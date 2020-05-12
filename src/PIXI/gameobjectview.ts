@@ -174,9 +174,12 @@ export default class GameObjectView {
   }
 
   private changeSelection(r: GoRecord, selectedKey: string) {
-    const tint = r.key === selectedKey ? 0x00ff00 : 0xffffff;
-    const { sprite, border } = getView(r);
+    const isSelected = r.key === selectedKey;
+    const tint = isSelected ? 0x00ff00 : 0xffffff;
+
+    const { sprite, border, points } = getView(r);
     [sprite, border].filter((v) => v).forEach((v) => (v.tint = tint));
+    points && (points.visible = isSelected);
   }
 
   // helpers
@@ -206,6 +209,7 @@ export default class GameObjectView {
   }
 
   private texture(name: string): PIXI.Texture {
+    // check POT textures
     return this.resources.atlas.textures[name] || PIXI.Texture.WHITE;
   }
 
