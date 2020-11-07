@@ -12,8 +12,11 @@ import Controls from "./controls";
 import PropertyEditor from "./components/properties";
 import LayerList from "./components/layerlist";
 import Menu from "./components/menu";
+import MapList from "./components/maplist";
+import Client from "./client";
 window.customElements.define("property-box", PropertyEditor);
 window.customElements.define("layerlist-box", LayerList);
+window.customElements.define("maplist-box", MapList);
 window.customElements.define("menu-box", Menu);
 
 const canvas = document.querySelector("canvas");
@@ -22,11 +25,13 @@ canvas.height = canvas.clientHeight;
 
 let model = new Model();
 // ts.createGrid();
+let client = new Client(model);
 
 const app = new PIXI.Application({
   view: canvas,
   resizeTo: canvas,
 });
+PIXI.Ticker.shared.stop();
 
 PIXI.Loader.shared
   .add("atlas", "assets/textures.json", { crossOrigin: true }) // anonymous

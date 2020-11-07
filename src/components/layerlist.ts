@@ -10,7 +10,7 @@ export default class LayerList extends HTMLElement {
 
   public set data(data: any) {
     if (!Array.isArray(data)) {
-      Array.from(this.root.querySelectorAll("input")).forEach(i => {
+      Array.from(this.root.querySelectorAll("input")).forEach((i) => {
         const id = i.getAttribute("data-id");
         i.checked = !!data[id];
       });
@@ -51,7 +51,7 @@ export default class LayerList extends HTMLElement {
 
   set hidden(val) {
     const container: HTMLElement = this.root.querySelector(".layerlist-box");
-    container.style.display = val ? "block" : "none";
+    container.style.display = val ? "none" : "block";
     val ? this.setAttribute("hidden", "") : this.removeAttribute("hidden");
   }
 
@@ -59,7 +59,7 @@ export default class LayerList extends HTMLElement {
     const container = this.root.querySelector(".layerlist-box");
     container.innerHTML = "";
 
-    data.forEach(line => {
+    data.forEach((line) => {
       const label = document.createElement("label");
       label.classList.add("layerlist-label");
       label.innerText = line.label;
@@ -75,7 +75,7 @@ export default class LayerList extends HTMLElement {
       label.addEventListener("change", () => {
         const changeEvent = new Event("change", {
           bubbles: true,
-          cancelable: false
+          cancelable: false,
         });
         this.dispatchEvent(changeEvent);
       });

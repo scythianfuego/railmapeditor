@@ -1,0 +1,25 @@
+.maplist-box {
+  width: 300px;
+  min-height: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: #222;
+  padding: 18px;
+  color: #fff;
+  border-top: 1px solid #444;
+  font: 14px Arial;
+  user-select: none;
+}
+
+.maplist-box .maplist-label {
+  text-decoration: underline;
+  cursor: pointer;
+  margin: 7px 0;
+  padding: 7px 10px;
+  background: #333;
+}
+
+.maplist-box button {
+  cursor: pointer;
+}

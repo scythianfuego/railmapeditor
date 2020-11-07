@@ -98,16 +98,22 @@ export default class Model {
     const pixels = (i: number) => Math.round(i * PIXELS_PER_UNIT || 0);
     const joins = Array.from(this.joins.values()).concat(autojoins);
 
-    const objects: IKeyValue[] = JSON.parse(JSON.stringify(this.gameobjects)); // clone
-    objects.forEach((o) => {
-      if (["polygon", "rope"].includes(o.type)) {
-        o.points = o.points.map((p: Point) => [pixels(p.x), pixels(p.y)]);
+    const objectArr: IKeyValue[] = Array.from(this.gameobjects.values()).map(
+      (o: IGameObject) => {
+        const copy: IKeyValue = { ...o };
+        if (["polygon", "rope"].includes(o.type)) {
+          copy.points = copy.points.map((p: Point) => [
+            pixels(p.x),
+            pixels(p.y),
+          ]);
+        }
+        if (copy.x) {
+          copy.x = pixels(copy.x);
+          copy.y = pixels(copy.y);
+        }
+        return copy;
       }
-      if (o.x) {
-        o.x = pixels(o.x);
-        o.y = pixels(o.y);
-      }
-    });
+    );
 
     const encodeChunk = (i: IRail) => {
       const a1 = normalize(i.a1);
@@ -130,34 +136,29 @@ export default class Model {
       ];
     };
 
-    const result = JSON.stringify(
+    return JSON.stringify(
       {
         rails: Array.from(this.rails.values()).map(encodeChunk),
-        switches: this.switches,
+        switches: Array.from(this.switches),
         joins,
-        objects: objects,
+        objects: objectArr,
       },
       null
       //, 2
     );
-    window.open(
-      "",
-      "",
-      "toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes"
-    ).document.body.innerHTML = `<pre>${result}</pre>`;
   }
 
   serialize() {
     // return LZString.compressToUTF16(
     return JSON.stringify({
-      rails: this.rails,
       blockId: this.blockId,
       pointId: this.pointId,
       objectId: this.objectId,
-      connections: this.connections,
-      switches: this.switches,
-      joins: this.joins,
-      gameobjects: this.gameobjects,
+      rails: Array.from(this.rails),
+      connections: Array.from(this.connections),
+      switches: Array.from(this.switches),
+      joins: Array.from(this.joins),
+      gameobjects: Array.from(this.gameobjects),
     });
     // );
   }
@@ -169,10 +170,12 @@ export default class Model {
     this.pointId = obj.pointId || [];
     this.objectId = obj.objectId || [];
 
-    const makeMap = <T>(items: T[], target: Map<String, T>) => {
-      (items || []).forEach((i: T) => target.set(UUID(), i));
+    // do not recreate map for mobx to do its magic
+    const makeMap = <T>(items: [string, T][], target: Map<String, T>) => {
+      target.clear();
+      (items || []).forEach((v) => target.set(v[0], v[1]));
     };
-    makeMap(obj.store || obj.rails, this.rails); // compatibiity
+    makeMap(obj.rails, this.rails);
     makeMap(obj.connections, this.connections);
     makeMap(obj.switches, this.switches);
     makeMap(obj.joins, this.joins);
