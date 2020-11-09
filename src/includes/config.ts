@@ -34,24 +34,6 @@ enum A {
   SWITCH_BP,
   SWITCH_BS,
 
-  SAVE,
-  LOAD,
-  EXPORT,
-  SAVESLOT1,
-  SAVESLOT2,
-  SAVESLOT3,
-  SAVESLOT4,
-  SAVESLOT5,
-  SAVESLOT6,
-  SAVESLOT7,
-  LOADSLOT1,
-  LOADSLOT2,
-  LOADSLOT3,
-  LOADSLOT4,
-  LOADSLOT5,
-  LOADSLOT6,
-  LOADSLOT7,
-
   OBJECTNEW,
   OBJECTEDIT,
   OBJECTEDITPOINTS,
@@ -87,15 +69,7 @@ const pointtools = [
   A.POINTSPLIT,
   A.POINTINTERPOLATE,
 ];
-const extramodes = [
-  A.SAVE,
-  A.LOAD,
-  A.SELECT,
-  A.BLOCK,
-  A.OBJECT,
-  A.CONNECT,
-  A.POINTS,
-];
+const extramodes = [A.SELECT, A.BLOCK, A.OBJECT, A.CONNECT, A.POINTS];
 const modes = tools.concat(pointtools).concat(extramodes);
 
 const AG: { [index: string]: A[] } = {
@@ -105,24 +79,6 @@ const AG: { [index: string]: A[] } = {
   SELECT_CONNECTIONS: [A.CONNECT],
   SELECT_OBJECTS: [A.OBJECT],
   MODES: modes,
-  LOADSLOT: [
-    A.LOADSLOT1,
-    A.LOADSLOT2,
-    A.LOADSLOT3,
-    A.LOADSLOT4,
-    A.LOADSLOT5,
-    A.LOADSLOT6,
-    A.LOADSLOT7,
-  ],
-  SAVESLOT: [
-    A.SAVESLOT1,
-    A.SAVESLOT2,
-    A.SAVESLOT3,
-    A.SAVESLOT4,
-    A.SAVESLOT5,
-    A.SAVESLOT6,
-    A.SAVESLOT7,
-  ],
 };
 
 const actions = A;
@@ -135,13 +91,10 @@ const actionGroups = AG;
 // prettier-ignore
 const hints: IHints = [
   // top level
-  { tag: "1", text: "Draw", action: A.LINES, show: [A.SELECT] },
-  { tag: "2", text: "Block", action: A.BLOCK, show: [A.SELECT] },
+  { tag: "1", text: "Drawing", action: A.LINES, show: [A.SELECT] },
+  { tag: "2", text: "Blocks", action: A.BLOCK, show: [A.SELECT] },
   { tag: "3", text: "Switch", action: A.CONNECT, show: [A.SELECT] },
   { tag: "4", text: "Objects", action: A.OBJECT, show: [A.SELECT] },
-  { tag: "S", text: "Save", action: A.SAVE, show: [A.SELECT] },
-  { tag: "L", text: "Load", action: A.LOAD, show: [A.SELECT] },
-  { tag: "0", text: "Export", action: A.EXPORT, show: [A.SELECT] },
   { tag: "DEL", text: "Delete", action: A.DELETE, show: [A.SELECT] },
   // drawing
   { tag: "ESC", text: "Back", action: A.SELECT, show: AG.TOOLS },
@@ -152,7 +105,7 @@ const hints: IHints = [
   { tag: "5", text: "CurveA", action: A.CURVE1, show: AG.TOOLS, on: A.CURVE1 },
   { tag: "6", text: "SideA", action: A.SIDEA, show: AG.TOOLS, on: A.SIDEA },
   { tag: "7", text: "DoubleA", action: A.ARC2A, show: AG.TOOLS, on: A.ARC2A },
-  { tag: "0", text: "InfLine", action: A.LONG, show: AG.TOOLS, on: A.LONG },
+  { tag: "0", text: "Long Line", action: A.LONG, show: AG.TOOLS, on: A.LONG },
   { tag: "Z", text: "Next tool", action: A.NEXT, show: AG.TOOLS },
   { tag: "X", text: "Prev tool", action: A.PREV, show: AG.TOOLS },
   // block
@@ -166,31 +119,13 @@ const hints: IHints = [
   { tag: "ESC", text: "Back", action: A.SELECT, show: [A.CONNECT] },
   { tag: "Z", text: "Create switch", action: A.SWITCH, show: [A.CONNECT] },
 
-  { tag: "1", text: "A1", action: A.SWITCH_AP, show: [A.CONNECT] },
-  { tag: "2", text: "A2", action: A.SWITCH_AS, show: [A.CONNECT] },
-  { tag: "3", text: "B1", action: A.SWITCH_BP, show: [A.CONNECT] },
-  { tag: "4", text: "B2", action: A.SWITCH_BS, show: [A.CONNECT] },
+  { tag: "1", text: "Change to A1", action: A.SWITCH_AP, show: [A.CONNECT] },
+  { tag: "2", text: "Change to A2", action: A.SWITCH_AS, show: [A.CONNECT] },
+  { tag: "3", text: "Change to B1", action: A.SWITCH_BP, show: [A.CONNECT] },
+  { tag: "4", text: "Change to B2", action: A.SWITCH_BS, show: [A.CONNECT] },
   // todo: find common connection for selection
   // onclick select switch components - with alteration
   { tag: "X", text: "Connect", action: A.JOIN, show: [A.CONNECT] },
-
-  // saveloadslots
-  { tag: "ESC", text: "Back", action: A.SELECT, show: [A.SAVE] },
-  { tag: "1", text: "Save Slot", action: A.SAVESLOT1, show: [A.SAVE] },
-  { tag: "2", text: "Save Slot", action: A.SAVESLOT2, show: [A.SAVE] },
-  { tag: "3", text: "Save Slot", action: A.SAVESLOT3, show: [A.SAVE] },
-  { tag: "4", text: "Save Slot", action: A.SAVESLOT4, show: [A.SAVE] },
-  { tag: "5", text: "Save Slot", action: A.SAVESLOT5, show: [A.SAVE] },
-  { tag: "6", text: "Save Slot", action: A.SAVESLOT6, show: [A.SAVE] },
-  { tag: "7", text: "Save Slot", action: A.SAVESLOT7, show: [A.SAVE] },
-  { tag: "ESC", text: "Back", action: A.SELECT, show: [A.LOAD] },
-  { tag: "1", text: "Load Slot", action: A.LOADSLOT1, show: [A.LOAD] },
-  { tag: "2", text: "Load Slot", action: A.LOADSLOT2, show: [A.LOAD] },
-  { tag: "3", text: "Load Slot", action: A.LOADSLOT3, show: [A.LOAD] },
-  { tag: "4", text: "Load Slot", action: A.LOADSLOT4, show: [A.LOAD] },
-  { tag: "5", text: "Load Slot", action: A.LOADSLOT5, show: [A.LOAD] },
-  { tag: "6", text: "Load Slot", action: A.LOADSLOT6, show: [A.LOAD] },
-  { tag: "7", text: "Load Slot", action: A.LOADSLOT7, show: [A.LOAD] },
 
   // object
   { tag: "ESC", text: "Back", action: A.SELECT, show: [A.OBJECT] },

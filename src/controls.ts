@@ -1,7 +1,14 @@
 import { IProperty } from "./interfaces/IProperty";
 import { Tools, Tool } from "./interfaces/types";
+import {
+  observable,
+  action,
+  ObservableMap,
+  makeObservable,
+  runInAction,
+} from "mobx";
 
-import store from "./store";
+import { store } from "./store";
 import ts from "./transform";
 import Objects from "./objects";
 import Model from "./model";
@@ -124,17 +131,28 @@ export default class Controls {
   private editedObject: string = null;
 
   constructor(private model: Model) {
-    // const mode = A.LINES;
-    const mode = A.OBJECT; //debug
-    const hints = this.applyHintsFilter(mode);
-    store.setState({ hints });
+    makeObservable(this, {
+      onMouseMove: action,
+      onMouseUp: action,
+      onMouseDown: action,
+      onWheel: action,
+      runAction: action,
+    });
+
+    const defaultMode = A.SELECT;
+    const hints = this.applyHintsFilter(defaultMode);
+    runInAction(() => {
+      store.hints = hints;
+    });
 
     const canvas = document.querySelector("canvas");
     const parent = canvas.parentElement; // canvas can't have focus, no keyboard events
+    parent.focus();
     parent.addEventListener("keyup", (event) => this.onKeyUp(event.keyCode));
     parent.addEventListener("keydown", (event) =>
       this.onKeyDown(event.keyCode)
     );
+
     canvas.addEventListener("contextmenu", (event) => event.preventDefault());
     canvas.addEventListener("mousemove", (event) => this.onMouseMove(event));
     canvas.addEventListener("mousedown", (event) => this.onMouseDown(event));
@@ -151,10 +169,10 @@ export default class Controls {
     this.layerList = <LayerList>document.querySelector("layerlist-box");
     this.layerList.data = config.layers;
     this.layerList.addEventListener("change", () => {
-      store.setState({ layers: this.layerList.userInput });
+      store.layers = this.layerList.userInput;
     });
 
-    this.runAction(mode);
+    this.runAction(defaultMode);
     this.menu = <Menu>document.querySelector("menu-box");
     this.menu.data = hints;
   }
@@ -175,7 +193,7 @@ export default class Controls {
     keyCode === 16 && (this.shift = false);
     keyCode === 17 && (this.ctrl = false);
 
-    const state = store.getState();
+    const state = store;
     const { hints } = state;
     hints.forEach((v) => (v.active = false));
 
@@ -186,7 +204,7 @@ export default class Controls {
     keyCode === 16 && (this.shift = true);
     keyCode === 17 && (this.ctrl = true);
 
-    const state = store.getState();
+    const state = store;
     const { mode, hints } = state;
     const key = Object.entries(config.keyMap).find(([k, v]) => v === keyCode);
     this.active = (key && key[0]) || "";
@@ -206,7 +224,7 @@ export default class Controls {
   }
 
   onMouseDown(event: MouseEvent) {
-    const state = store.getState();
+    const state = store;
     const coords = this.mouseEventToXY(event);
     const [x, y] = coords;
     const { wx, wy } = ts;
@@ -239,17 +257,17 @@ export default class Controls {
     if (this.createObjectMode) {
       this.createObjectMode = false;
       this.editedObject = null;
-      store.setState({ cursorType: 0 });
+      store.cursorType = 0;
     }
 
     const down = event.button === 0;
     const pan = event.button === 1;
     const mouse = { coords, down, pan, selection: coords };
-    store.setState({ mouse });
+    store.mouse = mouse;
   }
 
   onMouseUp(event: MouseEvent) {
-    const state = store.getState();
+    const state = store;
     const { pan } = state.mouse;
     const coords = this.mouseEventToXY(event);
 
@@ -272,11 +290,11 @@ export default class Controls {
 
     const selection: number[] = null;
     const mouse = { coords, down: false, pan: false, selection };
-    store.setState({ mouse });
+    store.mouse = mouse;
   }
 
   onMouseMove(event: MouseEvent) {
-    const state = store.getState();
+    const state = store;
     const mouse = state.mouse;
     const coords = this.mouseEventToXY(event);
 
@@ -286,7 +304,10 @@ export default class Controls {
     const panX = mouse.pan ? state.panX + event.movementX : state.panX;
     const panY = mouse.pan ? state.panY + event.movementY : state.panY;
 
-    store.setState({ mouse, panX, panY, snapPoint });
+    store.mouse = mouse;
+    store.panX = panX;
+    store.panY = panY;
+    store.snapPoint = snapPoint;
 
     if (this.createObjectMode && this.editedObject) {
       const [x, y] = coords;
@@ -311,7 +332,7 @@ export default class Controls {
   onWheel(event: WheelEvent) {
     event.preventDefault(); // disable page zoom using Ctrl key
     const { gridWidth, gridHeight, clamp, rotate, ratioX, ratioY } = ts;
-    const state = store.getState();
+    const state = store;
     const direction = Math.sign(event.deltaY);
 
     if (event.ctrlKey || AG.SELECTABLE.includes(state.mode)) {
@@ -322,10 +343,12 @@ export default class Controls {
 
       const panX = state.panX + gridWidth * zoomDelta * ratioX(mouseX);
       const panY = state.panY + gridHeight * zoomDelta * ratioY(mouseY);
-      store.setState({ zoom, panX, panY });
+      store.zoom = zoom;
+      store.panX = panX;
+      store.panY = panY;
     } else {
       this.nextTool(direction);
-      store.setState({ tool: this.getTool() });
+      store.tool = this.getTool();
     }
   }
 
@@ -336,7 +359,7 @@ export default class Controls {
   }
 
   alterSelection(startPoint: number[], endPoint: number[]) {
-    const state = store.getState();
+    const state = store;
     // rectangular selection, todo: move to model
     const { wx, wy } = ts;
     const sx = wx(startPoint[0]);
@@ -356,7 +379,7 @@ export default class Controls {
   }
 
   runAction(action: number): void {
-    const state = store.getState();
+    const state = store;
     const { wx, wy } = ts;
     const [x, y] = state.mouse.coords;
     let { selectionMode, layers } = state; //
@@ -401,30 +424,6 @@ export default class Controls {
     action === A.SWITCH_BP && this.model.setSwitchSegmentType(2);
     action === A.SWITCH_BS && this.model.setSwitchSegmentType(3);
 
-    action === A.EXPORT && this.model.export();
-
-    if (AG.SAVESLOT.includes(action)) {
-      const slot = AG.SAVESLOT.indexOf(action);
-
-      // backup
-      const data = localStorage.getItem(`savedata${slot}`);
-      const hId = Number(localStorage.getItem(`historyId`)) || 0;
-      if (data) {
-        window.localStorage.setItem(`history${hId}`, data);
-        window.localStorage.setItem(`historyId`, `${(hId + 1) % 20}`);
-      }
-
-      window.localStorage.setItem(`savedata${slot}`, this.model.serialize());
-      mode = A.SELECT;
-    }
-
-    if (AG.LOADSLOT.includes(action)) {
-      const slot = AG.LOADSLOT.indexOf(action);
-      const data = localStorage.getItem(`savedata${slot}`);
-      data && this.model.unserialize(data);
-      mode = A.SELECT;
-    }
-
     if (action === A.OBJECTNEW) {
       this.createObjectMode = true;
       this.editedObject = this.model.addGameObject(wx(x), wy(y));
@@ -466,14 +465,12 @@ export default class Controls {
 
     const cursorType = this.createObjectMode ? 1 : 0;
     const hints = this.applyHintsFilter(mode);
-    store.setState({
-      tool: this.getTool(),
-      selectionMode,
-      cursorType,
-      // layers,
-      hints,
-      mode,
-    });
+
+    store.tool = this.getTool();
+    store.selectionMode = selectionMode;
+    store.cursorType = cursorType;
+    store.hints = hints;
+    store.mode = mode;
   }
 
   objectToPropertyList(obj: IGameObject) {

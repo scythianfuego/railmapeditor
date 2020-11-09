@@ -54,7 +54,7 @@ export default class GameObjectView {
         const obj = change.newValue;
         const key = change.name;
 
-        const record: GoRecord = { obj, key };
+        const record: GoRecord = { key, obj };
         this.gameObject(record); // create
 
         const reactions = [

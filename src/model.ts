@@ -5,7 +5,7 @@ import ISwitch from "./interfaces/ISwitch";
 import catRomSpline from "cat-rom-spline";
 import IGameObject from "./interfaces/IGameObject";
 
-import { observable, action, ObservableMap } from "mobx";
+import { observable, action, ObservableMap, makeObservable } from "mobx";
 import IKeyValue from "./interfaces/IKeyValue";
 
 const magic = 0x7ffffffe;
@@ -65,15 +65,15 @@ type RailMap = ObservableMap<string, IRail>;
 
 export default class Model {
   public selectedConnection: string = null;
-  @observable public selectedGameObject: string = null;
-  @observable public selectedPointIndex: number = -1;
+  public selectedGameObject: string = null;
+  public selectedPointIndex: number = -1;
 
-  @observable public gameobjects: GameObjectMap = observable.map();
-  @observable public rails: RailMap = observable.map();
+  public gameobjects: GameObjectMap = observable.map();
+  public rails: RailMap = observable.map();
 
-  public connections: Map<string, IConnection> = new Map(); // TODO: remove public access?
-  public switches: Map<string, ISwitch> = new Map();
-  public joins: Map<string, IJoin> = new Map();
+  public connections: ObservableMap<string, IConnection> = observable.map(); // TODO: remove public access?
+  public switches: ObservableMap<string, ISwitch> = observable.map();
+  public joins: ObservableMap<string, IJoin> = observable.map();
 
   private railsIndex: Map<number, string> = new Map();
   private blockId = 1;
@@ -84,6 +84,20 @@ export default class Model {
 
   constructor() {
     this.distance = distance;
+
+    makeObservable(this, {
+      selectedGameObject: observable,
+      selectedPointIndex: observable,
+      gameobjects: observable,
+      rails: observable,
+      connections: observable,
+      switches: observable,
+      joins: observable,
+      addGameObject: action,
+      moveGameObject: action,
+      updateGameObjectProperties: action,
+      setSwitchSegmentType: action,
+    });
   }
 
   export() {
@@ -176,24 +190,13 @@ export default class Model {
       (items || []).forEach((v) => target.set(v[0], v[1]));
     };
     makeMap(obj.rails, this.rails);
+    this.railsIndex.clear(); //reindex rails
+    this.rails.forEach((v, k) => this.railsIndex.set(v.meta.id, k));
+
     makeMap(obj.connections, this.connections);
     makeMap(obj.switches, this.switches);
     makeMap(obj.joins, this.joins);
     makeMap(obj.gameobjects, this.gameobjects);
-
-    // load old and new format
-    if (obj.gameobjectpoints) {
-      obj.gameobjects.forEach((o: any) => {
-        const pointid = o.points;
-        if (pointid !== 0) {
-          o.points = obj.gameobjectpoints[pointid];
-        }
-      });
-    }
-
-    //reindex
-    this.railsIndex = new Map();
-    this.rails.forEach((v, k) => this.railsIndex.set(v.meta.id, k));
   }
 
   makeConnection(pointId: number, x: number, y: number) {
@@ -481,12 +484,13 @@ export default class Model {
         const tmp = sw[newType];
         sw[newType] = sw[oldType];
         sw[oldType] = tmp;
+        this.switches.set(swid, sw.slice()); // force update
       }
     }
   }
 
   // objects
-  @action addGameObject(x: number, y: number): string {
+  addGameObject(x: number, y: number): string {
     const o: IGameObject = {
       x,
       y,
@@ -501,13 +505,13 @@ export default class Model {
     return uuid;
   }
 
-  @action moveGameObject(objuuid: string, x: number, y: number) {
+  moveGameObject(objuuid: string, x: number, y: number) {
     const obj = this.gameobjects.get(objuuid);
     obj.x = x;
     obj.y = y;
   }
 
-  @action updateGameObjectProperties(objuuid: string, values: IGameObject) {
+  updateGameObjectProperties(objuuid: string, values: IGameObject) {
     const old: IGameObject = this.gameobjects.get(objuuid);
     Object.assign(old, values);
     // Object.keys(old).forEach(

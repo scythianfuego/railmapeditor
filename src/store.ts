@@ -1,10 +1,5 @@
-import createStore, { Store } from "unistore";
-import unistoreDevTools from "unistore/devtools";
+import { autorun, observable } from "mobx";
 import IState from "./interfaces/IState";
-import config from "./includes/config";
-
-// let store = createStore({ count: 0 });
-// use redux dev tools instead
 
 const defaults: IState = {
   // ui
@@ -25,21 +20,16 @@ const defaults: IState = {
     coords: [0, 0],
     down: false,
     pan: false,
-    selection: null
+    selection: null,
   },
   // model
-  model: null
+  model: null,
 };
-
-let storeInstance: Store<IState> = createStore(defaults);
-// console.log(unistoreDevTools);
-let devInstance: Store<IState> = unistoreDevTools(storeInstance);
 
 type FlatObject = {
   [index: string]: any;
 };
 
-// todo: Partial?
 const pick = (object: FlatObject, props: string[]) =>
   props.reduce((acc: FlatObject, curr: string) => {
     acc[curr] = object[curr];
@@ -49,4 +39,4 @@ const pick = (object: FlatObject, props: string[]) =>
 export const copy = (from: FlatObject, to: FlatObject, props: string[]) =>
   Object.assign(to, pick(from, props));
 
-export default devInstance;
+export const store = observable(defaults);

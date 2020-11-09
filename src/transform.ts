@@ -1,4 +1,5 @@
-import store, { copy } from "./store";
+import { autorun } from "mobx";
+import { store, copy } from "./store";
 
 // handles world to screen transformations and back
 class Transform {
@@ -27,7 +28,11 @@ class Transform {
     this.clamp((y - this.panY) / (this.gridHeight * this.zoom), 0, 1);
 
   constructor() {
-    store.subscribe((state) => copy(state, this, ["zoom", "panX", "panY"]));
+    autorun(() => {
+      this.zoom = store.zoom;
+      this.panY = store.panY;
+      this.panX = store.panX;
+    });
   }
 
   snap(coords: number[]) {

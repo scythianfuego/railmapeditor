@@ -1,15 +1,15 @@
-import storeInstance, { copy } from "../store";
+import { store, copy } from "../store";
 import ts from "../transform";
 import { Tool } from "../interfaces/types";
 import Model from "../model";
 import IRail from "../interfaces/IRail";
 import IHintLine from "../interfaces/IHintLine";
 import IState from "../interfaces/IState";
-import { Listener, Store } from "unistore";
 import IGameObject from "../interfaces/IGameObject";
 import IKeyValue from "../interfaces/IKeyValue";
 import IHints from "../interfaces/IHints";
 import GameObjectView from "./gameobjectview";
+import RailView from "./railview";
 
 import { autorun, reaction, observe } from "mobx";
 
@@ -34,7 +34,6 @@ const blends: {
 const { sx, sy, scale, pixels } = ts;
 
 const sprites: Map<string, any> = new Map();
-const RAIL = "rails.png";
 
 export default class Draw {
   private ctx: CanvasRenderingContext2D;
@@ -68,82 +67,58 @@ export default class Draw {
   > = new Map();
 
   private gameobjectview: GameObjectView;
+  private railview: RailView;
 
   constructor(
     private model: Model,
     private app: PIXI.Application,
     resources: Partial<Record<string, PIXI.LoaderResource>>
   ) {
-    // moveable and zoomable parts of canvas
-    //(state: K, action?: Action<K>) => void;
-    const subscribeListener: Listener<IState> = (state: IState) => {
-      copy(state, this, [
-        "hints",
-        "tool",
-        "selectionMode",
-        "zoom",
-        "panX",
-        "panY",
-        "cursorType",
-        "layers",
-        "mouse",
-        "snapPoint",
-      ]);
-      // this.canvas.style.cursor = state.mouse.pan ? "grabbing" : "pointer";
-      this.all();
-    };
-
-    storeInstance.subscribe(subscribeListener);
-
     // PIXI
     this.app = app;
     this.pixiAppStage = new PIXI.Container();
     this.app.stage.addChild(this.pixiAppStage);
     this.atlas = resources.atlas.textures;
-    new POT(this.atlas); // make power-of-two textures
+
+    // moveable and zoomable parts of canvas
+    //(state: K, action?: Action<K>) => void;
 
     autorun(() => {
-      this.model.rails.forEach((obj: IRail, key: string) =>
-        this.object(obj, key)
-      );
+      this.hints = store.hints;
+      this.tool = store.tool;
+      this.selectionMode = store.selectionMode;
+      this.zoom = store.zoom;
+      this.panX = store.panX;
+      this.panY = store.panY;
+      this.cursorType = store.cursorType;
+      this.layers = store.layers;
+      this.mouse = store.mouse;
+      this.snapPoint = store.snapPoint;
+
+      // this.canvas.style.cursor = state.mouse.pan ? "grabbing" : "pointer";
+      this.all();
     });
+
+    new POT(this.atlas); // make power-of-two textures
 
     this.gameobjectview = new GameObjectView(
       model,
       this.pixiAppStage,
       resources
     );
+
+    this.railview = new RailView(model, this.pixiAppStage, resources);
   }
 
   private getTexture(name: string): PIXI.Texture {
     return this.atlas[name] || PIXI.Texture.WHITE;
   }
 
-  private getColor(type: number, selected: boolean): number {
-    if (selected) {
-      return 0xff0000;
-    } else if (!this.layers.colors) {
-      return 0xcccccc;
-    }
-
-    const colors = [
-      { min: 0x20, max: 0x29, color: 0xffff00 },
-      { min: 0x30, max: 0x39, color: 0x00ff2a },
-      { min: 0x40, max: 0x49, color: 0x00baff },
-    ];
-
-    return colors.reduce(
-      (accu, { min, max, color }) =>
-        min <= type && type <= max ? color : accu,
-      0xffa834
-    );
-  }
-
   public all() {
     this.grid();
 
-    this.labelCache.forEach((v) => this.label(v.x, v.y, v.text));
-    this.connections();
+    // this.labelCache.forEach((v) => this.label(v.x, v.y, v.text));
+    // this.connections();
     this.cursor();
     this.selectionFrame();
   }
@@ -153,7 +128,9 @@ export default class Draw {
     if (this.cursorType === 0) {
       cursorSprite && (cursorSprite.visible = true);
       cursorSprite && cursorSprite.parent.addChild(cursorSprite); // bring to front
-      this.tool && this.object(this.tool(this.snapPoint), "@Tool");
+
+      // TODO: create tool from railview
+      // this.tool && this.railview.makeCursor(this.tool(this.snapPoint));
     } else {
       cursorSprite && (cursorSprite.visible = false); //TODO: doesnt work
     }
@@ -181,11 +158,11 @@ export default class Draw {
       this.pixiGrid && this.pixiGrid.destroy();
       this.pixiGrid = new PIXI.Container();
       const bg = new PIXI.TilingSprite(
-        this.getTexture("grass.png"),
+        this.getTexture("grass_t.png"),
         gridWidth * 50,
         gridHeight * 50
       );
-      bg.tint = 0x999999;
+      // bg.tint = 0x999999;
       const dots = new PIXI.Graphics();
 
       // draw dot grid
@@ -215,186 +192,6 @@ export default class Draw {
 
     this.pixiAppStage.position.set(ts.panX, ts.panY);
     this.pixiAppStage.scale.set(ts.zoom / 50);
-  }
-
-  private arc(obj: IRail, key: string) {
-    // pixi
-    const { x, y, radius, a1, a2, type, meta } = obj;
-
-    const calcPoints = () => {
-      const TAU = 2 * Math.PI;
-      const normalize = (angle: number) => ((angle % TAU) + TAU) % TAU;
-      const an1 = normalize(a1);
-      const a = normalize(a2);
-      // angle delta MUST be positive to simplify drawing
-      const an2 = a < a1 ? a + 2 * Math.PI : a;
-
-      const steps = 10;
-      const delta = 1 / (steps - 1);
-      const points = [...Array(steps).keys()].map((i) => {
-        const angle = an1 + (an2 - an1) * delta * i;
-        return new PIXI.Point(
-          x * 50 + radius * 50 * Math.cos(angle),
-          y * 50 + radius * 50 * Math.sin(angle)
-        );
-      });
-      return points;
-    };
-
-    if (!sprites.has(key)) {
-      const points = calcPoints();
-      const texture = this.getTexture(RAIL);
-      texture.baseTexture.wrapMode = PIXI.WRAP_MODES.REPEAT;
-      const sprite = new PIXI.SimpleRope(texture, points, 0.5);
-      sprite.position.set(0, 0);
-      sprite.blendMode = PIXI.BLEND_MODES.NORMAL;
-      const color = this.getColor(type, meta && meta.selected);
-      sprite.tint = color;
-      sprites.set(key, sprite);
-      this.pixiAppStage.addChild(sprite);
-    } else {
-      const sprite = sprites.get(key);
-      const color = this.getColor(type, meta && meta.selected);
-      sprite.geometry.points = calcPoints();
-      sprite.tint = color;
-    }
-
-    const midx = x * 50 + radius * 50 * Math.cos((a1 + a2) / 2);
-    const midy = y * 50 + radius * 50 * Math.sin((a1 + a2) / 2);
-    obj.meta &&
-      this.layers.blocks &&
-      this.label(midx, midy, obj.meta.block.toString());
-
-    obj.meta &&
-      this.layers.ids &&
-      this.label(midx, midy, obj.meta.id.toString());
-  }
-
-  private label(x: number, y: number, text: string) {
-    // todo: delete label
-    const key = `${(x * 50) | 0} - ${(y * 50) | 0}`;
-    if (!this.labelCache.has(key)) {
-      const sprite = new PIXI.Text("This is a PixiJS text", {
-        fontFamily: "Arial",
-        fontSize: 10,
-        fill: 0xffffff,
-        align: "center",
-      });
-      sprite.x = x * 50;
-      sprite.y = y * 50;
-      this.labelCache.set(key, { x, y, text, sprite });
-    } else {
-      const sprite = this.labelCache.get(key).sprite;
-      sprite.text = text;
-    }
-  }
-
-  private line(obj: IRail, key: string) {
-    const { sx, sy, ex, ey, type, meta } = obj;
-
-    const calcPoints = () => {
-      return [
-        new PIXI.Point(sx * 50, sy * 50),
-        new PIXI.Point(ex * 50, ey * 50),
-      ];
-    };
-    // pixi
-    if (!sprites.has(key)) {
-      const points = calcPoints();
-      const sprite = new PIXI.SimpleRope(this.getTexture(RAIL), points, 0.5);
-      sprite.position.set(0, 0);
-      sprites.set(key, sprite);
-      this.pixiAppStage.addChild(sprite);
-    } else {
-      const sprite = sprites.get(key);
-      sprite.geometry.points = calcPoints();
-      const color = this.getColor(type, meta && meta.selected);
-      sprite.tint = color;
-
-      const midx = (sx + ex) * 0.5;
-      const midy = (sy + ey) * 0.5;
-      obj.meta &&
-        this.layers.blocks &&
-        this.label(midx, midy, obj.meta.block.toString());
-
-      obj.meta &&
-        this.layers.ids &&
-        this.label(midx, midy, obj.meta.id.toString());
-    }
-  }
-
-  private object(obj: IRail, key: string) {
-    obj.radius ? this.arc(obj, key) : this.line(obj, key);
-  }
-
-  private pathLabel(path: IRail, what: string) {
-    const x = 0.5 * (path.sx + path.ex);
-    const y = 0.5 * (path.sy + path.ey);
-    this.label(x, y, what);
-  }
-
-  private connections() {
-    const c = this.model.connections;
-    Object.values(c).forEach((v) => {
-      const { x, y, items } = v;
-      const isSimple = items.length <= 2;
-
-      let radius = isSimple ? 3 : 5;
-      let color = isSimple ? "green" : "red";
-      if (v === this.model.selectedConnection) {
-        radius = 15;
-        color = "rgba(0, 0, 0, 0.8)";
-
-        // draw items - temp
-        v.items.forEach((i: any) => {
-          const obj = this.model.get(i);
-          const sprite = sprites.get(obj);
-          sprite && (sprite.tint = 0xff0000);
-          // this.objectPath(obj);
-        });
-      }
-
-      // this.ctx.fillStyle = color;
-      // this.ctx.beginPath();
-      // this.screen.circle(x, y, radius);
-      // this.ctx.fill();
-    });
-
-    this.model.switches.forEach((v) => {
-      let path, sprite;
-      path = this.model.get(v[0]);
-      sprite = sprites.get(path);
-      sprite && (sprite.tint = 0x00ff00);
-      // path && this.objectPath(path, hex2rgba("#0099004C"));
-      path && this.pathLabel(this.model.rails.get(path), "A1");
-      path = this.model.get(v[1]);
-      sprite = sprites.get(path);
-      sprite && (sprite.tint = 0x00ff00);
-      // path && this.objectPath(path, hex2rgba("#FF00004C"));
-      path && this.pathLabel(this.model.rails.get(path), "A2");
-      path = this.model.get(v[2]);
-      sprite = sprites.get(path);
-      sprite && (sprite.tint = 0x00ff00);
-      // path && this.objectPath(path, hex2rgba("#0099004C"));
-      path && this.pathLabel(this.model.rails.get(path), "B1");
-      path = this.model.get(v[3]);
-      sprite = sprites.get(path);
-      sprite && (sprite.tint = 0x00ff00);
-      // path && this.objectPath(path, hex2rgba("#FF00004C"));
-      path && this.pathLabel(this.model.rails.get(path), "B2");
-    });
-
-    this.model.joins.forEach((v) => {
-      let path, sprite;
-      path = this.model.get(v[0]);
-      // path && this.objectPath(path, hex2rgba("#9999994C"));
-      sprite = sprites.get(path);
-      sprite && (sprite.tint = 0x9999994c);
-      path = this.model.get(v[1]);
-      // path && this.objectPath(path, hex2rgba("#9999994C"));
-      sprite = sprites.get(path);
-      sprite && (sprite.tint = 0x9999994c);
-    });
   }
 
   private selectionFrame() {
