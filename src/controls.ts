@@ -1,12 +1,6 @@
 import { IProperty } from "./interfaces/IProperty";
 import { Tools, Tool } from "./interfaces/types";
-import {
-  observable,
-  action,
-  ObservableMap,
-  makeObservable,
-  runInAction,
-} from "mobx";
+import { action, makeObservable, runInAction } from "mobx";
 
 import { store } from "./store";
 import ts from "./transform";
@@ -16,7 +10,7 @@ import IHints from "./interfaces/IHints";
 import config from "./includes/config";
 import PropertyEditor from "./components/properties";
 import Menu from "./components/menu";
-import LayerList from "./components/layerlist";
+
 import IGameObject from "./interfaces/IGameObject";
 import IKeyValue from "./interfaces/IKeyValue";
 
@@ -126,7 +120,6 @@ export default class Controls {
   private active: string = "";
 
   private propertyEditor: PropertyEditor = null;
-  private layerList: LayerList = null;
   private menu: Menu = null;
   private editedObject: string = null;
 
@@ -165,12 +158,6 @@ export default class Controls {
     this.propertyEditor.addEventListener("change", () =>
       this.onPropertyEditorSave()
     );
-
-    this.layerList = <LayerList>document.querySelector("layerlist-box");
-    this.layerList.data = config.layers;
-    this.layerList.addEventListener("change", () => {
-      store.layers = this.layerList.userInput;
-    });
 
     this.runAction(defaultMode);
     this.menu = <Menu>document.querySelector("menu-box");
@@ -404,7 +391,6 @@ export default class Controls {
     // action === A.OBJECT && (layers.thick = true);
     // action === A.BLOCK && (layers.blocks = true);
     // action === A.LINES && (layers.ids = true);
-    // this.layerList.data = layers;
 
     // actions to run
     action === A.GROUP && this.model.group();

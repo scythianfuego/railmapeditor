@@ -52,11 +52,11 @@ export default class Menu extends HTMLElement {
 
     data.forEach((line: IHintLine) => {
       const label = document.createElement("span");
-      label.classList.add("layerlist-span", "label");
+      label.classList.add("label");
       label.innerText = line.text;
 
       const hotkey = document.createElement("span");
-      hotkey.classList.add("layerlist-span", "hotkey");
+      hotkey.classList.add("hotkey");
       hotkey.innerText = line.tag;
 
       const item = document.createElement("div");

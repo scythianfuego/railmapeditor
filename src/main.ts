@@ -10,12 +10,10 @@ import Draw from "./PIXI/draw";
 import Model from "./model";
 import Controls from "./controls";
 import PropertyEditor from "./components/properties";
-import LayerList from "./components/layerlist";
 import Menu from "./components/menu";
 import MapList from "./components/maplist";
 import Client from "./client";
 window.customElements.define("property-box", PropertyEditor);
-window.customElements.define("layerlist-box", LayerList);
 window.customElements.define("maplist-box", MapList);
 window.customElements.define("menu-box", Menu);
 

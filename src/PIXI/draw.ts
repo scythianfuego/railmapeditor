@@ -115,6 +115,13 @@ export default class Draw {
   }
 
   public all() {
+    // always show - switches tint
+    // select - selection frame, rail ids
+    // drawing - rail ids, grid, rail cursor
+    // blocks - selection frame, block ids,
+    // switches - selection frame, switches labels
+    // objects - object marks, no labels
+
     this.grid();
 
     // this.labelCache.forEach((v) => this.label(v.x, v.y, v.text));
