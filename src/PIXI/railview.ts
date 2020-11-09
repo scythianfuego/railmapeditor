@@ -14,6 +14,7 @@ import {
 import * as PIXI from "pixi.js";
 import TileMesh from "./tilemesh";
 import IConnection from "../interfaces/IConnection";
+import { store } from "../store";
 
 type RailRecord = {
   key: string;
@@ -57,14 +58,18 @@ export default class GameObjectView {
       }
     });
 
-    // reaction(
-    //   () => this.model.selectedPointIndex,
-    //   (index) => {
-    //     const key = this.model.selectedGameObject;
-    //     const obj = this.model.gameobjects.get(key);
-    //     this.updatePoints({ key, obj });
-    //   }
-    // );
+    reaction(
+      () => store.show.connectionMarks,
+      (show) => {
+        connectCircles.forEach((c) => (c.renderable = show));
+      }
+    );
+    reaction(
+      () => store.show.blockId,
+      (show) => {
+        labelCache.forEach((l) => (l.renderable = show));
+      }
+    );
     this.connections();
     this.switches();
     this.joins();

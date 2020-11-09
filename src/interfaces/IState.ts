@@ -7,7 +7,6 @@ interface IState {
   // ui
   mode: number;
   // drawing
-  layers: IKeyValue;
   hints: IHints;
   tool: Tool; // ?
   snapPoint: number[];
@@ -17,7 +16,7 @@ interface IState {
   panX: number;
   panY: number;
   zoom: number;
-  // mouse selection
+  // mouse and selection
   mouse: {
     coords: number[];
     down: boolean;
@@ -26,6 +25,18 @@ interface IState {
   };
   // model
   model: Model;
+
+  // ui display items
+  show: {
+    selection: boolean;
+    railId: boolean;
+    blockId: boolean;
+    gridDots: boolean;
+    railCursor: boolean;
+    switchLabel: boolean;
+    objectAnchors: boolean;
+    connectionMarks: boolean;
+  };
 }
 
 export default IState;

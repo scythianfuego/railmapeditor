@@ -2,6 +2,7 @@ import ts from "../transform";
 import Model from "../model";
 import IGameObject from "../interfaces/IGameObject";
 import IKeyValue from "../interfaces/IKeyValue";
+import { store } from "../store";
 
 import { observe, reaction, IReactionDisposer } from "mobx";
 import * as PIXI from "pixi.js";
@@ -71,6 +72,7 @@ export default class GameObjectView {
             () => this.model.selectedGameObject,
             () => this.changeSelection(record, this.model.selectedGameObject),
           ],
+          [() => store.show.objectAnchors, () => this.showAnchors()],
         ].map(([expression, effect]) => reaction(expression, effect));
 
         disposers.set(key, reactions);
@@ -97,6 +99,13 @@ export default class GameObjectView {
   }
 
   // reactions
+  private showAnchors() {
+    const show: boolean = store.show.objectAnchors;
+    views.forEach((v) => {
+      v.border.renderable = show;
+    });
+  }
+
   private updatePoints(r: GoRecord) {
     // redraw points
     const view = getView(r);

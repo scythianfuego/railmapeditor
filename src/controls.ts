@@ -180,8 +180,7 @@ export default class Controls {
     keyCode === 16 && (this.shift = false);
     keyCode === 17 && (this.ctrl = false);
 
-    const state = store;
-    const { hints } = state;
+    const { hints } = store;
     hints.forEach((v) => (v.active = false));
 
     this.menu.data = hints;
@@ -191,8 +190,7 @@ export default class Controls {
     keyCode === 16 && (this.shift = true);
     keyCode === 17 && (this.ctrl = true);
 
-    const state = store;
-    const { mode, hints } = state;
+    const { mode, hints } = store;
     const key = Object.entries(config.keyMap).find(([k, v]) => v === keyCode);
     this.active = (key && key[0]) || "";
     const index = hints.findIndex((i) => config.keyMap[i.tag] === keyCode);
@@ -211,32 +209,31 @@ export default class Controls {
   }
 
   onMouseDown(event: MouseEvent) {
-    const state = store;
     const coords = this.mouseEventToXY(event);
     const [x, y] = coords;
     const { wx, wy } = ts;
 
-    if (AG.SELECTABLE.includes(state.mode)) {
+    if (AG.SELECTABLE.includes(store.mode)) {
       const hit = this.model.findByXY(wx(x), wy(y));
       // deselect if shift is not pressed
       !this.shift && this.model.deselect();
       this.model.select(hit);
-      if (state.mode === A.BLOCK) {
+      if (store.mode === A.BLOCK) {
         this.model.selectGroup(hit);
       }
     }
 
-    if (AG.SELECT_CONNECTIONS.includes(state.mode)) {
+    if (AG.SELECT_CONNECTIONS.includes(store.mode)) {
       const hit = this.model.findConnection(wx(x), wy(y));
       this.model.selectedConnection = hit;
     }
 
-    if (AG.SELECT_OBJECTS.includes(state.mode)) {
+    if (AG.SELECT_OBJECTS.includes(store.mode)) {
       const hit = this.model.findGameObjectByXY(wx(x), wy(y));
       this.model.selectedGameObject = hit;
     }
 
-    if (AG.POINTTOOLS.includes(state.mode)) {
+    if (AG.POINTTOOLS.includes(store.mode)) {
       const point = this.model.findPointByXY(wx(x), wy(y));
       this.model.selectedPointIndex = point;
     }
@@ -254,24 +251,23 @@ export default class Controls {
   }
 
   onMouseUp(event: MouseEvent) {
-    const state = store;
-    const { pan } = state.mouse;
+    const { pan } = store.mouse;
     const coords = this.mouseEventToXY(event);
 
     if (this.toolset.length && !pan) {
       const tool = this.getTool();
-      this.model.add(state.snapPoint, tool(state.snapPoint));
+      this.model.add(store.snapPoint, tool(store.snapPoint));
     }
 
-    if (AG.POINTTOOLS.includes(state.mode)) {
-      if (state.mode === A.POINTADD) {
+    if (AG.POINTTOOLS.includes(store.mode)) {
+      if (store.mode === A.POINTADD) {
         const [x, y] = coords;
         const { wx, wy } = ts;
         this.model.addPoint(wx(x), wy(y));
       }
-      state.mode === A.POINTSPLIT && this.model.splitPoint();
-      state.mode === A.POINTINTERPOLATE && this.model.splitInterpolate();
-      state.mode === A.POINTDELETE && this.model.deletePoint();
+      store.mode === A.POINTSPLIT && this.model.splitPoint();
+      store.mode === A.POINTINTERPOLATE && this.model.splitInterpolate();
+      store.mode === A.POINTDELETE && this.model.deletePoint();
     }
     this.model.selectedPointIndex = -1;
 
@@ -281,15 +277,14 @@ export default class Controls {
   }
 
   onMouseMove(event: MouseEvent) {
-    const state = store;
-    const mouse = state.mouse;
+    const mouse = store.mouse;
     const coords = this.mouseEventToXY(event);
 
     const snapPoint = ts.snap(coords);
 
     mouse.coords = coords;
-    const panX = mouse.pan ? state.panX + event.movementX : state.panX;
-    const panY = mouse.pan ? state.panY + event.movementY : state.panY;
+    const panX = mouse.pan ? store.panX + event.movementX : store.panX;
+    const panY = mouse.pan ? store.panY + event.movementY : store.panY;
 
     store.mouse = mouse;
     store.panX = panX;
@@ -302,34 +297,33 @@ export default class Controls {
       this.model.moveGameObject(this.editedObject, wx(x), wy(y));
     }
 
-    if (AG.POINTTOOLS.includes(state.mode)) {
-      if (state.mode === A.POINTMOVE) {
+    if (AG.POINTTOOLS.includes(store.mode)) {
+      if (store.mode === A.POINTMOVE) {
         const [x, y] = coords;
         const { wx, wy } = ts;
         this.model.movePoint(wx(x), wy(y));
       }
     }
 
-    AG.SELECTABLE.includes(state.mode) &&
-      state.mouse.down &&
-      state.mouse.selection &&
-      this.alterSelection(coords, state.mouse.selection);
+    AG.SELECTABLE.includes(store.mode) &&
+      store.mouse.down &&
+      store.mouse.selection &&
+      this.alterSelection(coords, store.mouse.selection);
   }
 
   onWheel(event: WheelEvent) {
     event.preventDefault(); // disable page zoom using Ctrl key
     const { gridWidth, gridHeight, clamp, rotate, ratioX, ratioY } = ts;
-    const state = store;
     const direction = Math.sign(event.deltaY);
 
-    if (event.ctrlKey || AG.SELECTABLE.includes(state.mode)) {
-      const [mouseX, mouseY] = state.mouse.coords;
-      const zoomOld = state.zoom;
+    if (event.ctrlKey || AG.SELECTABLE.includes(store.mode)) {
+      const [mouseX, mouseY] = store.mouse.coords;
+      const zoomOld = store.zoom;
       const zoom = clamp(zoomOld * (1 + 0.2 * direction), 5, 500);
       const zoomDelta = zoomOld - zoom;
 
-      const panX = state.panX + gridWidth * zoomDelta * ratioX(mouseX);
-      const panY = state.panY + gridHeight * zoomDelta * ratioY(mouseY);
+      const panX = store.panX + gridWidth * zoomDelta * ratioX(mouseX);
+      const panY = store.panY + gridHeight * zoomDelta * ratioY(mouseY);
       store.zoom = zoom;
       store.panX = panX;
       store.panY = panY;
@@ -346,7 +340,6 @@ export default class Controls {
   }
 
   alterSelection(startPoint: number[], endPoint: number[]) {
-    const state = store;
     // rectangular selection, todo: move to model
     const { wx, wy } = ts;
     const sx = wx(startPoint[0]);
@@ -359,25 +352,41 @@ export default class Controls {
       !this.shift && this.model.deselect(); // deselect if shift is not pressed
       this.model.select(hit);
 
-      if (state.mode === A.BLOCK) {
+      if (store.mode === A.BLOCK) {
         this.model.selectGroup(hit);
       }
     }
   }
 
-  runAction(action: number): void {
-    const state = store;
-    const { wx, wy } = ts;
-    const [x, y] = state.mouse.coords;
-    let { selectionMode, layers } = state; //
-    // set new mode if action is in modes list
-    let mode = AG.MODES.includes(action) ? action : state.mode;
+  selectWhatToShow(action: number) {
+    // always show - switches tint
+    // select - selection frame, rail ids
+    // drawing - rail ids, grid, rail cursor
+    // blocks - selection frame, block ids,
+    // switches - selection frame, switches labels
+    // objects - object marks, no labels
+    const { show } = store;
+    const isDrawing = AG.TOOLS.includes(action);
+    show.selection = AG.SELECTABLE.includes(action);
+    show.railId = isDrawing;
+    show.blockId = store.mode === A.BLOCK;
+    show.gridDots = isDrawing; // show grid for point tools
+    show.railCursor = isDrawing;
+    show.switchLabel = store.mode === A.CONNECT;
+    show.objectAnchors = store.mode === A.OBJECT;
+    show.connectionMarks = store.mode !== A.OBJECT;
+  }
 
-    // modes
+  runAction(action: number): void {
+    const { wx, wy } = ts;
+    const [x, y] = store.mouse.coords;
+    let { selectionMode } = store; //
+    // set new mode if action is in modes list
+    let mode = AG.MODES.includes(action) ? action : store.mode;
+    this.selectWhatToShow(action);
+
+    // modes4
     if (AG.MODES.includes(action)) {
-      // layers.blocks = false;
-      // layers.ids = false;
-      // layers.thick = false;
       this.toolset = [];
     }
 
@@ -388,9 +397,6 @@ export default class Controls {
     }
 
     AG.SELECTABLE.includes(action) && (selectionMode = true);
-    // action === A.OBJECT && (layers.thick = true);
-    // action === A.BLOCK && (layers.blocks = true);
-    // action === A.LINES && (layers.ids = true);
 
     // actions to run
     action === A.GROUP && this.model.group();

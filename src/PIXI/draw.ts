@@ -1,17 +1,14 @@
-import { store, copy } from "../store";
+import { store } from "./../store";
 import ts from "../transform";
 import { Tool } from "../interfaces/types";
 import Model from "../model";
-import IRail from "../interfaces/IRail";
-import IHintLine from "../interfaces/IHintLine";
 import IState from "../interfaces/IState";
-import IGameObject from "../interfaces/IGameObject";
 import IKeyValue from "../interfaces/IKeyValue";
 import IHints from "../interfaces/IHints";
 import GameObjectView from "./gameobjectview";
 import RailView from "./railview";
 
-import { autorun, reaction, observe } from "mobx";
+import { autorun, reaction } from "mobx";
 
 import * as PIXI from "pixi.js";
 import TileMesh from "./tilemesh";
@@ -45,6 +42,8 @@ export default class Draw {
   private atlas: PIXIAtlas;
   private pixiAppStage: PIXI.Container;
   private pixiGrid: PIXI.Container;
+  private pixiGridBg: PIXI.TilingSprite;
+  private pixiGridDots: PIXI.Graphics;
   private pixiCursor: PIXI.Graphics;
   private pixiSelectionFrame: PIXI.Graphics;
 
@@ -59,7 +58,6 @@ export default class Draw {
   private panX: number;
   private panY: number;
   private snapPoint: number[] = [0, 0];
-  private layers: IKeyValue;
 
   private labelCache: Map<
     string,
@@ -91,7 +89,6 @@ export default class Draw {
       this.panX = store.panX;
       this.panY = store.panY;
       this.cursorType = store.cursorType;
-      this.layers = store.layers;
       this.mouse = store.mouse;
       this.snapPoint = store.snapPoint;
 
@@ -99,6 +96,7 @@ export default class Draw {
       this.all();
     });
 
+    this.all1();
     new POT(this.atlas); // make power-of-two textures
 
     this.gameobjectview = new GameObjectView(
@@ -114,18 +112,23 @@ export default class Draw {
     return this.atlas[name] || PIXI.Texture.WHITE;
   }
 
+  public all1() {
+    reaction(
+      () => store.show.gridDots,
+      (grid) => {
+        if (grid) {
+          this.pixiGridDots.renderable = true;
+        } else {
+          this.pixiGridDots.renderable = false;
+        }
+      }
+    );
+  }
+
   public all() {
-    // always show - switches tint
-    // select - selection frame, rail ids
-    // drawing - rail ids, grid, rail cursor
-    // blocks - selection frame, block ids,
-    // switches - selection frame, switches labels
-    // objects - object marks, no labels
-
-    this.grid();
-
     // this.labelCache.forEach((v) => this.label(v.x, v.y, v.text));
     // this.connections();
+    this.grid();
     this.cursor();
     this.selectionFrame();
   }
@@ -164,7 +167,7 @@ export default class Draw {
     const generatePixiGrid = () => {
       this.pixiGrid && this.pixiGrid.destroy();
       this.pixiGrid = new PIXI.Container();
-      const bg = new PIXI.TilingSprite(
+      this.pixiGridBg = new PIXI.TilingSprite(
         this.getTexture("grass_t.png"),
         gridWidth * 50,
         gridHeight * 50
@@ -182,14 +185,16 @@ export default class Draw {
           const r = j % 2 === 0 ? 0 : 0.25;
           const x = i * xStep + r;
           const y = j * yStep;
-
-          dots.drawRect(Math.floor(x * 50) - 1, Math.floor(y * 50) - 1, 1, 1);
+          const s = 1.5;
+          dots.drawRect(Math.floor(x * 50) - s, Math.floor(y * 50) - s, s, s);
         }
       }
       dots.endFill();
+      dots.renderable = false;
+      this.pixiGridDots = dots;
 
-      this.pixiGrid.addChild(bg);
-      this.pixiGrid.addChild(dots);
+      this.pixiGrid.addChild(this.pixiGridBg);
+      this.pixiGrid.addChild(this.pixiGridDots);
       this.pixiAppStage.addChildAt(this.pixiGrid, 0);
     };
 

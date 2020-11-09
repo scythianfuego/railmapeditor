@@ -5,7 +5,6 @@ const defaults: IState = {
   // ui
   mode: 0,
   // drawing
-  layers: {},
   hints: [],
   tool: null,
   selectionMode: false,
@@ -24,6 +23,16 @@ const defaults: IState = {
   },
   // model
   model: null,
+  show: {
+    selection: true,
+    railId: false,
+    blockId: false,
+    gridDots: false,
+    railCursor: false,
+    switchLabel: false,
+    objectAnchors: false,
+    connectionMarks: false,
+  },
 };
 
 type FlatObject = {
